@@ -22,7 +22,7 @@ The application features a modern, full-screen **snap-scrolling slideshow layout
 
 ---
 
-## 📊 How the Webpage Works (Architecture Flowchart)
+## How the Webpage Works (Architecture Flowchart)
 
 ```mermaid
 graph TD
