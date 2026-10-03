@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Manuscript Analysis Dashboard</title>
+    <!-- Import Alice font from Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Alice&display=swap" rel="stylesheet">
     <style>
         /* --- Color Palette --- */
         :root {
@@ -30,6 +32,7 @@
             line-height: 1.6;
             height: 100vh;
             overflow-y: scroll;
+            overflow-x: hidden;
         }
         * { box-sizing: border-box; }
 
@@ -47,17 +50,57 @@
             overflow-y: auto;
         }
 
-        /* --- Slide 1: Welcome Screen (Image Background) --- */
+        /* --- Slide 1: Welcome Screen (Split Code Layout) --- */
         #welcome {
             background-color: var(--pearl);
             padding: 0;
+            flex-direction: row; /* Split left and right */
             overflow: hidden;
         }
-        #welcome img {
-            width: 100%;
+
+        /* Left Side: 2/3 Width for Text */
+        .welcome-text {
+            width: 66.66%;
             height: 100vh;
-            object-fit: cover;
-            display: block;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+            text-align: center;
+            position: relative;
+        }
+        .welcome-text h1 {
+            font-family: 'Bogart', Georgia, serif;
+            font-size: 6.5rem;
+            color: var(--eerie-black);
+            margin: 0 0 10px 0;
+            font-weight: normal;
+        }
+        .welcome-text h2 {
+            font-family: 'Alice', serif;
+            font-size: 1.2rem;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: var(--eerie-black);
+            margin-bottom: 40px;
+            font-weight: normal;
+        }
+        .welcome-text p {
+            font-family: 'Alice', serif;
+            font-size: 1.4rem;
+            max-width: 600px;
+            color: var(--eerie-black);
+            line-height: 1.8;
+        }
+
+        /* Right Side: 1/3 Width for Image */
+        .welcome-image {
+            width: 33.33%;
+            height: 100vh;
+            background-image: url('/static/Marginalia.png');
+            background-size: cover;
+            background-position: center;
         }
 
         /* Bouncing Down Arrow */
@@ -135,7 +178,7 @@
         th { background: var(--platinum); color: var(--eerie-black); font-weight: bold; }
         .toolbar { display: flex; gap: 15px; margin-bottom: 15px; align-items: center; }
         .toolbar input, .toolbar select { padding: 8px; border: 1px solid var(--tuscany); border-radius: 4px; font-size: 14px; background-color: #fff; }
-        .context-list { margin: 0; padding-left: 20px; font-size: 13.5px; color: var(--old-burgundy); max-height: 150px; overflow-y: auto; }
+        .context-list { margin: 0; padding-left: 20px; font-size: 14px; color: var(--old-burgundy); max-height: 150px; overflow-y: auto; }
         .context-list li { margin-bottom: 6px; }
 
         /* --- Slide 3: About Me Footer (Dark Footer Block) --- */
@@ -158,8 +201,13 @@
 
     <!-- Slide 1: Welcome Screen -->
     <section id="welcome" class="slide-section">
-        <img src="Marginalia_2.jpg" alt="Marginalia Manuscript Analyser & Editor">
-        <a href="#editor" class="down-arrow" aria-label="Slide down to editor">↓</a>
+        <div class="welcome-text">
+            <h1>Marginalia</h1>
+            <h2>A Manuscript Analyzer & Editor</h2>
+            <p>A tool built for writers to freely edit their manuscripts by checking for overused words, passive voice constructions, and structural pacing issues.</p>
+            <a href="#editor" class="down-arrow" aria-label="Slide down to editor">↓</a>
+        </div>
+        <div class="welcome-image"></div>
     </section>
 
     <!-- Slide 2: Main Editor Application -->
@@ -225,7 +273,7 @@
     <section id="about" class="slide-section">
         <div class="container">
             <h2>About Me</h2>
-            <p>Developed by Samira Ozturk.</p>
+            <p>Developed by Samira <span spellcheck="false">Ozturk</span>.</p>
             <a href="https://github.com/ozturksamira" target="_blank" rel="noopener noreferrer" aria-label="Visit my GitHub">
                 <!-- GitHub SVG Icon -->
                 <svg height="40" viewBox="0 0 16 16" width="40" fill="currentColor">
