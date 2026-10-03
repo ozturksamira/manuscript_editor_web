@@ -9,7 +9,7 @@ A professional, full-stack Natural Language Processing (NLP) web application bui
 
 ---
 
-## Interactive Interface & User Experience
+## Interactive Interface & User Experience - Current Project and Vision
 
 The application features a modern, full-screen **snap-scrolling slideshow layout** utilizing a custom warm color palette (Pearl, Platinum, Tuscany, Raw Umber, Old Burgundy, and Eerie Black):
 
