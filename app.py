@@ -10,7 +10,6 @@ app = Flask(__name__)
 
 class ManuscriptProcessor:
     def __init__(self):
-        # 1. Expand the stop_words set to include "his", "her", "him", "etc.", etc.
         self.stop_words = {
             "the", "and", "a", "to", "of", "in", "it", "is", "that", "was", "for", "on", "are", "with",
             "as", "i", "you", "he", "she", "they", "at", "be", "this", "have", "from", "or", "had", "by",
@@ -24,66 +23,58 @@ class ManuscriptProcessor:
     def get_sentences(text):
         return re.split(r'(?<=[.!?]) +', text.strip())
 
-    def analyze_text(self, text, custom_words):
+    def analyze_text(self, text):
         sentences = self.get_sentences(text)
-        flagged_data = []
+
+        passive_data = []
+        pacing_data = []
+        word_tracker = {}
 
         all_words = re.findall(r'\b\w+\b', text.lower())
         meaningful_words = [w for w in all_words if w not in self.stop_words and len(w) > 2]
         word_counts = Counter(meaningful_words)
-        frequent_words = {word for word, count in word_counts.items() if count > 5}
 
         consecutive_long_sentences = 0
 
         for sentence in sentences:
-            words = re.findall(r'\b\w+\b', sentence.lower())
+            clean_sentence = sentence.strip().replace('\n', ' ')
+            words = re.findall(r'\b\w+\b', clean_sentence.lower())
             word_count = len(words)
+
             if word_count == 0:
                 continue
 
-            issues = []
-            issue_types = []
+            # 1. Passive Voice Check
+            if self.passive_regex.search(clean_sentence):
+                passive_data.append({"sentence": clean_sentence, "word_count": word_count})
 
-            # 1. Custom User Words
-            found_custom = set([w for w in words if w in custom_words])
-            if found_custom:
-                issues.append(f"Custom flag: {', '.join(found_custom)}")
-                issue_types.append("custom")
-
-            # 2. Dynamic Frequency Checking (UPDATED LOGIC)
-            found_frequent = set([w for w in words if w in frequent_words])
-            if found_frequent:
-                # Look up the total count for each flagged word and append it to the string
-                frequent_with_counts = [f"{w} ({word_counts[w]}x)" for w in found_frequent]
-                issues.append(f"High frequency words: {', '.join(frequent_with_counts)}")
-                issue_types.append("frequency")
-
-            # 3. Passive Voice
-            if self.passive_regex.search(sentence):
-                issues.append("Passive voice")
-                issue_types.append("passive")
-
-            # 4. Better Pacing
+            # 2. Pacing Check
             if word_count > 25:
                 consecutive_long_sentences += 1
                 if consecutive_long_sentences >= 2:
-                    issues.append("Pacing: Consecutive long sentences dragging momentum")
-                    issue_types.append("pacing")
+                    pacing_data.append(
+                        {"sentence": clean_sentence, "word_count": word_count, "issue": "Consecutive long sentences"})
                 else:
-                    issues.append("Pacing: Long sentence")
-                    issue_types.append("pacing")
+                    pacing_data.append({"sentence": clean_sentence, "word_count": word_count, "issue": "Long sentence"})
             else:
                 consecutive_long_sentences = 0
 
-            if issues:
-                flagged_data.append({
-                    "sentence": sentence.strip().replace('\n', ' '),
-                    "word_count": word_count,
-                    "issues": " | ".join(issues),
-                    "types": issue_types
-                })
+            # 3. Track Word Contexts (Limits to 15 context snippets per word to prevent massive payloads)
+            for w in set(words):
+                if w in word_counts:
+                    if w not in word_tracker:
+                        word_tracker[w] = {"word": w, "count": word_counts[w], "contexts": []}
+                    if len(word_tracker[w]["contexts"]) < 15:
+                        word_tracker[w]["contexts"].append(clean_sentence)
 
-        return flagged_data, word_counts.most_common(10)
+        # Convert word tracker to a list and filter out words only used once to keep the list focused
+        word_data = [data for data in word_tracker.values() if data["count"] > 1]
+
+        return {
+            "words": word_data,
+            "passive": passive_data,
+            "pacing": pacing_data
+        }
 
 
 processor = ManuscriptProcessor()
@@ -98,28 +89,22 @@ def index():
 def analyze():
     text = ""
 
-    # Handle File Upload
     if 'file' in request.files and request.files['file'].filename:
         file = request.files['file']
         raw_filename = file.filename
 
-        # Guard against NoneType filename to satisfy linters
         if not raw_filename:
             return jsonify({"error": "No file selected."}), 400
 
         filename = raw_filename.lower()
 
         try:
-            # Read file bytes once to safely wrap in io.BytesIO for strict typing
             file_bytes = file.read()
-
             if filename.endswith('.txt'):
                 text = file_bytes.decode('utf-8')
-
             elif filename.endswith('.docx'):
                 doc = docx.Document(io.BytesIO(file_bytes))
                 text = "\n".join([para.text for para in doc.paragraphs])
-
             elif filename.endswith('.pdf'):
                 pdf_reader = PyPDF2.PdfReader(io.BytesIO(file_bytes))
                 for page in pdf_reader.pages:
@@ -127,28 +112,17 @@ def analyze():
                     if extracted:
                         text += extracted + " "
             else:
-                return jsonify({"error": "Unsupported file type. Please use .txt, .docx, or .pdf"}), 400
-
+                return jsonify({"error": "Unsupported file type."}), 400
         except Exception as e:
             return jsonify({"error": f"Failed to read file: {str(e)}"}), 500
-
-    # Handle Text Paste (if no file was uploaded)
     else:
         text = request.form.get("text", "")
 
-    custom_words_raw = request.form.get("custom_words", "")
-    custom_words = {w.strip().lower() for w in custom_words_raw.split(",") if w.strip()}
-
     if not text.strip():
-        return jsonify({"results": [], "flagged_count": 0, "top_words": []})
+        return jsonify({"words": [], "passive": [], "pacing": []})
 
-    results, top_words = processor.analyze_text(text, custom_words)
-
-    return jsonify({
-        "results": results,
-        "flagged_count": len(results),
-        "top_words": top_words
-    })
+    results = processor.analyze_text(text)
+    return jsonify(results)
 
 
 if __name__ == "__main__":
