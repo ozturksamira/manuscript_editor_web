@@ -10,10 +10,14 @@ app = Flask(__name__)
 
 class ManuscriptProcessor:
     def __init__(self):
-        self.stop_words = {"the", "and", "a", "to", "of", "in", "it", "is", "that", "was", "for", "on", "are", "with",
-                           "as", "i", "you", "he", "she", "they", "at", "be", "this", "have", "from", "or", "had", "by",
-                           "but", "not", "what", "all", "were", "when", "we", "there", "can", "an", "your", "which",
-                           "their", "said", "if", "do", "will", "each", "about", "how", "up", "out", "them", "then"}
+        # 1. Expand the stop_words set to include "his", "her", "him", "etc.", etc.
+        self.stop_words = {
+            "the", "and", "a", "to", "of", "in", "it", "is", "that", "was", "for", "on", "are", "with",
+            "as", "i", "you", "he", "she", "they", "at", "be", "this", "have", "from", "or", "had", "by",
+            "but", "not", "what", "all", "were", "when", "we", "there", "can", "an", "your", "which",
+            "their", "back", "if", "do", "will", "each", "about", "how", "up", "out", "them", "then",
+            "against", "through", "would", "his", "her", "him", "hers", "etc", "so", "me", "my", "could", "into"
+        }
         self.passive_regex = re.compile(r'\b(is|are|was|were|be|been|being|am)\s+\w+ed\b', re.IGNORECASE)
 
     @staticmethod
@@ -24,11 +28,9 @@ class ManuscriptProcessor:
         sentences = self.get_sentences(text)
         flagged_data = []
 
-        # Calculate overall word frequency for the whole text
         all_words = re.findall(r'\b\w+\b', text.lower())
         meaningful_words = [w for w in all_words if w not in self.stop_words and len(w) > 2]
         word_counts = Counter(meaningful_words)
-        # Find words used more than 5 times (adjust as needed)
         frequent_words = {word for word, count in word_counts.items() if count > 5}
 
         consecutive_long_sentences = 0
@@ -43,15 +45,17 @@ class ManuscriptProcessor:
             issue_types = []
 
             # 1. Custom User Words
-            found_custom = [w for w in words if w in custom_words]
+            found_custom = set([w for w in words if w in custom_words])
             if found_custom:
-                issues.append(f"Custom flag: {', '.join(set(found_custom))}")
+                issues.append(f"Custom flag: {', '.join(found_custom)}")
                 issue_types.append("custom")
 
-            # 2. Dynamic Frequency Checking
-            found_frequent = [w for w in words if w in frequent_words]
+            # 2. Dynamic Frequency Checking (UPDATED LOGIC)
+            found_frequent = set([w for w in words if w in frequent_words])
             if found_frequent:
-                issues.append(f"High frequency words: {', '.join(set(found_frequent))}")
+                # Look up the total count for each flagged word and append it to the string
+                frequent_with_counts = [f"{w} ({word_counts[w]}x)" for w in found_frequent]
+                issues.append(f"High frequency words: {', '.join(frequent_with_counts)}")
                 issue_types.append("frequency")
 
             # 3. Passive Voice
@@ -59,7 +63,7 @@ class ManuscriptProcessor:
                 issues.append("Passive voice")
                 issue_types.append("passive")
 
-            # 4. Better Pacing (Flags if >25 words OR if multiple long sentences appear in a row)
+            # 4. Better Pacing
             if word_count > 25:
                 consecutive_long_sentences += 1
                 if consecutive_long_sentences >= 2:
