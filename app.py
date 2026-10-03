@@ -1,62 +1,81 @@
 from flask import Flask, render_template, request, jsonify
 import re
+from collections import Counter
 
 app = Flask(__name__)
 
 
 class ManuscriptProcessor:
-    """Analyzes manuscript text for common writing pitfalls."""
-
     def __init__(self):
-        # Target words commonly overused in creative writing[cite: 1]
-        self.overused_words = {"just", "really", "very", "suddenly", "literally", "actually", "that", "almost"}
-
-        # Regex for passive voice detection[cite: 1]
+        self.stop_words = {"the", "and", "a", "to", "of", "in", "it", "is", "that", "was", "for", "on", "are", "with",
+                           "as", "i", "you", "he", "she", "they", "at", "be", "this", "have", "from", "or", "had", "by",
+                           "but", "not", "what", "all", "were", "when", "we", "there", "can", "an", "your", "which",
+                           "their", "said", "if", "do", "will", "each", "about", "how", "up", "out", "them", "then"}
         self.passive_regex = re.compile(r'\b(is|are|was|were|be|been|being|am)\s+\w+ed\b', re.IGNORECASE)
 
-        # Sentence word count threshold for pacing issues[cite: 1]
-        self.long_sentence_threshold = 30
-
     def get_sentences(self, text):
-        """Splits raw text into a list of sentences[cite: 1]."""
         return re.split(r'(?<=[.!?]) +', text.strip())
 
-    def analyze_text(self, text):
-        """Parses sentences directly from string input and identifies issues[cite: 1]."""
+    def analyze_text(self, text, custom_words):
         sentences = self.get_sentences(text)
         flagged_data = []
+
+        # Calculate overall word frequency for the whole text
+        all_words = re.findall(r'\b\w+\b', text.lower())
+        meaningful_words = [w for w in all_words if w not in self.stop_words and len(w) > 2]
+        word_counts = Counter(meaningful_words)
+        # Find words used more than 5 times (adjust as needed)
+        frequent_words = {word for word, count in word_counts.items() if count > 5}
+
+        consecutive_long_sentences = 0
 
         for sentence in sentences:
             words = re.findall(r'\b\w+\b', sentence.lower())
             word_count = len(words)
-
             if word_count == 0:
                 continue
 
             issues = []
+            issue_types = []  # Used for frontend filtering
 
-            # 1. Overused words check[cite: 1]
-            found_overused = [w for w in words if w in self.overused_words]
-            if found_overused:
-                unique_overused = list(set(found_overused))
-                issues.append(f"Overused words: {', '.join(unique_overused)}")
+            # 1. Custom User Words
+            found_custom = [w for w in words if w in custom_words]
+            if found_custom:
+                issues.append(f"Custom flag: {', '.join(set(found_custom))}")
+                issue_types.append("custom")
 
-            # 2. Passive voice check[cite: 1]
+            # 2. Dynamic Frequency Checking
+            found_frequent = [w for w in words if w in frequent_words]
+            if found_frequent:
+                issues.append(f"High frequency words: {', '.join(set(found_frequent))}")
+                issue_types.append("frequency")
+
+            # 3. Passive Voice
             if self.passive_regex.search(sentence):
-                issues.append("Passive voice detected")
+                issues.append("Passive voice")
+                issue_types.append("passive")
 
-            # 3. Pacing check[cite: 1]
-            if word_count > self.long_sentence_threshold:
-                issues.append("Pacing issue: Long sentence")
+            # 4. Better Pacing (Flags if >25 words OR if multiple long sentences appear in a row)
+            if word_count > 25:
+                consecutive_long_sentences += 1
+                if consecutive_long_sentences >= 2:
+                    issues.append("Pacing: Consecutive long sentences dragging momentum")
+                    issue_types.append("pacing")
+                else:
+                    issues.append("Pacing: Long sentence")
+                    issue_types.append("pacing")
+            else:
+                consecutive_long_sentences = 0
 
             if issues:
                 flagged_data.append({
                     "sentence": sentence.strip().replace('\n', ' '),
                     "word_count": word_count,
-                    "issues": " | ".join(issues)
+                    "issues": " | ".join(issues),
+                    "types": issue_types
                 })
 
-        return flagged_data
+        return flagged_data, word_counts.most_common(10)
 
 
 processor = ManuscriptProcessor()
@@ -69,16 +88,29 @@ def index():
 
 @app.route("/analyze", methods=["POST"])
 def analyze():
-    data = request.get_json() or {}
-    text = data.get("text", "")
+    text = ""
+
+    # Handle File Upload or Text Paste
+    if 'file' in request.files and request.files['file'].filename != '':
+        file = request.files['file']
+        text = file.read().decode('utf-8')
+    else:
+        text = request.form.get("text", "")
+
+    custom_words_raw = request.form.get("custom_words", "")
+    custom_words = {w.strip().lower() for w in custom_words_raw.split(",") if w.strip()}
 
     if not text.strip():
-        return jsonify({"results": [], "flagged_count": 0})
+        return jsonify({"results": [], "flagged_count": 0, "top_words": []})
 
-    results = processor.analyze_text(text)
-    return jsonify({"results": results, "flagged_count": len(results)})
+    results, top_words = processor.analyze_text(text, custom_words)
+
+    return jsonify({
+        "results": results,
+        "flagged_count": len(results),
+        "top_words": top_words
+    })
 
 
 if __name__ == "__main__":
-    # 0.0.0.0 tells Flask to listen on all public IPs on your local network
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    app.run(debug=True)
