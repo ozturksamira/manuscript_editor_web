@@ -26,14 +26,14 @@
 
     <div class="control-panel">
         <form id="analyzeForm">
-            <label><strong>1. Upload a File (.txt, .docx, .pdf)</strong></label>
+            <label for="fileInput"><strong>1. Upload a File (.txt, .docx, .pdf)</strong></label>
             <p style="font-size: 13px; color: #666; margin-top: 2px;"><em>Using Google Docs? Go to File > Download > Microsoft Word (.docx)</em></p>
             <input type="file" id="fileInput" name="file" accept=".txt, .docx, application/pdf">
 
-            <label><strong>OR Paste Text</strong></label>
+            <label for="textInput"><strong>OR Paste Text</strong></label>
             <textarea id="textInput" name="text" placeholder="Paste manuscript excerpt here..."></textarea>
 
-            <label><strong>2. Custom Words to Flag (comma separated)</strong></label>
+            <label for="customWords"><strong>2. Custom Words to Flag (comma separated)</strong></label>
             <input type="text" id="customWords" name="custom_words" placeholder="e.g. smile, nod, sigh">
 
             <button type="button" onclick="submitAnalysis()">Analyze Manuscript</button>

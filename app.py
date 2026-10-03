@@ -1,9 +1,9 @@
-import PyPDF2
-import docx
-import io
 from flask import Flask, render_template, request, jsonify
 import re
 from collections import Counter
+import PyPDF2
+import docx
+import io
 
 app = Flask(__name__)
 
@@ -16,7 +16,8 @@ class ManuscriptProcessor:
                            "their", "said", "if", "do", "will", "each", "about", "how", "up", "out", "them", "then"}
         self.passive_regex = re.compile(r'\b(is|are|was|were|be|been|being|am)\s+\w+ed\b', re.IGNORECASE)
 
-    def get_sentences(self, text):
+    @staticmethod
+    def get_sentences(text):
         return re.split(r'(?<=[.!?]) +', text.strip())
 
     def analyze_text(self, text, custom_words):
@@ -39,7 +40,7 @@ class ManuscriptProcessor:
                 continue
 
             issues = []
-            issue_types = []  # Used for frontend filtering
+            issue_types = []
 
             # 1. Custom User Words
             found_custom = [w for w in words if w in custom_words]
@@ -94,20 +95,29 @@ def analyze():
     text = ""
 
     # Handle File Upload
-    if 'file' in request.files and request.files['file'].filename != '':
+    if 'file' in request.files and request.files['file'].filename:
         file = request.files['file']
-        filename = file.filename.lower()
+        raw_filename = file.filename
+
+        # Guard against NoneType filename to satisfy linters
+        if not raw_filename:
+            return jsonify({"error": "No file selected."}), 400
+
+        filename = raw_filename.lower()
 
         try:
+            # Read file bytes once to safely wrap in io.BytesIO for strict typing
+            file_bytes = file.read()
+
             if filename.endswith('.txt'):
-                text = file.read().decode('utf-8')
+                text = file_bytes.decode('utf-8')
 
             elif filename.endswith('.docx'):
-                doc = docx.Document(file)
+                doc = docx.Document(io.BytesIO(file_bytes))
                 text = "\n".join([para.text for para in doc.paragraphs])
 
             elif filename.endswith('.pdf'):
-                pdf_reader = PyPDF2.PdfReader(file)
+                pdf_reader = PyPDF2.PdfReader(io.BytesIO(file_bytes))
                 for page in pdf_reader.pages:
                     extracted = page.extract_text()
                     if extracted:
@@ -135,6 +145,7 @@ def analyze():
         "flagged_count": len(results),
         "top_words": top_words
     })
+
 
 if __name__ == "__main__":
     app.run(debug=True)
