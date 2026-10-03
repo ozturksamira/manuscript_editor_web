@@ -2,86 +2,107 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manuscript Analysis Dashboard</title>
+    <title>Advanced Manuscript Dashboard</title>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 40px auto; max-width: 900px; padding: 0 20px; color: #333; line-height: 1.5; }
-        h1 { margin-bottom: 8px; }
-        p.subtitle { color: #666; margin-top: 0; margin-bottom: 24px; }
-        textarea { width: 100%; height: 220px; padding: 12px; font-size: 15px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; resize: vertical; }
-        button { background-color: #0066cc; color: #fff; border: none; padding: 12px 24px; font-size: 15px; font-weight: 600; border-radius: 6px; cursor: pointer; margin-top: 12px; }
-        button:hover { background-color: #0052a3; }
-        #summary { margin-top: 24px; font-weight: bold; font-size: 16px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 16px; }
-        th, td { border: 1px solid #ddd; padding: 10px 12px; text-align: left; }
-        th { background-color: #f4f4f6; }
-        .badge { display: inline-block; background-color: #fff3cd; color: #856404; padding: 3px 8px; border-radius: 4px; font-size: 13px; font-weight: 500; }
+        body { font-family: system-ui, sans-serif; max-width: 1000px; margin: 40px auto; padding: 0 20px; line-height: 1.5; }
+        .control-panel { background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+        textarea { width: 100%; height: 150px; padding: 10px; margin-top: 10px; border-radius: 4px; border: 1px solid #ccc; box-sizing: border-box; }
+        input[type="text"], input[type="file"] { width: 100%; padding: 10px; margin-top: 5px; margin-bottom: 15px; border-radius: 4px; border: 1px solid #ccc; box-sizing: border-box;}
+        button { background: #0d6efd; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; }
+        .filters { margin: 20px 0; padding: 10px; background: #e9ecef; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border: 1px solid #dee2e6; padding: 12px; text-align: left; }
+        th { background: #e9ecef; }
     </style>
 </head>
 <body>
 
-    <h1>Manuscript Editing Dashboard</h1>
-    <p class="subtitle">Analyze text for overused words, passive voice, and pacing issues.</p>
+    <h1>Advanced Editing Dashboard</h1>
 
-    <textarea id="manuscript" placeholder="Paste your text or manuscript excerpt here..."></textarea>
-    <br>
-    <button onclick="analyzeText()">Analyze Manuscript</button>
+    <div class="control-panel">
+        <form id="analyzeForm">
+            <label><strong>1. Upload a Text File (.txt)</strong></label>
+            <input type="file" id="fileInput" name="file" accept=".txt">
 
-    <div id="summary"></div>
+            <label><strong>OR Paste Text</strong></label>
+            <textarea id="textInput" name="text" placeholder="Paste manuscript here..."></textarea>
+
+            <label><strong>2. Custom Words to Flag (comma separated)</strong></label>
+            <input type="text" id="customWords" name="custom_words" placeholder="e.g. smile, nod, sigh">
+
+            <button type="button" onclick="submitAnalysis()">Analyze Manuscript</button>
+        </form>
+    </div>
+
+    <div class="filters" id="filterBar" style="display: none;">
+        <strong>Filter by Issue: </strong>
+        <label><input type="checkbox" checked value="all" onchange="filterTable()"> All</label>
+        <label><input type="checkbox" checked value="pacing" onchange="filterTable()"> Pacing</label>
+        <label><input type="checkbox" checked value="passive" onchange="filterTable()"> Passive Voice</label>
+        <label><input type="checkbox" checked value="frequency" onchange="filterTable()"> Word Frequency</label>
+        <label><input type="checkbox" checked value="custom" onchange="filterTable()"> Custom Words</label>
+    </div>
+
+    <div id="stats" style="margin-bottom: 20px; font-weight: bold;"></div>
 
     <table id="resultsTable" style="display: none;">
-        <thead>
-            <tr>
-                <th style="width: 50%;">Sentence</th>
-                <th style="width: 15%;">Word Count</th>
-                <th style="width: 35%;">Flagged Issues</th>
-            </tr>
-        </thead>
+        <thead><tr><th>Sentence</th><th>Words</th><th>Issues</th></tr></thead>
         <tbody id="resultsBody"></tbody>
     </table>
 
     <script>
-        async function analyzeText() {
-            const text = document.getElementById('manuscript').value;
-            const summaryDiv = document.getElementById('summary');
-            const table = document.getElementById('resultsTable');
-            const tbody = document.getElementById('resultsBody');
+        let currentData = [];
 
-            if (!text.trim()) {
-                summaryDiv.innerText = "Please enter some text to analyze.";
-                table.style.display = "none";
-                return;
-            }
+        async function submitAnalysis() {
+            const form = document.getElementById('analyzeForm');
+            const formData = new FormData(form);
+            const statsDiv = document.getElementById('stats');
 
-            summaryDiv.innerText = "Analyzing text...";
+            statsDiv.innerText = "Analyzing...";
 
             const response = await fetch('/analyze', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ text: text })
+                body: formData
             });
 
             const data = await response.json();
-            tbody.innerHTML = '';
+            currentData = data.results;
 
             if (data.flagged_count === 0) {
-                summaryDiv.innerText = "No issues detected in the manuscript!";
-                table.style.display = "none";
+                statsDiv.innerText = "No issues detected!";
+                document.getElementById('resultsTable').style.display = "none";
+                document.getElementById('filterBar').style.display = "none";
             } else {
-                summaryDiv.innerText = `Analysis complete. ${data.flagged_count} sentence(s) flagged.`;
-
-                data.results.forEach(row => {
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td>${row.sentence}</td>
-                        <td>${row.word_count}</td>
-                        <td><span class="badge">${row.issues}</span></td>
-                    `;
-                    tbody.appendChild(tr);
-                });
-
-                table.style.display = "table";
+                let topWordsStr = data.top_words.map(w => `${w[0]} (${w[1]})`).join(', ');
+                statsDiv.innerHTML = `Found ${data.flagged_count} issues.<br>Top Used Words: ${topWordsStr}`;
+                document.getElementById('resultsTable').style.display = "table";
+                document.getElementById('filterBar').style.display = "block";
+                renderTable();
             }
+        }
+
+        function filterTable() {
+            renderTable();
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('resultsBody');
+            tbody.innerHTML = '';
+
+            const checkboxes = document.querySelectorAll('.filters input[type="checkbox"]:not([value="all"]):checked');
+            const activeFilters = Array.from(checkboxes).map(cb => cb.value);
+            const showAll = document.querySelector('.filters input[value="all"]').checked;
+
+            currentData.forEach(row => {
+                // Check if the row has any issue type that matches the active filters
+                const matchesFilter = showAll || row.types.some(type => activeFilters.includes(type));
+
+                if (matchesFilter) {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `<td>${row.sentence}</td><td>${row.word_count}</td><td>${row.issues}</td>`;
+                    tbody.appendChild(tr);
+                }
+            });
         }
     </script>
 </body>
