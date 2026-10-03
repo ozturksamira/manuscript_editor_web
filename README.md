@@ -1,4 +1,4 @@
-# Manuscript Editor & Analyzer Web Application
+# Marginalia | Manuscript Editor & Analyser
 
 A professional, full-stack Natural Language Processing (NLP) web application built for writers to analyze manuscripts for overused words, passive voice constructions, and structural pacing issues.
 
