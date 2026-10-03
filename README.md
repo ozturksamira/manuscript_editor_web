@@ -1,6 +1,6 @@
 <img width="1366" height="768" alt="Marginalia" src="https://github.com/user-attachments/assets/77f04fae-6be8-4c37-ae39-ef1bafbd420a" />
 
-# Marginalia | Manuscript Editor & Analyser
+# Marginalia | Manuscript Analyser & Editor
 
 A professional, full-stack Natural Language Processing (NLP) web application built for writers to analyze manuscripts for overused words, passive voice constructions, and structural pacing issues.
 
