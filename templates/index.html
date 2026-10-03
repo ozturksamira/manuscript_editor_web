@@ -20,18 +20,17 @@
     <h1>Advanced Editing Dashboard</h1>
 
     <div class="control-panel">
-        <form id="analyzeForm">
-            <label><strong>1. Upload a Text File (.txt)</strong></label>
-            <input type="file" id="fileInput" name="file" accept=".txt">
+        <label><strong>1. Upload a File (.txt, .docx, .pdf)</strong></label>
+<p style="font-size: 13px; color: #666; margin-top: 0;"><em>Using Google Docs? Go to File > Download > Microsoft Word (.docx)</em></p>
+<input type="file" id="fileInput" name="file" accept=".txt, .docx, application/pdf">
 
             <label><strong>OR Paste Text</strong></label>
-            <textarea id="textInput" name="text" placeholder="Paste manuscript here..."></textarea>
+        <label for="textInput"></label><textarea id="textInput" name="text" placeholder="Paste manuscript here..."></textarea>
 
             <label><strong>2. Custom Words to Flag (comma separated)</strong></label>
-            <input type="text" id="customWords" name="custom_words" placeholder="e.g. smile, nod, sigh">
+        <label for="customWords"></label><input type="text" id="customWords" name="custom_words" placeholder="e.g. smile, nod, sigh">
 
             <button type="button" onclick="submitAnalysis()">Analyze Manuscript</button>
-        </form>
     </div>
 
     <div class="filters" id="filterBar" style="display: none;">
@@ -65,7 +64,31 @@
                 body: formData
             });
 
-            const data = await response.json();
+    // Check for server-side errors (like unsupported files)
+    if (!response.ok) {
+        const errorData = await response.json();
+        statsDiv.innerText = errorData.error || "An error occurred during analysis.";
+        return;
+    }
+
+    const data = await response.json();
+    currentData = data.results;
+
+    if (data.flagged_count === 0) {
+        statsDiv.innerText = "No issues detected!";
+        document.getElementById('resultsTable').style.display = "none";
+        document.getElementById('filterBar').style.display = "none";
+    } else {
+        let topWordsStr = data.top_words.map(w => `${w[0]} (${w[1]})`).join(', ');
+        statsDiv.innerHTML = `Found ${data.flagged_count} issues.<br>Top Used Words: ${topWordsStr}`;
+        document.getElementById('resultsTable').style.display = "table";
+        document.getElementById('filterBar').style.display = "block";
+        renderTable();
+    }
+}
+
+        let response;
+        const data = await response.json();
             currentData = data.results;
 
             if (data.flagged_count === 0) {
@@ -78,7 +101,6 @@
                 document.getElementById('resultsTable').style.display = "table";
                 document.getElementById('filterBar').style.display = "block";
                 renderTable();
-            }
         }
 
         function filterTable() {

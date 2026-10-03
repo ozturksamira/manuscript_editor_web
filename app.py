@@ -1,3 +1,6 @@
+import PyPDF2
+import docx
+import io
 from flask import Flask, render_template, request, jsonify
 import re
 from collections import Counter
@@ -90,10 +93,32 @@ def index():
 def analyze():
     text = ""
 
-    # Handle File Upload or Text Paste
+    # Handle File Upload
     if 'file' in request.files and request.files['file'].filename != '':
         file = request.files['file']
-        text = file.read().decode('utf-8')
+        filename = file.filename.lower()
+
+        try:
+            if filename.endswith('.txt'):
+                text = file.read().decode('utf-8')
+
+            elif filename.endswith('.docx'):
+                doc = docx.Document(file)
+                text = "\n".join([para.text for para in doc.paragraphs])
+
+            elif filename.endswith('.pdf'):
+                pdf_reader = PyPDF2.PdfReader(file)
+                for page in pdf_reader.pages:
+                    extracted = page.extract_text()
+                    if extracted:
+                        text += extracted + " "
+            else:
+                return jsonify({"error": "Unsupported file type. Please use .txt, .docx, or .pdf"}), 400
+
+        except Exception as e:
+            return jsonify({"error": f"Failed to read file: {str(e)}"}), 500
+
+    # Handle Text Paste (if no file was uploaded)
     else:
         text = request.form.get("text", "")
 
@@ -110,7 +135,6 @@ def analyze():
         "flagged_count": len(results),
         "top_words": top_words
     })
-
 
 if __name__ == "__main__":
     app.run(debug=True)
