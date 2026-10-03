@@ -1,19 +1,21 @@
-<img width="1366" height="768" alt="Marginalia" src="https://github.com/user-attachments/assets/77f04fae-6be8-4c37-ae39-ef1bafbd420a" />
+<p align="center">
+<img width="1366" height="768" alt="magnolia margin" src="https://github.com/user-attachments/assets/c44ed85e-837e-45b6-9aa9-ec8302d95e4e" />
+    </p>
 
-# Marginalia | Manuscript Analyser & Editor
+# Magnolia Margin | Manuscript Analyser & Editor
 
 A professional, full-stack Natural Language Processing (NLP) web application built for writers to analyze manuscripts for overused words, passive voice constructions, and structural pacing issues.
 
-* **Live Web App:** [Access the Global Application](https://manuscript-app.onrender.com/) *(Hosted via Render)*
+* **Live Web App:** [Magnolia Margin](https://magnoliamargin.onrender.com/) *(Hosted via Render)*
 * **GitHub Repository:** [ozturksamira/manuscript_app](https://www.google.com/search?q=https://github.com/ozturksamira/manuscript_app)
 
 ---
 
-## Interactive Interface & User Experience - Current Project and Vision
+## Interactive Interface & User Experience
 
 The application features a modern, full-screen **snap-scrolling slideshow layout** utilizing a custom warm color palette (Pearl, Platinum, Tuscany, Raw Umber, Old Burgundy, and Eerie Black):
 
-1. **Welcome Slide (Hero Section):** A dark, welcoming introduction screen featuring a smooth animated down arrow (`↓`) that snaps users directly into the core editor.
+1. **Welcome Slide (Hero Section):** A light, welcoming introduction screen featuring a smooth animated down arrow (`↓`) that snaps users directly into the core editor.
 2. **Main Editor Slide:** Houses the multi-format file uploader (`.txt`, `.docx`, `.pdf`) and raw text pasting interface, connected to a dynamic tabbed dashboard:
 * **Overused Words Tab:** Displays word frequencies, count totals, and direct context-location sentence links, enhanced with a live custom search bar and multi-sorting filters (Most/Least Used, A-Z, Z-A).
 * **Passive Voice Tab:** Dynamically flags and isolates sentences containing passive constructions.
@@ -22,8 +24,12 @@ The application features a modern, full-screen **snap-scrolling slideshow layout
 
 3. **About Me Slide:** A professional footer section detailing the developer and linking directly to GitHub (`ozturksamira`).
 
----
+## Extended Vision
+- Develop custom stop-word filtering algorithms to isolate overused vocabulary and map occurrence counts directly to in-text context snippets.
+- Modify editorial page to look more sleek.
+- Extend and develop feature which allows users to modify their scripts' tense (e.g. first to third, past to present).
 
+---
 ## How the Webpage Works (Architecture Flowchart)
 
 ```mermaid
