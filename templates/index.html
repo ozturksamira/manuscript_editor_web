@@ -5,88 +5,221 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Manuscript Analysis Dashboard</title>
     <style>
-        body { font-family: system-ui, sans-serif; max-width: 1100px; margin: 40px auto; padding: 0 20px; line-height: 1.5; color: #333; }
-        .control-panel { background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #dee2e6; }
-        textarea { width: 100%; height: 120px; padding: 10px; margin-top: 10px; border-radius: 4px; border: 1px solid #ccc; box-sizing: border-box; resize: vertical; margin-bottom: 15px;}
-        input[type="file"] { width: 100%; padding: 10px; margin-top: 5px; margin-bottom: 15px; border-radius: 4px; border: 1px solid #ccc; box-sizing: border-box;}
-        button.btn-primary { background: #0d6efd; color: white; border: none; padding: 12px 24px; border-radius: 4px; cursor: pointer; font-size: 15px; font-weight: bold; }
-        button.btn-primary:hover { background: #0b5ed7; }
+        /* --- Color Palette --- */
+        :root {
+            --pearl: #F7F5F2;
+            --platinum: #EFE8E2;
+            --tuscany: #C0AB9A;
+            --raw-umber: #7B5C4B;
+            --old-burgundy: #3F3027;
+            --eerie-black: #171411;
+        }
 
-        /* Tabs CSS */
-        .tab { overflow: hidden; border-bottom: 2px solid #ccc; margin-top: 30px; display: none; }
-        .tab button { background-color: inherit; float: left; border: none; outline: none; cursor: pointer; padding: 14px 24px; transition: 0.3s; font-size: 16px; font-weight: bold; color: #555;}
-        .tab button:hover { background-color: #e9ecef; }
-        .tab button.active { background-color: #0d6efd; color: white; border-radius: 6px 6px 0 0; }
-        .tab-content { display: none; padding: 20px 0; border-top: none; }
+        /* --- Slide-Show Layout & Snap Scrolling --- */
+        html {
+            scroll-behavior: smooth;
+            scroll-snap-type: y mandatory;
+            height: 100vh;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: system-ui, sans-serif;
+            color: var(--eerie-black);
+            background-color: var(--pearl);
+            line-height: 1.6;
+            height: 100vh;
+            overflow-y: scroll;
+        }
+        * { box-sizing: border-box; }
 
-        /* Table CSS */
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th, td { border: 1px solid #dee2e6; padding: 12px; text-align: left; vertical-align: top; }
-        th { background: #e9ecef; }
+        .slide-section {
+            height: 100vh;
+            width: 100vw;
+            scroll-snap-align: start;
+            scroll-snap-stop: always;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            padding: 40px 20px;
+            overflow-y: auto;
+        }
 
+        /* --- Slide 1: Welcome Screen (Dark Header Block) --- */
+        #welcome {
+            background-color: var(--old-burgundy);
+            color: var(--pearl);
+            text-align: center;
+        }
+        #welcome h1 { font-size: 3.5rem; margin-bottom: 10px; color: var(--platinum); }
+        #welcome p { font-size: 1.2rem; max-width: 600px; color: var(--tuscany); margin: 0 auto; }
+
+        /* Bouncing Down Arrow */
+        .down-arrow {
+            position: absolute;
+            bottom: 30px;
+            font-size: 2.2rem;
+            color: var(--tuscany);
+            text-decoration: none;
+            animation: bounce 2s infinite;
+            transition: color 0.3s;
+        }
+        .down-arrow:hover { color: var(--pearl); }
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-15px); }
+            60% { transform: translateY(-7px); }
+        }
+
+        /* --- Slide 2: Main Editor (Light Content Block) --- */
+        #editor {
+            background-color: var(--pearl);
+            justify-content: flex-start;
+            padding-top: 60px;
+        }
+        .container { max-width: 1100px; width: 100%; }
+
+        .control-panel {
+            background: var(--platinum);
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid var(--tuscany);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        textarea {
+            width: 100%; height: 90px; padding: 10px; margin-top: 5px;
+            border-radius: 4px; border: 1px solid var(--tuscany); resize: vertical;
+            margin-bottom: 10px; font-family: inherit; background-color: #fff;
+        }
+        input[type="file"] {
+            width: 100%; padding: 8px; margin-top: 5px; margin-bottom: 10px;
+            border-radius: 4px; border: 1px solid var(--tuscany); background-color: #fff;
+        }
+
+        button.btn-primary {
+            background: var(--raw-umber); color: var(--pearl); border: none;
+            padding: 12px 24px; border-radius: 4px; cursor: pointer; font-size: 15px;
+            font-weight: bold; transition: background 0.3s;
+        }
+        button.btn-primary:hover { background: var(--old-burgundy); }
+
+        /* Tabs UI */
+        .tab { overflow: hidden; border-bottom: 2px solid var(--tuscany); margin-top: 20px; display: none; }
+        .tab button {
+            background-color: inherit; float: left; border: none; outline: none;
+            cursor: pointer; padding: 12px 20px; transition: 0.3s; font-size: 15px;
+            font-weight: bold; color: var(--raw-umber);
+        }
+        .tab button:hover { background-color: var(--platinum); }
+        .tab button.active { background-color: var(--raw-umber); color: var(--pearl); border-radius: 6px 6px 0 0; }
+        .tab-content { display: none; padding: 15px 0; border-top: none; }
+
+        /* Tables & Data Area */
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; background-color: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        th, td { border: 1px solid var(--tuscany); padding: 12px; text-align: left; vertical-align: top; }
+        th { background: var(--platinum); color: var(--eerie-black); font-weight: bold; }
         .toolbar { display: flex; gap: 15px; margin-bottom: 15px; align-items: center; }
-        .toolbar input, .toolbar select { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
-        .context-list { margin: 0; padding-left: 20px; font-size: 14px; color: #444; }
+        .toolbar input, .toolbar select { padding: 8px; border: 1px solid var(--tuscany); border-radius: 4px; font-size: 14px; background-color: #fff; }
+        .context-list { margin: 0; padding-left: 20px; font-size: 13.5px; color: var(--old-burgundy); max-height: 150px; overflow-y: auto; }
         .context-list li { margin-bottom: 6px; }
+
+        /* --- Slide 3: About Me Footer (Dark Footer Block) --- */
+        #about {
+            background-color: var(--eerie-black);
+            color: var(--pearl);
+            text-align: center;
+        }
+        #about h2 { color: var(--tuscany); margin-bottom: 10px; font-size: 2.5rem; }
+        #about p { font-size: 1.1rem; color: var(--platinum); max-width: 500px; margin: 10px auto; }
+        #about a {
+            color: var(--tuscany); text-decoration: none; font-weight: bold;
+            border-bottom: 1px solid transparent; transition: 0.3s;
+        }
+        #about a:hover { border-bottom: 1px solid var(--tuscany); color: var(--pearl); }
+
     </style>
 </head>
 <body>
 
-    <h1>Manuscript Editing Dashboard</h1>
-
-    <div class="control-panel">
-        <form id="analyzeForm">
-            <label for="fileInput"><strong>1. Upload a File (.txt, .docx, .pdf)</strong></label>
-            <input type="file" id="fileInput" name="file" accept=".txt, .docx, application/pdf">
-
-            <label for="textInput"><strong>OR Paste Text</strong></label>
-            <textarea id="textInput" name="text" placeholder="Paste a manuscript excerpt here..."></textarea>
-
-            <button type="button" class="btn-primary" onclick="submitAnalysis()">Analyze Manuscript</button>
-        </form>
-    </div>
-
-    <div id="stats" style="margin-bottom: 10px; font-size: 16px;"></div>
-
-    <!-- Tabs Layout -->
-    <div class="tab" id="tabContainer">
-      <button class="tab-links active" onclick="openTab(this, 'WordsTab')">Overused & Custom Words</button>
-      <button class="tab-links" onclick="openTab(this, 'PassiveTab')">Passive Voice</button>
-      <button class="tab-links" onclick="openTab(this, 'PacingTab')">Pacing Issues</button>
-    </div>
-
-    <!-- Overused Words Tab -->
-    <div id="WordsTab" class="tab-content" style="display:block;">
-        <div class="toolbar">
-            <input type="text" id="wordSearch" aria-label="Search for a custom word" placeholder="Search for a custom word..." onkeyup="renderWordsTable()" style="flex-grow: 1;">
-            <select id="wordSort" aria-label="Sort words" onchange="renderWordsTable()">
-                <option value="desc">Sort: Most Used First</option>
-                <option value="asc">Sort: Least Used First</option>
-                <option value="az">Sort: A-Z</option>
-                <option value="za">Sort: Z-A</option>
-            </select>
+    <!-- Slide 1: Welcome Screen -->
+    <section id="welcome" class="slide-section">
+        <div class="container">
+            <h1>Manuscript Analyzer</h1>
+            <p>An interactive tool designed to refine your writing pacing, eliminate passive voice, and target overused words with precision.</p>
         </div>
-        <table id="wordsTable">
-            <thead><tr><th style="width: 15%;">Word</th><th style="width: 10%;">Count</th><th style="width: 75%;">Context Locations in Document</th></tr></thead>
-            <tbody id="wordsBody"></tbody>
-        </table>
-    </div>
+        <a href="#editor" class="down-arrow" aria-label="Slide down to editor">↓</a>
+    </section>
 
-    <!-- Passive Voice Tab -->
-    <div id="PassiveTab" class="tab-content">
-        <table>
-            <thead><tr><th style="width: 85%;">Sentence</th><th style="width: 15%;">Word Count</th></tr></thead>
-            <tbody id="passiveBody"></tbody>
-        </table>
-    </div>
+    <!-- Slide 2: Main Editor Application -->
+    <section id="editor" class="slide-section">
+        <div class="container">
+            <div class="control-panel">
+                <form id="analyzeForm">
+                    <label for="fileInput"><strong style="color: var(--old-burgundy);">1. Upload a File (.txt, .docx, .pdf)</strong></label>
+                    <input type="file" id="fileInput" name="file" accept=".txt, .docx, application/pdf">
 
-    <!-- Pacing Tab -->
-    <div id="PacingTab" class="tab-content">
-        <table>
-            <thead><tr><th style="width: 65%;">Sentence</th><th style="width: 15%;">Word Count</th><th style="width: 20%;">Issue Type</th></tr></thead>
-            <tbody id="pacingBody"></tbody>
-        </table>
-    </div>
+                    <label for="textInput"><strong style="color: var(--old-burgundy);">OR Paste Text</strong></label>
+                    <textarea id="textInput" name="text" placeholder="Paste a manuscript excerpt here..."></textarea>
+
+                    <button type="button" class="btn-primary" onclick="submitAnalysis()">Analyze Manuscript</button>
+                </form>
+            </div>
+
+            <div id="stats" style="margin-bottom: 5px; font-size: 16px; color: var(--old-burgundy);"></div>
+
+            <!-- Tabs Layout -->
+            <div class="tab" id="tabContainer">
+              <button class="tab-links active" onclick="openTab(this, 'WordsTab')">Overused Words</button>
+              <button class="tab-links" onclick="openTab(this, 'PassiveTab')">Passive Voice</button>
+              <button class="tab-links" onclick="openTab(this, 'PacingTab')">Pacing Issues</button>
+            </div>
+
+            <!-- Overused Words Tab -->
+            <div id="WordsTab" class="tab-content" style="display:block;">
+                <div class="toolbar">
+                    <input type="text" id="wordSearch" aria-label="Search for a specific word" placeholder="Search for a specific word..." onkeyup="renderWordsTable()" style="flex-grow: 1;">
+                    <select id="wordSort" aria-label="Sort words" onchange="renderWordsTable()">
+                        <option value="desc">Sort: Most Used First</option>
+                        <option value="asc">Sort: Least Used First</option>
+                        <option value="az">Sort: A-Z</option>
+                        <option value="za">Sort: Z-A</option>
+                    </select>
+                </div>
+                <table id="wordsTable">
+                    <thead><tr><th style="width: 15%;">Word</th><th style="width: 10%;">Count</th><th style="width: 75%;">Context Locations in Document</th></tr></thead>
+                    <tbody id="wordsBody"></tbody>
+                </table>
+            </div>
+
+            <!-- Passive Voice Tab -->
+            <div id="PassiveTab" class="tab-content">
+                <table>
+                    <thead><tr><th style="width: 85%;">Sentence</th><th style="width: 15%;">Word Count</th></tr></thead>
+                    <tbody id="passiveBody"></tbody>
+                </table>
+            </div>
+
+            <!-- Pacing Tab -->
+            <div id="PacingTab" class="tab-content">
+                <table>
+                    <thead><tr><th style="width: 65%;">Sentence</th><th style="width: 15%;">Word Count</th><th style="width: 20%;">Issue Type</th></tr></thead>
+                    <tbody id="pacingBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <!-- Slide 3: About Me Footer -->
+    <section id="about" class="slide-section">
+        <div class="container">
+            <h2>About Me</h2>
+            <p>Developed by Samira Ozturk.</p>
+            <p><a href="https://github.com/ozturksamira" target="_blank" rel="noopener noreferrer">Visit my GitHub (ozturksamira)</a></p>
+        </div>
+    </section>
 
     <script>
         let wordData = [];
@@ -98,7 +231,7 @@
             const formData = new FormData(form);
             const statsDiv = document.getElementById('stats');
 
-            statsDiv.innerHTML = "<strong>Analyzing...</strong>";
+            statsDiv.innerHTML = "<strong>Analyzing document...</strong>";
             document.getElementById('tabContainer').style.display = "none";
             document.querySelectorAll('.tab-content').forEach(tc => tc.style.display = "none");
 
@@ -118,7 +251,6 @@
                 statsDiv.innerHTML = "<strong>Analysis Complete. Navigate tabs below.</strong>";
                 document.getElementById('tabContainer').style.display = "block";
 
-                // Show first tab by default
                 document.getElementById('WordsTab').style.display = "block";
                 document.querySelectorAll('.tab-links')[0].classList.add("active");
 
@@ -136,10 +268,8 @@
             const searchTerm = document.getElementById('wordSearch').value.toLowerCase();
             const sortMethod = document.getElementById('wordSort').value;
 
-            // Filter
             let filtered = wordData.filter(w => w.word.includes(searchTerm));
 
-            // Sort
             filtered.sort((a, b) => {
                 if (sortMethod === 'desc') return b.count - a.count;
                 if (sortMethod === 'asc') return a.count - b.count;
@@ -153,7 +283,7 @@
                 const contextsHtml = row.contexts.map(c => `<li>${c}</li>`).join('');
 
                 tr.innerHTML = `
-                    <td><strong>${row.word}</strong></td>
+                    <td><strong style="color: var(--old-burgundy);">${row.word}</strong></td>
                     <td>${row.count}</td>
                     <td><ul class="context-list">${contextsHtml}</ul></td>
                 `;
@@ -176,7 +306,7 @@
             tbody.innerHTML = '';
             pacingData.forEach(row => {
                 const tr = document.createElement('tr');
-                tr.innerHTML = `<td>${row.sentence}</td><td>${row.word_count}</td><td>${row.issue}</td>`;
+                tr.innerHTML = `<td>${row.sentence}</td><td>${row.word_count}</td><td><strong style="color: var(--raw-umber);">${row.issue}</strong></td>`;
                 tbody.appendChild(tr);
             });
         }
