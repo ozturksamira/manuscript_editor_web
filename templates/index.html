@@ -2,17 +2,22 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Advanced Manuscript Dashboard</title>
     <style>
-        body { font-family: system-ui, sans-serif; max-width: 1000px; margin: 40px auto; padding: 0 20px; line-height: 1.5; }
-        .control-panel { background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
-        textarea { width: 100%; height: 150px; padding: 10px; margin-top: 10px; border-radius: 4px; border: 1px solid #ccc; box-sizing: border-box; }
+        body { font-family: system-ui, sans-serif; max-width: 1000px; margin: 40px auto; padding: 0 20px; line-height: 1.5; color: #333; }
+        h1 { margin-bottom: 8px; }
+        .control-panel { background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #dee2e6; }
+        textarea { width: 100%; height: 150px; padding: 10px; margin-top: 10px; border-radius: 4px; border: 1px solid #ccc; box-sizing: border-box; resize: vertical; }
         input[type="text"], input[type="file"] { width: 100%; padding: 10px; margin-top: 5px; margin-bottom: 15px; border-radius: 4px; border: 1px solid #ccc; box-sizing: border-box;}
-        button { background: #0d6efd; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; }
-        .filters { margin: 20px 0; padding: 10px; background: #e9ecef; border-radius: 4px; }
+        button { background: #0d6efd; color: white; border: none; padding: 12px 24px; border-radius: 4px; cursor: pointer; font-size: 15px; font-weight: bold; }
+        button:hover { background: #0b5ed7; }
+        .filters { margin: 20px 0; padding: 15px; background: #e9ecef; border-radius: 4px; border: 1px solid #dee2e6; }
+        .filters label { margin-right: 15px; cursor: pointer; }
         table { width: 100%; border-collapse: collapse; margin-top: 10px; }
         th, td { border: 1px solid #dee2e6; padding: 12px; text-align: left; }
         th { background: #e9ecef; }
+        .badge { display: inline-block; background-color: #fff3cd; color: #856404; padding: 3px 8px; border-radius: 4px; font-size: 13px; font-weight: 500; margin-bottom: 4px; }
     </style>
 </head>
 <body>
@@ -20,17 +25,19 @@
     <h1>Advanced Editing Dashboard</h1>
 
     <div class="control-panel">
-        <label><strong>1. Upload a File (.txt, .docx, .pdf)</strong></label>
-<p style="font-size: 13px; color: #666; margin-top: 0;"><em>Using Google Docs? Go to File > Download > Microsoft Word (.docx)</em></p>
-<input type="file" id="fileInput" name="file" accept=".txt, .docx, application/pdf">
+        <form id="analyzeForm">
+            <label><strong>1. Upload a File (.txt, .docx, .pdf)</strong></label>
+            <p style="font-size: 13px; color: #666; margin-top: 2px;"><em>Using Google Docs? Go to File > Download > Microsoft Word (.docx)</em></p>
+            <input type="file" id="fileInput" name="file" accept=".txt, .docx, application/pdf">
 
             <label><strong>OR Paste Text</strong></label>
-        <label for="textInput"></label><textarea id="textInput" name="text" placeholder="Paste manuscript here..."></textarea>
+            <textarea id="textInput" name="text" placeholder="Paste manuscript excerpt here..."></textarea>
 
             <label><strong>2. Custom Words to Flag (comma separated)</strong></label>
-        <label for="customWords"></label><input type="text" id="customWords" name="custom_words" placeholder="e.g. smile, nod, sigh">
+            <input type="text" id="customWords" name="custom_words" placeholder="e.g. smile, nod, sigh">
 
             <button type="button" onclick="submitAnalysis()">Analyze Manuscript</button>
+        </form>
     </div>
 
     <div class="filters" id="filterBar" style="display: none;">
@@ -42,10 +49,16 @@
         <label><input type="checkbox" checked value="custom" onchange="filterTable()"> Custom Words</label>
     </div>
 
-    <div id="stats" style="margin-bottom: 20px; font-weight: bold;"></div>
+    <div id="stats" style="margin-bottom: 20px; font-size: 16px;"></div>
 
     <table id="resultsTable" style="display: none;">
-        <thead><tr><th>Sentence</th><th>Words</th><th>Issues</th></tr></thead>
+        <thead>
+            <tr>
+                <th style="width: 50%;">Sentence</th>
+                <th style="width: 10%;">Words</th>
+                <th style="width: 40%;">Issues</th>
+            </tr>
+        </thead>
         <tbody id="resultsBody"></tbody>
     </table>
 
@@ -57,50 +70,38 @@
             const formData = new FormData(form);
             const statsDiv = document.getElementById('stats');
 
-            statsDiv.innerText = "Analyzing...";
+            statsDiv.innerHTML = "<strong>Analyzing...</strong>";
+            document.getElementById('resultsTable').style.display = "none";
+            document.getElementById('filterBar').style.display = "none";
 
-            const response = await fetch('/analyze', {
-                method: 'POST',
-                body: formData
-            });
+            try {
+                const response = await fetch('/analyze', {
+                    method: 'POST',
+                    body: formData
+                });
 
-    // Check for server-side errors (like unsupported files)
-    if (!response.ok) {
-        const errorData = await response.json();
-        statsDiv.innerText = errorData.error || "An error occurred during analysis.";
-        return;
-    }
+                // Check for server-side errors (like unsupported files)
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    statsDiv.innerHTML = `<strong style="color: red;">Error: ${errorData.error || "An error occurred during analysis."}</strong>`;
+                    return;
+                }
 
-    const data = await response.json();
-    currentData = data.results;
+                const data = await response.json();
+                currentData = data.results;
 
-    if (data.flagged_count === 0) {
-        statsDiv.innerText = "No issues detected!";
-        document.getElementById('resultsTable').style.display = "none";
-        document.getElementById('filterBar').style.display = "none";
-    } else {
-        let topWordsStr = data.top_words.map(w => `${w[0]} (${w[1]})`).join(', ');
-        statsDiv.innerHTML = `Found ${data.flagged_count} issues.<br>Top Used Words: ${topWordsStr}`;
-        document.getElementById('resultsTable').style.display = "table";
-        document.getElementById('filterBar').style.display = "block";
-        renderTable();
-    }
-}
-
-        let response;
-        const data = await response.json();
-            currentData = data.results;
-
-            if (data.flagged_count === 0) {
-                statsDiv.innerText = "No issues detected!";
-                document.getElementById('resultsTable').style.display = "none";
-                document.getElementById('filterBar').style.display = "none";
-            } else {
-                let topWordsStr = data.top_words.map(w => `${w[0]} (${w[1]})`).join(', ');
-                statsDiv.innerHTML = `Found ${data.flagged_count} issues.<br>Top Used Words: ${topWordsStr}`;
-                document.getElementById('resultsTable').style.display = "table";
-                document.getElementById('filterBar').style.display = "block";
-                renderTable();
+                if (data.flagged_count === 0) {
+                    statsDiv.innerHTML = "<strong>No issues detected!</strong>";
+                } else {
+                    let topWordsStr = data.top_words.map(w => `${w[0]} (${w[1]})`).join(', ');
+                    statsDiv.innerHTML = `<strong>Analysis Complete. Found ${data.flagged_count} flagged sentences.</strong><br><span style="color: #555;">Top Used Words: ${topWordsStr}</span>`;
+                    document.getElementById('resultsTable').style.display = "table";
+                    document.getElementById('filterBar').style.display = "block";
+                    renderTable();
+                }
+            } catch (error) {
+                statsDiv.innerHTML = `<strong style="color: red;">Connection error. Ensure your Flask server is running.</strong>`;
+            }
         }
 
         function filterTable() {
@@ -121,7 +122,15 @@
 
                 if (matchesFilter) {
                     const tr = document.createElement('tr');
-                    tr.innerHTML = `<td>${row.sentence}</td><td>${row.word_count}</td><td>${row.issues}</td>`;
+
+                    // Format the issues with badges for better readability
+                    const formattedIssues = row.issues.split(' | ').map(issue => `<span class="badge">${issue}</span>`).join(' ');
+
+                    tr.innerHTML = `
+                        <td>${row.sentence}</td>
+                        <td>${row.word_count}</td>
+                        <td>${formattedIssues}</td>
+                    `;
                     tbody.appendChild(tr);
                 }
             });
