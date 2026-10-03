@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manuscript Analysis Dashboard</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 40px auto; max-width: 900px; padding: 0 20px; color: #333; line-height: 1.5; }
+        h1 { margin-bottom: 8px; }
+        p.subtitle { color: #666; margin-top: 0; margin-bottom: 24px; }
+        textarea { width: 100%; height: 220px; padding: 12px; font-size: 15px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; resize: vertical; }
+        button { background-color: #0066cc; color: #fff; border: none; padding: 12px 24px; font-size: 15px; font-weight: 600; border-radius: 6px; cursor: pointer; margin-top: 12px; }
+        button:hover { background-color: #0052a3; }
+        #summary { margin-top: 24px; font-weight: bold; font-size: 16px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+        th, td { border: 1px solid #ddd; padding: 10px 12px; text-align: left; }
+        th { background-color: #f4f4f6; }
+        .badge { display: inline-block; background-color: #fff3cd; color: #856404; padding: 3px 8px; border-radius: 4px; font-size: 13px; font-weight: 500; }
+    </style>
+</head>
+<body>
+
+    <h1>Manuscript Editing Dashboard</h1>
+    <p class="subtitle">Analyze text for overused words, passive voice, and pacing issues.</p>
+
+    <textarea id="manuscript" placeholder="Paste your text or manuscript excerpt here..."></textarea>
+    <br>
+    <button onclick="analyzeText()">Analyze Manuscript</button>
+
+    <div id="summary"></div>
+
+    <table id="resultsTable" style="display: none;">
+        <thead>
+            <tr>
+                <th style="width: 50%;">Sentence</th>
+                <th style="width: 15%;">Word Count</th>
+                <th style="width: 35%;">Flagged Issues</th>
+            </tr>
+        </thead>
+        <tbody id="resultsBody"></tbody>
+    </table>
+
+    <script>
+        async function analyzeText() {
+            const text = document.getElementById('manuscript').value;
+            const summaryDiv = document.getElementById('summary');
+            const table = document.getElementById('resultsTable');
+            const tbody = document.getElementById('resultsBody');
+
+            if (!text.trim()) {
+                summaryDiv.innerText = "Please enter some text to analyze.";
+                table.style.display = "none";
+                return;
+            }
+
+            summaryDiv.innerText = "Analyzing text...";
+
+            const response = await fetch('/analyze', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text: text })
+            });
+
+            const data = await response.json();
+            tbody.innerHTML = '';
+
+            if (data.flagged_count === 0) {
+                summaryDiv.innerText = "No issues detected in the manuscript!";
+                table.style.display = "none";
+            } else {
+                summaryDiv.innerText = `Analysis complete. ${data.flagged_count} sentence(s) flagged.`;
+
+                data.results.forEach(row => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${row.sentence}</td>
+                        <td>${row.word_count}</td>
+                        <td><span class="badge">${row.issues}</span></td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+
+                table.style.display = "table";
+            }
+        }
+    </script>
+</body>
+</html>
