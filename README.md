@@ -4,7 +4,7 @@
 
 A professional, full-stack Natural Language Processing (NLP) web application built for writers to analyze manuscripts for overused words, passive voice constructions, and structural pacing issues.
 
-* **Live Web App:** [Access the Global Application](https://manuscript-app.onrender.com/) *(Hosted via Render)*
+* **Live Web App:** Magnolia Margin(https://magnoliamargin.onrender.com/) *(Hosted via Render)*
 * **GitHub Repository:** [ozturksamira/manuscript_app](https://www.google.com/search?q=https://github.com/ozturksamira/manuscript_app)
 
 ---
