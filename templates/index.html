@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Manuscript Analysis Dashboard</title>
-    <!-- Import Alice font from Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Alice&display=swap" rel="stylesheet">
     <style>
         /* --- Color Palette --- */
@@ -54,11 +53,10 @@
         #welcome {
             background-color: var(--pearl);
             padding: 0;
-            flex-direction: row; /* Split left and right */
+            flex-direction: row;
             overflow: hidden;
         }
 
-        /* Left Side: 2/3 Width for Text */
         .welcome-text {
             width: 66.66%;
             height: 100vh;
@@ -94,7 +92,6 @@
             line-height: 1.8;
         }
 
-        /* Right Side: 1/3 Width for Image */
         .welcome-image {
             width: 33.33%;
             height: 100vh;
@@ -103,7 +100,6 @@
             background-position: center;
         }
 
-        /* Bouncing Down Arrow */
         .down-arrow {
             position: absolute;
             bottom: 30px;
@@ -128,11 +124,100 @@
             60% { transform: translateY(-7px); }
         }
 
-        /* --- Slide 2: Main Editor (Light Content Block) --- */
+        /* --- Slide 2: Login Section --- */
+        #login-section {
+            background-color: var(--pearl);
+        }
+
+        .login-card {
+            background-color: var(--platinum);
+            padding: 50px 40px;
+            border-radius: 24px;
+            text-align: center;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+        }
+
+        .login-card h2 {
+            font-family: 'Alice', serif;
+            color: var(--old-burgundy);
+            font-size: 1.8rem;
+            margin-top: 0;
+            margin-bottom: 30px;
+        }
+
+        .auth-btn {
+            display: block;
+            width: 100%;
+            padding: 14px;
+            margin-bottom: 15px;
+            border-radius: 30px;
+            border: none;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn-google, .btn-apple {
+            background-color: var(--tuscany);
+            color: var(--old-burgundy);
+        }
+
+        .btn-google:hover, .btn-apple:hover {
+            background-color: #b09987;
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            text-align: center;
+            color: var(--raw-umber);
+            margin: 20px 0;
+            font-size: 12px;
+            letter-spacing: 1px;
+        }
+
+        .divider::before, .divider::after {
+            content: '';
+            flex: 1;
+            border-bottom: 1px solid var(--tuscany);
+        }
+
+        .divider:not(:empty)::before { margin-right: .25em; }
+        .divider:not(:empty)::after { margin-left: .25em; }
+
+        .email-input {
+            width: 100%;
+            padding: 14px 20px;
+            border-radius: 30px;
+            border: none;
+            background-color: var(--raw-umber);
+            color: var(--pearl);
+            font-size: 16px;
+            box-sizing: border-box;
+            margin-bottom: 15px;
+        }
+
+        .email-input::placeholder { color: var(--platinum); }
+
+        .btn-continue {
+            background-color: var(--tuscany);
+            color: var(--old-burgundy);
+            padding: 10px 30px;
+            border-radius: 20px;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        /* --- Slide 3: Main Editor --- */
         #editor {
             background-color: var(--pearl);
             justify-content: flex-start;
             padding-top: 60px;
+            display: none; /* Hidden until login */
         }
         .container { max-width: 1100px; width: 100%; }
 
@@ -144,11 +229,14 @@
             border: 1px solid var(--tuscany);
             box-shadow: 0 4px 6px rgba(0,0,0,0.05);
         }
-        textarea {
-            width: 100%; height: 90px; padding: 10px; margin-top: 5px;
-            border-radius: 4px; border: 1px solid var(--tuscany); resize: vertical;
-            margin-bottom: 10px; font-family: inherit; background-color: #fff;
+
+        #richEditor {
+            width: 100%; min-height: 150px; padding: 15px; margin-top: 5px;
+            border-radius: 4px; border: 1px solid var(--tuscany);
+            background-color: #fff; overflow-y: auto; outline: none;
+            color: var(--eerie-black); margin-bottom: 10px;
         }
+
         input[type="file"] {
             width: 100%; padding: 8px; margin-top: 5px; margin-bottom: 10px;
             border-radius: 4px; border: 1px solid var(--tuscany); background-color: #fff;
@@ -181,7 +269,7 @@
         .context-list { margin: 0; padding-left: 20px; font-size: 14px; color: var(--old-burgundy); max-height: 150px; overflow-y: auto; }
         .context-list li { margin-bottom: 6px; }
 
-        /* --- Slide 3: About Me Footer (Dark Footer Block) --- */
+        /* --- Slide 4: About Me Footer --- */
         #about {
             background-color: var(--eerie-black);
             color: var(--pearl);
@@ -195,7 +283,7 @@
         }
         #about a:hover { color: var(--pearl); transform: scale(1.1); }
 
-        /* --- Responsive Design for Mobile & Tablets --- */
+        /* --- Responsive Design --- */
         @media (max-width: 768px) {
             #welcome { flex-direction: column; }
             .welcome-text { width: 100%; height: 65vh; padding: 20px; }
@@ -208,7 +296,6 @@
             .slide-section { padding: 20px 10px; }
             #editor { padding-top: 40px; }
         }
-
     </style>
 </head>
 <body>
@@ -219,12 +306,29 @@
             <h1>Marginalia</h1>
             <h2>A Manuscript Analyzer & Editor</h2>
             <p>A tool built for writers to freely edit their manuscripts by checking for overused words, passive voice constructions, and structural pacing issues.</p>
-            <a href="#editor" class="down-arrow" aria-label="Slide down to editor">↓</a>
+            <a href="#login-section" id="welcomeArrow" class="down-arrow" aria-label="Slide down to login">↓</a>
         </div>
         <div class="welcome-image"></div>
     </section>
 
-    <!-- Slide 2: Main Editor Application -->
+    <!-- Slide 2: Login / Auth Screen -->
+    <section id="login-section" class="slide-section">
+        <div class="login-card">
+            <h2>Sign in or create your writing room</h2>
+
+            <button class="auth-btn btn-google" onclick="handleLogin(event)">G Continue with Google</button>
+            <button class="auth-btn btn-apple" onclick="handleLogin(event)"> Continue with Apple</button>
+
+            <div class="divider">OR</div>
+
+            <form onsubmit="handleLogin(event)">
+                <input type="email" class="email-input" placeholder="... your@email.com" required>
+                <button type="submit" class="btn-continue">continue</button>
+            </form>
+        </div>
+    </section>
+
+    <!-- Slide 3: Main Editor Application (Hidden until login) -->
     <section id="editor" class="slide-section">
         <div class="container">
             <div class="control-panel">
@@ -232,8 +336,10 @@
                     <label for="fileInput"><strong style="color: var(--old-burgundy);">1. Upload a File (.txt, .docx, .pdf)</strong></label>
                     <input type="file" id="fileInput" name="file" accept=".txt, .docx, application/pdf">
 
-                    <label for="textInput"><strong style="color: var(--old-burgundy);">OR Paste Text</strong></label>
-                    <textarea id="textInput" name="text" placeholder="Paste a manuscript excerpt here..."></textarea>
+                    <label for="richEditor"><strong style="color: var(--old-burgundy);">OR Paste Text (Retains Formatting)</strong></label>
+                    <div id="richEditor" contenteditable="true" placeholder="Paste your manuscript here..."></div>
+                    <span id="saveStatus" style="font-size: 12px; color: var(--raw-umber); float: right; margin-bottom: 15px;"></span>
+                    <input type="hidden" id="hiddenTextInput" name="text">
 
                     <button type="button" class="btn-primary" onclick="submitAnalysis()">Analyze Manuscript</button>
                 </form>
@@ -248,7 +354,6 @@
               <button class="tab-links" onclick="openTab(this, 'PacingTab')">Pacing Issues</button>
             </div>
 
-            <!-- Overused Words Tab -->
             <div id="WordsTab" class="tab-content" style="display:block;">
                 <div class="toolbar">
                     <input type="text" id="wordSearch" aria-label="Search for a specific word" placeholder="Search for a specific word..." onkeyup="renderWordsTable()" style="flex-grow: 1;">
@@ -265,7 +370,6 @@
                 </table>
             </div>
 
-            <!-- Passive Voice Tab -->
             <div id="PassiveTab" class="tab-content">
                 <table>
                     <thead><tr><th style="width: 85%;">Sentence</th><th style="width: 15%;">Word Count</th></tr></thead>
@@ -273,7 +377,6 @@
                 </table>
             </div>
 
-            <!-- Pacing Tab -->
             <div id="PacingTab" class="tab-content">
                 <table>
                     <thead><tr><th style="width: 65%;">Sentence</th><th style="width: 15%;">Word Count</th><th style="width: 20%;">Issue Type</th></tr></thead>
@@ -283,7 +386,7 @@
         </div>
     </section>
 
-    <!-- Slide 3: About Me Footer -->
+    <!-- Slide 4: About Me Footer -->
     <section id="about" class="slide-section">
         <div class="container">
             <h2>About Me</h2>
@@ -298,44 +401,55 @@
     </section>
 
     <script>
+        // --- Authentication Logic ---
+        function handleLogin(event) {
+            event.preventDefault(); // Prevent page reload
+
+            // Hide login, show editor
+            document.getElementById('login-section').style.display = 'none';
+            const editor = document.getElementById('editor');
+            editor.style.display = 'flex';
+
+            // Update the Welcome screen arrow to point to the editor now
+            document.getElementById('welcomeArrow').setAttribute('href', '#editor');
+
+            // Scroll to the editor smoothly
+            window.location.hash = '#editor';
+        }
+
+        // --- Auto-Save Logic ---
+        document.addEventListener('DOMContentLoaded', () => {
+            const editor = document.getElementById('richEditor');
+            const saveStatus = document.getElementById('saveStatus');
+
+            const savedContent = localStorage.getItem('marginalia_manuscript');
+            if (savedContent && editor) {
+                editor.innerHTML = savedContent;
+            }
+
+            let timeout;
+            if (editor) {
+                editor.addEventListener('input', () => {
+                    clearTimeout(timeout);
+                    saveStatus.innerText = "Saving...";
+
+                    timeout = setTimeout(() => {
+                        localStorage.setItem('marginalia_manuscript', editor.innerHTML);
+                        saveStatus.innerText = "All progress saved.";
+                    }, 1000);
+                });
+            }
+        });
+
+        // --- Analysis & Table Logic ---
         let wordData = [];
         let passiveData = [];
         let pacingData = [];
-// LocalStorage Auto-Save Logic for continuous editing
-document.addEventListener('DOMContentLoaded', () => {
-    const editor = document.getElementById('richEditor');
-    const saveStatus = document.getElementById('saveStatus');
 
-    // 1. Load saved content when returning to the page
-    const savedContent = localStorage.getItem('marginalia_manuscript');
-    if (savedContent && editor) {
-        editor.innerHTML = savedContent;
-    }
-
-    // 2. Auto-save content on input (debounced)
-    let timeout;
-    if (editor) {
-        editor.addEventListener('input', () => {
-            clearTimeout(timeout);
-            saveStatus.innerText = "Saving...";
-
-            timeout = setTimeout(() => {
-                localStorage.setItem('marginalia_manuscript', editor.innerHTML);
-                saveStatus.innerText = "All progress saved.";
-
-                // Optional: Send to backend database for cloud saving
-                /*
-                fetch('/save', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ content: editor.innerHTML })
-                });
-                */
-            }, 1000); // Saves 1 second after the user stops typing
-        });
-    }
-});
         async function submitAnalysis() {
+            // Move content from contenteditable div to hidden textarea for form submission
+            document.getElementById('hiddenTextInput').value = document.getElementById('richEditor').innerText;
+
             const form = document.getElementById('analyzeForm');
             const formData = new FormData(form);
             const statsDiv = document.getElementById('stats');
@@ -390,12 +504,7 @@ document.addEventListener('DOMContentLoaded', () => {
             filtered.forEach(row => {
                 const tr = document.createElement('tr');
                 const contextsHtml = row.contexts.map(c => `<li>${c}</li>`).join('');
-
-                tr.innerHTML = `
-                    <td><strong style="color: var(--old-burgundy);">${row.word}</strong></td>
-                    <td>${row.count}</td>
-                    <td><ul class="context-list">${contextsHtml}</ul></td>
-                `;
+                tr.innerHTML = `<td><strong style="color: var(--old-burgundy);">${row.word}</strong></td><td>${row.count}</td><td><ul class="context-list">${contextsHtml}</ul></td>`;
                 tbody.appendChild(tr);
             });
         }
@@ -422,15 +531,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         function openTab(element, tabName) {
             const tabContent = document.getElementsByClassName("tab-content");
-            for (let i = 0; i < tabContent.length; i++) {
-                tabContent[i].style.display = "none";
-            }
-
+            for (let i = 0; i < tabContent.length; i++) { tabContent[i].style.display = "none"; }
             const tabLinks = document.getElementsByClassName("tab-links");
-            for (let i = 0; i < tabLinks.length; i++) {
-                tabLinks[i].classList.remove("active");
-            }
-
+            for (let i = 0; i < tabLinks.length; i++) { tabLinks[i].classList.remove("active"); }
             document.getElementById(tabName).style.display = "block";
             element.classList.add("active");
         }

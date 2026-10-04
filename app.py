@@ -1,13 +1,10 @@
-from flask import Flask, render_template, request, jsonify
-import PyPDF2
+import io
 import docx
-from io import BytesIO
+import PyPDF2
+from flask import Flask, request, jsonify, render_template
 
-# Initialize your Flask app and your ManuscriptProcessor
 app = Flask(__name__)
 
-
-# processor = ManuscriptProcessor()
 
 @app.route("/")
 def index():
@@ -18,7 +15,7 @@ def index():
 def analyze():
     text = ""
 
-    # Handle File Upload safely using io.BytesIO streams
+    # Handle File Upload using io.BytesIO streams
     if 'file' in request.files and request.files['file'].filename != '':
         file = request.files['file']
         filename = file.filename.lower()
@@ -28,12 +25,12 @@ def analyze():
                 text = file.read().decode('utf-8')
 
             elif filename.endswith('.docx'):
-                file_stream = BytesIO(file.read())
+                file_stream = io.BytesIO(file.read())
                 doc = docx.Document(file_stream)
                 text = "\n".join([para.text for para in doc.paragraphs])
 
             elif filename.endswith('.pdf'):
-                file_stream = BytesIO(file.read())
+                file_stream = io.BytesIO(file.read())
                 pdf_reader = PyPDF2.PdfReader(file_stream)
                 for page in pdf_reader.pages:
                     extracted = page.extract_text()
@@ -55,15 +52,21 @@ def analyze():
     if not text.strip():
         return jsonify({"words": [], "passive": [], "pacing": [], "flagged_count": 0})
 
-    # Execute your processor logic here
+    # Placeholder for your NLP processing logic
     # data = processor.analyze_text(text, custom_words)
 
-    # The frontend expects 'words', 'passive', and 'pacing' arrays in the JSON response
     return jsonify({
-        # "words": data.words,
-        # "passive": data.passive,
-        # "pacing": data.pacing
+        "words": [],  # Replace with data.words
+        "passive": [],  # Replace with data.passive
+        "pacing": []  # Replace with data.pacing
     })
+
+
+@app.route("/save", methods=["POST"])
+def save_progress():
+    # Placeholder for database cloud saving
+    data = request.get_json()
+    return jsonify({"status": "success"})
 
 
 if __name__ == "__main__":
