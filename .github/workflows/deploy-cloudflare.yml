@@ -1,8 +1,6 @@
 name: Deploy Magnolia Margin to Cloudflare
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 jobs:
