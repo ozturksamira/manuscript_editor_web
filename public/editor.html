@@ -267,7 +267,23 @@ async function fileToHtml(file){
   if(name.endsWith('.txt')) return textToHtml(await file.text());
   if(name.endsWith('.docx')){
     if(!window.mammoth) throw new Error('DOCX import engine could not be loaded.');
-    const result=await window.mammoth.convertToHtml({arrayBuffer:await file.arrayBuffer()});
+    const result=await window.mammoth.convertToHtml({
+      arrayBuffer:await file.arrayBuffer(),
+      styleMap:[
+        "p[style-name='Title'] => h1:fresh",
+        "p[style-name='Subtitle'] => h2:fresh",
+        "p[style-name='Heading 1'] => h1:fresh",
+        "p[style-name='Heading 2'] => h2:fresh",
+        "p[style-name='Heading 3'] => h3:fresh",
+        "p[style-name='Heading 4'] => h4:fresh",
+        "p[style-name='Heading 5'] => h5:fresh",
+        "p[style-name='Heading 6'] => h6:fresh",
+        "p[style-name='Chapter'] => h1:fresh",
+        "p[style-name='Chapter Title'] => h1:fresh",
+        "p[style-name='Section Heading'] => h2:fresh",
+        "p[style-name='Subheading'] => h3:fresh"
+      ]
+    });
     return result.value;
   }
   if(name.endsWith('.pdf')){
