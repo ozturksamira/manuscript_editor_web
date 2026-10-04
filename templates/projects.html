@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Your Projects — Magnolia Margin</title>
+<link href="https://fonts.googleapis.com/css2?family=Alice&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--pearl:#f7f5f2;--platinum:#efe8e2;--tuscany:#c0ab9a;--umber:#7b5c4b;--burgundy:#3f3027;--ink:#171411;--line:rgba(63,48,39,.16)}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(circle at top left,rgba(192,171,154,.16),transparent 35%),var(--pearl);color:var(--ink);font-family:Alice,Georgia,serif}
+.topbar{padding:18px clamp(18px,4vw,56px);display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line);background:rgba(247,245,242,.92);backdrop-filter:blur(13px)}
+.brand{font:600 1.4rem "Playfair Display",Georgia,serif;color:var(--burgundy);text-decoration:none}.account{display:flex;align-items:center;gap:12px;color:var(--umber);font-size:.84rem}
+.logout{border:1px solid var(--umber);background:transparent;border-radius:999px;padding:8px 14px;color:var(--burgundy);cursor:pointer}.logout:hover{background:var(--platinum)}
+main{width:min(1180px,100%);margin:auto;padding:clamp(45px,8vw,95px) 20px 30px}
+.eyebrow{text-transform:uppercase;letter-spacing:.2em;font-size:.72rem;color:var(--umber);text-align:center}
+h1{font:500 clamp(2.9rem,6vw,5rem) "Playfair Display",Georgia,serif;line-height:1;text-align:center;color:var(--burgundy);margin:10px 0 17px}
+.intro{max-width:650px;margin:0 auto 48px;text-align:center;font-size:1.05rem;line-height:1.8;color:#5d5047}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}
+.card{text-decoration:none;color:inherit;background:var(--platinum);border:1px solid var(--line);border-radius:24px;min-height:205px;padding:24px;display:flex;flex-direction:column;justify-content:space-between;transition:transform .2s,box-shadow .2s,border-color .2s}
+.card:hover{transform:translateY(-5px);box-shadow:0 18px 42px rgba(23,20,17,.09);border-color:var(--tuscany)}
+.card-kicker{text-transform:uppercase;letter-spacing:.15em;font-size:.67rem;color:var(--umber)}
+.card h2{font:600 1.5rem "Playfair Display",Georgia,serif;color:var(--burgundy);margin:18px 0 8px;line-height:1.25}
+.card-meta{font:12px system-ui,sans-serif;color:#7d6e64}.arrow{align-self:flex-end;color:var(--umber);font-size:1.4rem}
+.empty{padding:46px 20px;text-align:center;border:1px dashed var(--tuscany);border-radius:24px;color:var(--umber)}
+.actions{display:flex;justify-content:center;margin:0 0 46px}.new{border:0;background:var(--umber);color:var(--pearl);padding:12px 20px;border-radius:999px;font-weight:700;cursor:pointer}.new:hover{background:var(--burgundy)}
+footer{padding:55px 20px 30px;display:flex;justify-content:space-between;align-items:end;gap:20px;border-top:1px solid var(--line);margin-top:65px}
+.foot-copy{font-size:11px;color:var(--umber)}.foot-links{display:flex;gap:9px}
+.foot-link{width:38px;height:38px;border:1px solid var(--line);border-radius:50%;display:grid;place-items:center;color:var(--burgundy);text-decoration:none;background:var(--platinum)}.foot-link:hover{background:var(--tuscany)}
+.foot-link svg{width:17px;height:17px}
+@media(max-width:850px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:560px){.topbar{gap:12px}.account span{display:none}.grid{grid-template-columns:1fr}footer{align-items:flex-start;flex-direction:column}}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="/">Magnolia Margin</a>
+  <div class="account"><span>{{ email }}</span><button class="logout" onclick="logout()">Log out</button></div>
+</header>
+<main>
+  <div class="eyebrow">Your writing room</div>
+  <h1>Your Projects</h1>
+  <p class="intro">Every manuscript has its own space. Choose a project to continue editing, or create a new one when inspiration takes you elsewhere.</p>
+  <div class="actions"><button class="new" onclick="newProject()">+ New project</button></div>
+  <section class="grid" id="projectGrid" aria-live="polite"></section>
+  <footer>
+    <div class="foot-copy">Built to keep the writer at the centre.</div>
+    <div class="foot-links">
+      <a class="foot-link" href="https://github.com/ozturksamira" target="_blank" rel="noopener" aria-label="GitHub — ozturksamira">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5C5.65.5.5 5.74.5 12.2c0 5.16 3.3 9.53 7.87 11.08.58.11.79-.26.79-.56 0-.28-.01-1.02-.02-2-3.2.71-3.87-1.57-3.87-1.57-.53-1.35-1.28-1.71-1.28-1.71-1.04-.73.08-.72.08-.72 1.15.08 1.75 1.2 1.75 1.2 1.03 1.79 2.7 1.27 3.36.97.1-.75.4-1.27.73-1.56-2.55-.3-5.23-1.3-5.23-5.77 0-1.28.45-2.33 1.2-3.15-.12-.3-.52-1.5.11-3.13 0 0 .98-.32 3.2 1.2a10.9 10.9 0 0 1 5.82 0c2.22-1.52 3.2-1.2 3.2-1.2.63 1.63.23 2.83.11 3.13.75.82 1.2 1.87 1.2 3.15 0 4.48-2.69 5.47-5.25 5.76.41.36.78 1.07.78 2.16 0 1.56-.01 2.81-.01 3.19 0 .31.21.68.8.56A11.72 11.72 0 0 0 23.5 12.2C23.5 5.74 18.35.5 12 .5Z"/></svg>
+      </a>
+      <a class="foot-link" href="#" aria-label="Support Magnolia Margin" title="Support link coming soon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4.5 9h11v5.2A4.8 4.8 0 0 1 10.7 19H9.3a4.8 4.8 0 0 1-4.8-4.8V9Z"/><path d="M15.5 10h2a2.5 2.5 0 1 1 0 5h-2M7 5.5c1 1 1 1.8 0 2.8M10 5c1 1 1 1.8 0 2.8M13 5.5c1 1 1 1.8 0 2.8"/><path d="M4 21h14"/></svg>
+      </a>
+    </div>
+  </footer>
+</main>
+<script>
+function escapeHtml(value){return String(value||'').replace(/[&<>"']/g,function(ch){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[ch]})}
+async function loadProjects(){
+  const response=await fetch('/api/projects');
+  if(!response.ok){location.href='/login/';return}
+  const data=await response.json();
+  const projects=data.projects||[];
+  const grid=document.getElementById('projectGrid');
+  if(!projects.length){grid.innerHTML='<div class="empty">No projects yet. Create your first manuscript project above.</div>';return}
+  grid.innerHTML=projects.map(function(project){
+    const filename=project.source_filename ? escapeHtml(project.source_filename) : 'Writing project';
+    return '<a class="card" href="'+escapeHtml(project.url)+'">' +
+      '<div><div class="card-kicker">Project</div><h2>'+escapeHtml(project.title)+'</h2><div class="card-meta">'+filename+'</div></div>' +
+      '<div class="arrow">→</div></a>';
+  }).join('');
+}
+async function newProject(){
+  const title=window.prompt('Project name','Untitled manuscript');
+  if(title===null)return;
+  const response=await fetch('/api/projects',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title:title.trim()||'Untitled manuscript'})});
+  const data=await response.json();
+  if(data.project){location.href=data.project.url}else{alert(data.error||'Could not create project.')}
+}
+async function logout(){await fetch('/logout',{method:'POST'});location.href='/'}
+loadProjects();
+</script>
+</body>
+</html>
