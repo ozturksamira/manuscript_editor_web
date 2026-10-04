@@ -205,10 +205,12 @@ CONTRACTION_STOP_WORDS = {
     "who's", "who’ll", "who’d",
     "that's", "that’ll", "that’d",
     "can't", "couldn't", "won't", "wouldn't", "shouldn't", "shan't",
-    "isn't", "aren't", "wasn't", "weren't",
+    "isn't", "aren't", "wasn't", "weren't", "ain't",
     "haven't", "hasn't", "hadn't",
     "don't", "doesn't", "didn't",
-    "mustn't", "mightn't", "needn't", "daren't", "oughtn't",
+    "can't", "could've", "couldn’t", "would've", "wouldn’t",
+    "should've", "shouldn’t", "might've", "mightn’t", "must've", "mustn’t",
+    "needn't", "daren't", "oughtn't", "usedn't",
     "cannot",
 }
 STOP_WORDS = PRONOUNS | PREPOSITIONS | CONJUNCTIONS | AUXILIARY_WORDS | CONTRACTION_STOP_WORDS | {
@@ -785,24 +787,24 @@ def analyse_text(value):
     # heavy description, repetitive content vocabulary, or dialogue that keeps
     # the plot in place without a change in stakes.
     if len(pacing) < 80:
-        for i in range(max(0, len(profiles) - 4)):
-            window = profiles[i:i + 5]
+        for i in range(max(0, len(profiles) - 3)):
+            window = profiles[i:i + 4]
             total_words = sum(item["word_count"] for item in window)
-            avg_words = total_words / 5
+            avg_words = total_words / 4
             event_total = sum(item["event_count"] for item in window)
             event_density = event_total / total_words if total_words else 0.0
             description_density = sum(item["description_count"] for item in window) / total_words if total_words else 0.0
-            dialogue_rate = sum(item["dialogue"] for item in window) / 5
-            variety = sum(item["content_variety"] for item in window) / 5
+            dialogue_rate = sum(item["dialogue"] for item in window) / 4
+            variety = sum(item["content_variety"] for item in window) / 4
             drag_signal = (
-                description_density >= 0.095
-                or dialogue_rate >= 0.6
-                or variety <= 0.58
+                description_density >= 0.06
+                or dialogue_rate >= 0.5
+                or variety <= 0.62
             )
             if (
-                avg_words >= 24
+                avg_words >= 22
                 and event_total <= 2
-                and event_density <= 0.035
+                and event_density <= 0.04
                 and drag_signal
             ):
                 pacing.append({
@@ -838,7 +840,7 @@ def analyse_text(value):
             rhythm_variance = sum((score - rhythm_mean) ** 2 for score in rhythm_scores) / 8
             rhythm_stdev = rhythm_variance ** 0.5
             if (
-                10 <= mean_len <= 28
+                7 <= mean_len <= 28
                 and stdev <= 4.5
                 and event_range <= 1
                 and rhythm_stdev <= 1.7
