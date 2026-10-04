@@ -25,7 +25,11 @@
 <script>
 const form=document.getElementById('authForm'),action=document.getElementById('authAction'),title=document.getElementById('authTitle'),submit=document.getElementById('authSubmit'),toggle=document.getElementById('authToggle'),message=document.getElementById('message'),password=document.getElementById('passwordInput');
 toggle.addEventListener('click',()=>{const registering=action.value==='login';action.value=registering?'register':'login';title.textContent=registering?'Create your writing room':'Sign in to your writing room';submit.textContent=registering?'Create Account':'Sign In';toggle.textContent=registering?'Already have an account? Sign in here.':"Don't have an account? Create one here.";password.autocomplete=registering?'new-password':'current-password';message.textContent='';});
-form.addEventListener('submit',async e=>{e.preventDefault();message.textContent='';submit.disabled=true;submit.textContent='Please wait…';try{const response=await fetch('/auth',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:document.getElementById('emailInput').value,password:password.value,action:action.value})});const data=await response.json();if(!response.ok)throw new Error(data.error||'Authentication failed.');window.location.href='/editor/';}catch(err){message.textContent=err.message;}finally{submit.disabled=false;submit.textContent=action.value==='register'?'Create Account':'Sign In';}});
+form.addEventListener('submit',async e=>{e.preventDefault();message.textContent='';submit.disabled=true;submit.textContent='Please wait…';try{const response=await fetch('/auth',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:document.getElementById('emailInput').value,password:password.value,action:action.value})});const data=await response.json();if(!response.ok)throw new Error(data.error||'Authentication failed.');window.location.href='/projects/';}catch(err){message.textContent=err.message;}finally{submit.disabled=false;submit.textContent=action.value==='register'?'Create Account':'Sign In';}});
+</script>
+
+<script>
+window.addEventListener('pageshow',function(){document.getElementById('emailInput').focus()});
 </script>
 </body>
 </html>
