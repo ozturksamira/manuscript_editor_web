@@ -583,7 +583,10 @@ async function loadProject(projectId) {
   analysisStatus.textContent = project.analysis && Object.keys(project.analysis).length ? 'Analysis saved' : 'Ready';
 }
 
-projectSelect.addEventListener('change', function(){ loadProject(this.value); });
+projectSelect.addEventListener('change', async function(){
+  await saveProject();
+  await loadProject(this.value);
+});
 
 titleInput.addEventListener('input', function(){
   scheduleSave();
@@ -636,6 +639,7 @@ async function createProject() {
 
 async function deleteProject() {
   if (!activeProjectId) return;
+  await saveProject();
   if (!window.confirm('Delete this manuscript project? This cannot be undone.')) return;
 
   const response = await fetch('/api/projects/' + activeProjectId, {method:'DELETE'});
@@ -904,6 +908,7 @@ function updateExportLinks() {
 }
 
 async function logout() {
+  await saveProject();
   await fetch('/logout', {method:'POST'});
   localStorage.removeItem('mm.activeProjectId');
   location.href = '/';
