@@ -285,6 +285,21 @@ async function handleApi(request, env) {
   const url = new URL(request.url);
   const path = url.pathname;
 
+  if (path === "/api/health" && request.method === "GET") {
+    if (!env.DB) return json({ status: "error", database: "missing" }, 503);
+    try {
+      const rows = await all(env, "SELECT name FROM sqlite_master WHERE type = 'table' AND name IN ('users','projects') ORDER BY name");
+      const names = new Set(rows.map((row) => row.name));
+      if (!names.has("users") || !names.has("projects")) {
+        return json({ status: "error", database: "connected", schema: "missing" }, 503);
+      }
+      return json({ status: "ok", database: "connected", schema: "ready" });
+    } catch (error) {
+      console.error("Database health check failed:", error);
+      return json({ status: "error", database: "unavailable" }, 503);
+    }
+  }
+
   if (path === "/api/account" && request.method === "GET") {
     const user = await requireUser(request, env);
     if (!user) return json({ error: "Authentication required." }, 401);
@@ -298,44 +313,47 @@ async function handleApi(request, env) {
     const action = body.action || "login";
     if (!email || !password) return json({ error: "Email and password are required." }, 400);
     if (password.length < 8) return json({ error: "Your password must be at least 8 characters." }, 400);
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return json({ error: "Please enter a valid email address." }, 400);
+    if (!/^\S+@\S+\.\S+$/.test(email)) return json({ error: "Please enter a valid email address." }, 400);
+    if (!env.DB) return json({ error: "Database is not connected to this Worker. Check the D1 binding named DB, then redeploy." }, 503);
 
-    const existing = await first(env, "SELECT id, email, password_hash FROM users WHERE email = ? LIMIT 1", email);
-    if (action === "register") {
-      if (existing) return json({ error: "An account with that email already exists. Please sign in." }, 409);
-      const passwordHash = await hashPassword(password);
-      const createdAt = new Date().toISOString();
-      await run(env, "INSERT INTO users (email, password_hash, created_at) VALUES (?, ?, ?)", email, passwordHash, createdAt);
-      const user = await first(env, "SELECT id, email FROM users WHERE email = ? LIMIT 1", email);
-      const slug = await uniqueSlug(env, Number(user.id), "Untitled manuscript");
-      await run(
-        env,
-        "INSERT INTO projects (user_id, title, slug, source_filename, content, analysis_json, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-        Number(user.id), "Untitled manuscript", slug, "", "", "{}", createdAt, createdAt,
-      );
-      const token = await createSession(user.id, env.SESSION_SECRET);
-      return json({ status: "success", message: "Account created successfully." }, 200, {
-        "Set-Cookie": cookieHeader(token, SESSION_DAYS * 86400),
-      });
-    }
-    if (action === "login") {
-      if (!existing || !(await verifyPassword(password, existing.password_hash))) {
-        return json({ error: "Invalid email or password." }, 401);
+    try {
+      const existing = await first(env, "SELECT id, email, password_hash FROM users WHERE email = ? LIMIT 1", email);
+      if (action === "register") {
+        if (existing) return json({ error: "An account with that email already exists. Please sign in." }, 409);
+        const passwordHash = await hashPassword(password);
+        const createdAt = new Date().toISOString();
+        const insert = await run(env, "INSERT INTO users (email, password_hash, created_at) VALUES (?, ?, ?)", email, passwordHash, createdAt);
+        const userId = Number(insert?.meta?.last_row_id || 0);
+        if (!userId) throw new Error("User insert returned no row id.");
+        const slug = await uniqueSlug(env, userId, "Untitled manuscript");
+        await run(
+          env,
+          "INSERT INTO projects (user_id, title, slug, source_filename, content, analysis_json, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+          userId, "Untitled manuscript", slug, "", "", "{}", createdAt, createdAt,
+        );
+        const token = await createSession(userId, env.SESSION_SECRET);
+        return json({ status: "success", message: "Account created successfully." }, 200, {
+          "Set-Cookie": cookieHeader(token, SESSION_DAYS * 86400),
+        });
       }
-      const token = await createSession(existing.id, env.SESSION_SECRET);
-      return json({ status: "success", message: "Logged in successfully." }, 200, {
-        "Set-Cookie": cookieHeader(token, SESSION_DAYS * 86400),
-      });
+      if (action === "login") {
+        if (!existing || !(await verifyPassword(password, existing.password_hash))) {
+          return json({ error: "Invalid email or password." }, 401);
+        }
+        const token = await createSession(existing.id, env.SESSION_SECRET);
+        return json({ status: "success", message: "Logged in successfully." }, 200, {
+          "Set-Cookie": cookieHeader(token, SESSION_DAYS * 86400),
+        });
+      }
+      return json({ error: "Unknown authentication action." }, 400);
+    } catch (error) {
+      console.error("Authentication request failed:", error);
+      return json({
+        error: "Registration/login could not be completed. The Cloudflare database may not be ready.",
+        details: "Check that the D1 database is bound as DB and that migration 0001_initial.sql has been applied remotely.",
+      }, 503);
     }
-    return json({ error: "Unknown authentication action." }, 400);
   }
-
-  if (path === "/logout" && request.method === "POST") {
-    return json({ status: "success" }, 200, {
-      "Set-Cookie": cookieHeader("", 0),
-    });
-  }
-
   const user = await requireUser(request, env);
   if (!user) return json({ error: "Authentication required." }, 401);
 
