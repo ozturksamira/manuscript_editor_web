@@ -68,6 +68,19 @@ Base = declarative_base()
 
 PROJECT_DOMAIN = os.environ.get("PROJECT_DOMAIN", "").strip().lower().rstrip(".")
 PROJECT_SUBDOMAIN_PREFIX = os.environ.get("PROJECT_SUBDOMAIN_PREFIX", "").strip().lower()
+if PROJECT_DOMAIN:
+    app.config.update(
+        SESSION_COOKIE_DOMAIN="." + PROJECT_DOMAIN,
+        SESSION_COOKIE_SECURE=True,
+        SESSION_COOKIE_HTTPONLY=True,
+        SESSION_COOKIE_SAMESITE="Lax",
+    )
+else:
+    app.config.update(
+        SESSION_COOKIE_SECURE=bool(os.environ.get("RENDER")),
+        SESSION_COOKIE_HTTPONLY=True,
+        SESSION_COOKIE_SAMESITE="Lax",
+    )
 
 
 class User(Base):
