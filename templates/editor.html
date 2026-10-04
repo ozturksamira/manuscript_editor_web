@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Writing Room — Magnolia Margin</title>
+<link href="https://fonts.googleapis.com/css2?family=Alice&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet">
+<style>
+:root{--pearl:#f7f5f2;--platinum:#efe8e2;--tuscany:#c0ab9a;--umber:#7b5c4b;--burgundy:#3f3027;--ink:#171411}*{box-sizing:border-box}body{margin:0;background:var(--pearl);color:var(--ink);font-family:system-ui,sans-serif}.topbar{position:sticky;top:0;z-index:5;background:rgba(247,245,242,.96);border-bottom:1px solid var(--tuscany);padding:12px clamp(16px,4vw,40px);display:flex;align-items:center;justify-content:space-between;gap:15px}.brand{font:600 1.35rem 'Playfair Display',Georgia,serif;color:var(--burgundy);text-decoration:none}.account{display:flex;align-items:center;gap:12px;font-size:14px}.logout{border:1px solid var(--umber);background:transparent;color:var(--burgundy);border-radius:22px;padding:8px 14px;cursor:pointer}.page{width:min(1100px,100%);margin:auto;padding:clamp(24px,5vw,55px) 18px 60px}.panel{background:var(--platinum);padding:clamp(16px,3vw,24px);border:1px solid var(--tuscany);border-radius:12px;box-shadow:0 5px 18px rgba(0,0,0,.04)}.label{display:block;color:var(--burgundy);font-weight:700;margin-bottom:8px}.file{width:100%;padding:8px;margin-bottom:20px;border:1px solid var(--tuscany);border-radius:6px;background:white}.editor{width:100%;min-height:360px;background:white;border:1px solid var(--tuscany);border-radius:7px;padding:18px;outline:none;line-height:1.7;font:16px Georgia,serif;overflow:auto}.editor:empty:before{content:attr(data-placeholder);color:#8c8178}.actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:12px}.primary{border:0;background:var(--umber);color:var(--pearl);border-radius:7px;padding:12px 20px;font-weight:700;cursor:pointer}.status{font-size:12px;color:var(--umber);margin-left:auto}.stats{margin:18px 0 8px;color:var(--burgundy)}.tabs{display:none;border-bottom:2px solid var(--tuscany);margin-top:18px}.tabs button{border:0;background:none;padding:12px 16px;color:var(--umber);font-weight:700;cursor:pointer}.tabs button.active{background:var(--umber);color:var(--pearl);border-radius:6px 6px 0 0}.tab{display:none;overflow:auto}.toolbar{display:flex;gap:10px;flex-wrap:wrap;padding:14px 0}.toolbar input,.toolbar select{padding:9px;border:1px solid var(--tuscany);border-radius:5px;background:white}.toolbar input{flex:1;min-width:220px}table{width:100%;border-collapse:collapse;background:white;min-width:650px}th,td{border:1px solid var(--tuscany);padding:11px;text-align:left;vertical-align:top}th{background:var(--platinum)}@media(max-width:600px){.account span{display:none}.editor{min-height:300px}.status{width:100%;margin-left:0}}
+</style>
+</head>
+<body>
+<header class="topbar"><a class="brand" href="/">Magnolia Margin</a><div class="account"><span>{{ email }}</span><button class="logout" onclick="logout()">Log out</button></div></header>
+<main class="page">
+<section class="panel">
+<form id="analyzeForm">
+<label class="label" for="fileInput">Upload a manuscript (.txt, .docx, .pdf)</label>
+<input class="file" type="file" id="fileInput" name="file" accept=".txt,.docx,application/pdf">
+<label class="label" for="richEditor">Or paste / write your text</label>
+<div class="editor" id="richEditor" contenteditable="true" data-placeholder="Start writing or paste your manuscript here…"></div>
+<input type="hidden" id="hiddenTextInput" name="text">
+<div class="actions"><button type="button" class="primary" onclick="submitAnalysis()">Analyze Manuscript</button><span class="status" id="saveStatus"></span></div>
+</form>
+</section>
+<div class="stats" id="stats"></div>
+<div class="tabs" id="tabContainer"><button class="active" onclick="openTab(this,'WordsTab')">Overused Words</button><button onclick="openTab(this,'PassiveTab')">Passive Voice</button><button onclick="openTab(this,'PacingTab')">Pacing Issues</button></div>
+<section class="tab" id="WordsTab"><div class="toolbar"><input id="wordSearch" placeholder="Search for a specific word…" oninput="renderWordsTable()"><select id="wordSort" onchange="renderWordsTable()"><option value="desc">Most Used First</option><option value="asc">Least Used First</option></select></div><table><thead><tr><th>Word</th><th>Count</th><th>Context Locations</th></tr></thead><tbody id="wordsBody"></tbody></table></section>
+<section class="tab" id="PassiveTab"><table><thead><tr><th>Sentence</th><th>Words</th></tr></thead><tbody id="passiveBody"></tbody></table></section>
+<section class="tab" id="PacingTab"><table><thead><tr><th>Sentence</th><th>Words</th><th>Issue Type</th></tr></thead><tbody id="pacingBody"></tbody></table></section>
+</main>
+<script>
+const editor=document.getElementById('richEditor'),status=document.getElementById('saveStatus');let saveTimer,wordData=[],passiveData=[],pacingData=[];
+async function loadCloudProgress(){try{const r=await fetch('/load');if(r.status===401){location.href='/login/';return}const d=await r.json();if(d.content)editor.innerHTML=d.content}catch(e){console.error(e)}}
+editor.addEventListener('input',()=>{clearTimeout(saveTimer);status.textContent='Saving…';saveTimer=setTimeout(async()=>{try{const r=await fetch('/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({content:editor.innerHTML})});status.textContent=r.ok?'Saved':'Save failed';}catch(e){status.textContent='Save failed';}},900)});
+async function logout(){await fetch('/logout',{method:'POST'});location.href='/';}
+async function submitAnalysis(){document.getElementById('hiddenTextInput').value=editor.innerText;const fd=new FormData(document.getElementById('analyzeForm'));document.getElementById('stats').innerHTML='<strong>Analyzing…</strong>';try{const r=await fetch('/analyze',{method:'POST',body:fd});const d=await r.json();if(!r.ok){document.getElementById('stats').textContent=d.error||'Analysis failed';return}wordData=d.words||[];passiveData=d.passive||[];pacingData=d.pacing||[];document.getElementById('stats').innerHTML='<strong>Analysis complete.</strong>';document.getElementById('tabContainer').style.display='block';document.querySelectorAll('.tab').forEach(x=>x.style.display='none');document.getElementById('WordsTab').style.display='block';renderWordsTable()}catch(e){document.getElementById('stats').textContent='Analysis error or backend disconnected.'}}
+function renderWordsTable(){const q=document.getElementById('wordSearch').value.toLowerCase(),sort=document.getElementById('wordSort').value,t=document.getElementById('wordsBody');let rows=wordData.filter(x=>x.word.toLowerCase().includes(q)).sort((a,b)=>sort==='desc'?b.count-a.count:a.count-b.count);t.innerHTML=rows.map(x=>'<tr><td><strong>'+x.word+'</strong></td><td>'+x.count+'</td><td><ul>'+x.contexts.map(c=>'<li>'+c+'</li>').join('')+'</ul></td></tr>').join('')}
+function openTab(btn,id){document.querySelectorAll('.tab').forEach(x=>x.style.display='none');document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active'));document.getElementById(id).style.display='block';btn.classList.add('active')}
+loadCloudProgress();
+</script>
+</body>
+</html>
