@@ -40,9 +40,18 @@ from werkzeug.security import check_password_hash, generate_password_hash
 
 
 app = Flask(__name__)
-app.secret_key = os.environ.get("SECRET_KEY", "dev-only-change-me")
+IS_RENDER = os.environ.get("RENDER", "").strip().lower() == "true"
+SECRET_KEY = os.environ.get("SECRET_KEY", "").strip()
+if IS_RENDER and not SECRET_KEY:
+    raise RuntimeError("SECRET_KEY must be configured in Render.")
+app.secret_key = SECRET_KEY or "dev-only-change-me"
 
 DATABASE_URL = os.environ.get("DATABASE_URL", "").strip()
+if IS_RENDER and not DATABASE_URL:
+    raise RuntimeError(
+        "DATABASE_URL must be configured in Render. Refusing ephemeral SQLite storage "
+        "because it would lose accounts and manuscripts on redeploy."
+    )
 if DATABASE_URL:
     if DATABASE_URL.startswith("postgres://"):
         DATABASE_URL = "postgresql+psycopg://" + DATABASE_URL[len("postgres://"):]
@@ -75,7 +84,7 @@ if PROJECT_DOMAIN:
     )
 else:
     app.config.update(
-        SESSION_COOKIE_SECURE=bool(os.environ.get("RENDER")),
+        SESSION_COOKIE_SECURE=IS_RENDER,
         SESSION_COOKIE_HTTPONLY=True,
         SESSION_COOKIE_SAMESITE="Lax",
     )
@@ -129,15 +138,35 @@ BLOCK_TAGS = {
     "p", "div", "h1", "h2", "h3", "h4", "h5", "h6",
     "blockquote", "li", "hr",
 }
-WORD_RE = re.compile(r"\b[A-Za-z][A-Za-z'’-]{2,}\b")
+WORD_RE = re.compile(r"\b[A-Za-z](?:[A-Za-z'’-]*[A-Za-z])?\b")
+WORD_COUNT_RE = re.compile(r"\b[A-Za-z](?:[A-Za-z'’-]*[A-Za-z])?\b")
 SENTENCE_RE = re.compile(r"[^.!?\n]+(?:[.!?]+|$)")
-PASSIVE_RE = re.compile(
-    r"\b(?:am|is|are|was|were|be|been|being)\s+"
-    r"(?:\w+\s+){0,2}"
-    r"(?:[A-Za-z]+ed|[A-Za-z]+en|[A-Za-z]+wn|[A-Za-z]+t)\b"
-    r"(?:\s+by\s+(?:the|a|an)?\s*[A-Za-z][A-Za-z'-]*)?",
+PASSIVE_AUX_RE = re.compile(
+    r"\b(?:am|is|are|was|were|be|been|being)\b"
+    r"(?:\s+(?:not|never|already|still|just|quickly|slowly|suddenly|"
+    r"clearly|completely|immediately|possibly|probably|often|usually|"
+    r"nearly|almost|finally)){0,3}\s+"
+    r"(?P<participle>[A-Za-z][A-Za-z'’-]*)\b",
     re.IGNORECASE,
 )
+GET_PASSIVE_RE = re.compile(
+    r"\b(?:get|gets|got|getting|gotten)\b"
+    r"(?:\s+(?:not|never|already|still|just|quickly|slowly|suddenly)){0,2}\s+"
+    r"(?P<participle>[A-Za-z][A-Za-z'’-]*)\b",
+    re.IGNORECASE,
+)
+IRREGULAR_PARTICIPLES = {
+    "arisen", "awoken", "been", "begun", "bitten", "blown", "born", "bought",
+    "bound", "broken", "brought", "built", "burnt", "caught", "chosen", "come",
+    "cost", "cut", "dealt", "done", "drawn", "driven", "eaten", "fallen", "felt",
+    "fought", "found", "flown", "forgiven", "forgotten", "frozen", "given", "gone",
+    "grown", "heard", "held", "hidden", "hit", "hurt", "kept", "known", "laid",
+    "led", "left", "lent", "let", "lost", "made", "meant", "met", "paid", "put",
+    "read", "ridden", "run", "said", "seen", "sent", "set", "shaken", "shown",
+    "shut", "sung", "sold", "spent", "spoken", "stood", "stolen", "stuck",
+    "struck", "sworn", "swum", "taken", "taught", "torn", "told", "thought",
+    "thrown", "understood", "woken", "won", "worn", "written",
+}
 AUXILIARY_WORDS = {
     "am", "is", "are", "was", "were", "be", "being", "been",
     "have", "has", "had", "having",
@@ -165,25 +194,46 @@ CONJUNCTIONS = {
     "and", "but", "or", "nor", "for", "yet", "so", "although", "because",
     "since", "unless", "until", "while", "whereas",
 }
-STOP_WORDS = PRONOUNS | PREPOSITIONS | CONJUNCTIONS | AUXILIARY_WORDS | {
+CONTRACTION_STOP_WORDS = {
+    "i'm", "i’ve", "i'll", "i’d",
+    "you're", "you’ve", "you'll", "you’d",
+    "he's", "he’ll", "he’d",
+    "she's", "she’ll", "she’d",
+    "it's", "it’ll", "it’d",
+    "we're", "we’ve", "we'll", "we’d",
+    "they're", "they’ve", "they'll", "they’d",
+    "who's", "who’ll", "who’d",
+    "that's", "that’ll", "that’d",
+    "can't", "couldn't", "won't", "wouldn't", "shouldn't", "shan't",
+    "isn't", "aren't", "wasn't", "weren't", "ain't",
+    "haven't", "hasn't", "hadn't",
+    "don't", "doesn't", "didn't",
+    "can't", "could've", "couldn’t", "would've", "wouldn’t",
+    "should've", "shouldn’t", "might've", "mightn’t", "must've", "mustn’t",
+    "needn't", "daren't", "oughtn't", "usedn't",
+    "cannot",
+}
+STOP_WORDS = PRONOUNS | PREPOSITIONS | CONJUNCTIONS | AUXILIARY_WORDS | CONTRACTION_STOP_WORDS | {
     "a", "an", "the",
 }
 EVENT_VERBS = {
-    "arrive", "arrived", "attack", "attacked", "break", "broke", "burst",
-    "call", "called", "catch", "caught", "change", "changed", "chase", "chased",
-    "close", "closed", "crash", "crashed", "cry", "cried", "cut", "cut",
-    "die", "died", "discover", "discovered", "enter", "entered", "escape",
-    "escaped", "fall", "fell", "fight", "fought", "find", "found", "grab",
-    "grabbed", "hit", "hold", "held", "jump", "jumped", "kill", "killed",
-    "leave", "left", "lose", "lost", "open", "opened", "pull", "pulled",
-    "push", "pushed", "reach", "reached", "run", "ran", "rush", "rushed",
-    "scream", "screamed", "see", "saw", "send", "sent", "shoot", "shot",
-    "shout", "shouted", "slip", "slipped", "smash", "smashed", "sprint",
-    "sprinted", "stand", "stood", "start", "started", "stop", "stopped",
-    "strike", "struck", "take", "took", "throw", "threw", "turn", "turned",
-    "wake", "woke", "walk", "walked", "warn", "warned", "watch", "watched",
-}
-DESCRIPTION_RE = re.compile(
+    "arrive", "arrived", "attack", "attacked", "avoid", "avoided", "break", "broke",
+    "burst", "build", "built", "call", "called", "catch", "caught", "change", "changed",
+    "chase", "chased", "choose", "chose", "close", "closed", "crash", "crashed",
+    "cry", "cried", "cut", "cutting", "die", "died", "discover", "discovered",
+    "drag", "dragged", "drive", "drove", "escape", "escaped", "enter", "entered",
+    "explode", "exploded", "fall", "fell", "fight", "fought", "find", "found",
+    "flee", "fled", "grab", "grabbed", "hit", "hold", "held", "jump", "jumped",
+    "kick", "kicked", "kill", "killed", "leave", "left", "lose", "lost", "open", "opened",
+    "pull", "pulled", "push", "pushed", "reach", "reached", "raise", "raised",
+    "react", "reacted", "run", "ran", "rush", "rushed", "scream", "screamed",
+    "search", "searched", "see", "saw", "send", "sent", "shake", "shook", "shoot",
+    "shot", "shout", "shouted", "slam", "slammed", "slip", "slipped", "smash",
+    "smashed", "sprint", "sprinted", "stand", "stood", "start", "started",
+    "stop", "stopped", "strike", "struck", "survive", "survived", "take", "took",
+    "throw", "threw", "turn", "turned", "wake", "woke", "walk", "walked",
+    "warn", "warned", "watch", "watched", "whisper", "whispered", "write", "wrote",
+}DESCRIPTION_RE = re.compile(
     r"\b(?:very|quite|rather|really|extremely|beautifully|slowly|quickly|"
     r"carefully|suddenly|silently|quietly|loudly|softly|deeply|"
     r"[A-Za-z-]*(?:ly|ful|ous|ive|less|ish|ical))\b",
@@ -574,8 +624,14 @@ def sentence_spans(value):
 
 
 def _sentence_profile(snippet):
-    words = [match.group(0).lower().replace("’", "'") for match in WORD_RE.finditer(snippet)]
+    words = [
+        match.group(0).lower().replace("’", "'").strip("'")
+        for match in WORD_RE.finditer(snippet)
+    ]
+    content_words = [word for word in words if word not in STOP_WORDS]
+    unique_content = len(set(content_words))
     word_count = len(words)
+    content_count = len(content_words)
     event_count = sum(1 for word in words if word in EVENT_VERBS)
     description_count = len(DESCRIPTION_RE.findall(snippet))
     dialogue = 1 if re.search(r'["“”]', snippet) else 0
@@ -583,22 +639,77 @@ def _sentence_profile(snippet):
     exclamations = snippet.count("!")
     return {
         "word_count": word_count,
+        "content_word_count": content_count,
+        "content_variety": (unique_content / content_count) if content_count else 1.0,
         "event_count": event_count,
+        "event_density": (event_count / word_count) if word_count else 0.0,
         "description_count": description_count,
+        "description_density": (description_count / word_count) if word_count else 0.0,
         "dialogue": dialogue,
         "questions": questions,
         "exclamations": exclamations,
     }
 
+def _is_participle(word):
+    word = word.lower().strip("'")
+    return (
+        word in IRREGULAR_PARTICIPLES
+        or word.endswith("ed")
+        or word.endswith("en")
+        or word.endswith("wn")
+        or word.endswith("t")
+    )
+
+
+def _passive_findings(snippet, start):
+    findings = []
+    seen_spans = set()
+
+    for pattern in (PASSIVE_AUX_RE, GET_PASSIVE_RE):
+        for match in pattern.finditer(snippet):
+            participle = match.group("participle")
+            if not _is_participle(participle):
+                continue
+            span = (match.start(), match.end())
+            if span in seen_spans:
+                continue
+            seen_spans.add(span)
+
+            trailing = snippet[match.end():match.end() + 90]
+            agent_match = re.search(
+                r"\bby\s+(?:the|a|an)?\s*[A-Za-z][A-Za-z'’-]*\b",
+                trailing,
+                re.IGNORECASE,
+            )
+            has_agent = bool(agent_match)
+            reason = (
+                "High-confidence passive voice — explicit agent"
+                if has_agent
+                else "Possible passive voice — action recipient is in subject position"
+            )
+            findings.append({
+                "sentence": snippet[:500],
+                "start": start,
+                "end": start + len(snippet),
+                "reason": reason,
+                "confidence": "high" if has_agent else "medium",
+            })
+    return findings
+
 
 def analyse_text(value):
     value = value or ""
     if not value.strip():
-        return {"words": [], "passive": [], "pacing": [], "flagged_count": 0}
+        return {
+            "word_count": 0,
+            "words": [],
+            "passive": [],
+            "pacing": [],
+            "flagged_count": 0,
+        }
 
-    # Designed for 50,000–200,000 word manuscripts: linear scans only, small
-    # rolling windows, and capped result sets.
     sentence_ranges = sentence_spans(value)
+    word_count = sum(1 for _ in WORD_COUNT_RE.finditer(value))
     counts = {}
 
     for match in WORD_RE.finditer(value):
@@ -610,12 +721,12 @@ def analyse_text(value):
     frequent = sorted(
         ((word, count) for word, count in counts.items() if count > 3),
         key=lambda pair: (-pair[1], pair[0]),
-    )[:80]
+    )[:100]
     frequent_set = {word for word, _ in frequent}
 
     contexts = {}
     for start, end, snippet in sentence_ranges:
-        if len(contexts) >= len(frequent_set) and frequent_set:
+        if frequent_set and len(contexts) >= len(frequent_set):
             break
         for match in WORD_RE.finditer(snippet):
             word = match.group(0).lower().replace("’", "'").strip("'")
@@ -629,118 +740,144 @@ def analyse_text(value):
         for word, count in frequent
     ]
 
-    passive = []
     profiles = []
+    passive = []
     for start, end, snippet in sentence_ranges:
         profile = _sentence_profile(snippet)
         profile.update({"start": start, "end": end, "sentence": snippet})
         profiles.append(profile)
-
-        # Strong passive signal: be + past participle. A "by" phrase gives
-        # extra confidence that the grammatical subject is receiving the action.
-        matches = list(PASSIVE_RE.finditer(snippet))
-        if matches:
-            for match in matches[:2]:
-                matched = match.group(0)
-                has_agent = bool(re.search(r"\bby\s+(?:the|a|an)?\s*[A-Za-z]", matched, re.IGNORECASE))
-                passive.append({
-                    "sentence": snippet[:500],
-                    "start": start,
-                    "end": end,
-                    "reason": "Passive construction" + (" with an explicit agent" if has_agent else ""),
-                })
-                if len(passive) >= 120:
-                    break
-
+        passive.extend(_passive_findings(snippet, start))
         if len(passive) >= 120:
-            # Keep building profiles for pacing; passive scanning is already capped.
-            continue
+            passive = passive[:120]
+            # Continue building sentence profiles for pacing.
 
     pacing = []
 
     def window_text(window):
         return " ".join(item["sentence"].strip() for item in window)
 
-    # Too fast: several short sentences containing multiple event/change verbs.
+    # Too fast / event compression: several short sentences with concentrated
+    # action, suggesting that major beats may be arriving before the reader can
+    # process the change, reaction, or consequence.
     for i in range(max(0, len(profiles) - 2)):
         window = profiles[i:i + 3]
-        avg_words = sum(item["word_count"] for item in window) / 3
+        total_words = sum(item["word_count"] for item in window)
+        avg_words = total_words / 3
         event_total = sum(item["event_count"] for item in window)
-        if avg_words <= 13 and event_total >= 2:
+        event_density = event_total / total_words if total_words else 0.0
+        short_sentences = sum(item["word_count"] <= 15 for item in window)
+        if (
+            short_sentences >= 2
+            and event_total >= 2
+            and avg_words <= 17
+            and event_density >= 0.055
+        ):
             pacing.append({
                 "sentence": window_text(window)[:650],
                 "start": window[0]["start"],
                 "end": window[-1]["end"],
                 "reason": "Too fast — possible event compression",
-                "word_count": sum(item["word_count"] for item in window),
+                "word_count": total_words,
+                "confidence": "medium",
             })
         if len(pacing) >= 80:
             break
 
-    # Too slow: sustained long sentences, low event/action density and
-    # description-heavy prose. This is a diagnostic rather than a judgement.
+    # Too slow / dragging: several long sentences with little event movement,
+    # heavy description, repetitive content vocabulary, or dialogue that keeps
+    # the plot in place without a change in stakes.
     if len(pacing) < 80:
         for i in range(max(0, len(profiles) - 3)):
             window = profiles[i:i + 4]
-            avg_words = sum(item["word_count"] for item in window) / 4
-            avg_events = sum(item["event_count"] for item in window) / 4
-            avg_description = sum(item["description_count"] for item in window) / 4
+            total_words = sum(item["word_count"] for item in window)
+            avg_words = total_words / 4
+            event_total = sum(item["event_count"] for item in window)
+            event_density = event_total / total_words if total_words else 0.0
+            description_density = sum(item["description_count"] for item in window) / total_words if total_words else 0.0
             dialogue_rate = sum(item["dialogue"] for item in window) / 4
+            variety = sum(item["content_variety"] for item in window) / 4
+            drag_signal = (
+                description_density >= 0.06
+                or dialogue_rate >= 0.5
+                or variety <= 0.62
+            )
             if (
-                avg_words >= 30
-                and avg_events <= 1.5
-                and (avg_description >= 2.0 or dialogue_rate >= 0.5)
+                avg_words >= 18
+                and event_total <= 2
+                and event_density <= 0.04
+                and drag_signal
             ):
-                pacing.append({
-                    "sentence": window_text(window)[:650],
-                    "start": window[0]["start"],
-                    "end": window[-1]["end"],
-                    "reason": "Too slow — possible dragging passage",
-                    "word_count": sum(item["word_count"] for item in window),
-                })
-            if len(pacing) >= 80:
-                break
-
-    # Flat dynamics: a longer run whose sentence lengths and action levels
-    # barely change. This targets a story staying in one gear for too long.
-    if len(pacing) < 100 and len(profiles) >= 7:
-        for i in range(len(profiles) - 6):
-            window = profiles[i:i + 7]
-            lengths = [item["word_count"] for item in window]
-            events = [item["event_count"] for item in window]
-            mean_len = sum(lengths) / 7
-            variance = sum((x - mean_len) ** 2 for x in lengths) / 7
-            stdev = variance ** 0.5
-            event_range = max(events) - min(events)
-            if 10 <= mean_len <= 28 and stdev <= 3.5 and event_range <= 1:
                 pacing.append({
                     "sentence": window_text(window)[:700],
                     "start": window[0]["start"],
                     "end": window[-1]["end"],
+                    "reason": "Too slow — possible dragging passage",
+                    "word_count": total_words,
+                    "confidence": "medium",
+                })
+            if len(pacing) >= 80:
+                break
+
+    # Flat dynamics: a run of medium-length sentences with almost identical
+    # rhythm and event activity, indicating a sustained single-gear passage.
+    if len(pacing) < 100 and len(profiles) >= 8:
+        for i in range(len(profiles) - 7):
+            window = profiles[i:i + 8]
+            lengths = [item["word_count"] for item in window]
+            events = [item["event_count"] for item in window]
+            mean_len = sum(lengths) / 8
+            variance = sum((x - mean_len) ** 2 for x in lengths) / 8
+            stdev = variance ** 0.5
+            event_range = max(events) - min(events)
+            rhythm_scores = [
+                (item["word_count"] / 8.0)
+                + (item["event_count"] * 2.0)
+                + (item["dialogue"] * 0.6)
+                + ((item["questions"] + item["exclamations"]) * 0.5)
+                for item in window
+            ]
+            rhythm_mean = sum(rhythm_scores) / 8
+            rhythm_variance = sum((score - rhythm_mean) ** 2 for score in rhythm_scores) / 8
+            rhythm_stdev = rhythm_variance ** 0.5
+            if (
+                5 <= mean_len <= 28
+                and stdev <= 4.5
+                and event_range <= 1
+                and rhythm_stdev <= 1.7
+            ):
+                pacing.append({
+                    "sentence": window_text(window)[:750],
+                    "start": window[0]["start"],
+                    "end": window[-1]["end"],
                     "reason": "Flat dynamics — sustained single-gear rhythm",
                     "word_count": sum(lengths),
+                    "confidence": "medium",
                 })
             if len(pacing) >= 100:
                 break
 
-    # Deduplicate overlapping findings so long manuscripts do not flood the UI.
-    unique_pacing = []
-    seen_windows = set()
+    # Deduplicate overlapping findings of the same type so one slow or flat
+    # stretch produces one useful finding rather than a card for every shift.
+    deduped = []
+    last_end_by_reason = {}
     for item in pacing:
-        key = (item["start"], item["end"], item["reason"])
-        if key not in seen_windows:
-            unique_pacing.append(item)
-            seen_windows.add(key)
-    pacing = unique_pacing[:100]
+        reason = item["reason"]
+        previous_end = last_end_by_reason.get(reason, -1)
+        if item["start"] <= previous_end:
+            continue
+        deduped.append(item)
+        last_end_by_reason[reason] = item["end"]
 
-    flagged_count = sum(item["count"] - 3 for item in words) + len(passive) + len(pacing)
+    pacing = deduped[:100]
+    passive = passive[:120]
+
     return {
+        "word_count": word_count,
         "words": words,
-        "passive": passive[:120],
+        "passive": passive,
         "pacing": pacing,
-        "flagged_count": flagged_count,
+        "flagged_count": len(words) + len(passive) + len(pacing),
     }
-
 
 def get_db():
     return SessionLocal()

@@ -7,7 +7,7 @@
 A professional, full-stack manuscript analysis and editing web application built for writers who want editorial help without generative writing.
 
 * **Live Web App:** [Magnolia Margin](https://magnoliamargin.onrender.com/) *(Hosted via Render)*
-* **GitHub Repository:** [ozturksamira/manuscript_app](https://www.google.com/search?q=https://github.com/ozturksamira/manuscript_app)
+* **GitHub Repository:** [ozturksamira/manuscript_editor_web](https://github.com/ozturksamira/manuscript_editor_web)
 
 ---
 
@@ -127,9 +127,15 @@ Built by **Samira Ozturk**.
 
 ## Render production storage
 
-For production, connect the web service to a Render Postgres database and expose its connection string as the `DATABASE_URL` environment variable. The application automatically uses PostgreSQL when `DATABASE_URL` is present and falls back to local SQLite for development.
+Production storage is defined in `render.yaml`. It provisions a Render Postgres database, wires its private `connectionString` into `DATABASE_URL`, and asks Render to generate a persistent `SECRET_KEY`. Render Blueprints preserve existing environment variables when they are synced.
 
-Also set a strong random `SECRET_KEY` environment variable in Render. The application stores passwords as secure password hashes and uses protected, user-scoped project records.
+The Flask app uses PostgreSQL whenever `DATABASE_URL` is present and uses local SQLite only for development. On Render it now refuses to start without `DATABASE_URL` so the application cannot silently fall back to an ephemeral filesystem database and lose accounts or manuscripts after a redeploy. Passwords are stored as secure password hashes, never as plaintext.
+
+### First production deployment
+
+Create or sync the Render Blueprint from this repository so the `magnoliamargin-db` database is created and `DATABASE_URL` is connected to the web service. Keep `SECRET_KEY` managed by Render; do not commit either secret values or database credentials to the repository.
+
+An account that only existed in the old ephemeral SQLite database cannot be recovered by code after the filesystem has already been reset. Once the Render Postgres database is in use, account and manuscript records live outside the web service and survive normal rebuilds and redeployments.
 
 ## Project subdomains
 

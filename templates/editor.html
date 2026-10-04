@@ -34,7 +34,7 @@ button,input,select{font:inherit}button{cursor:pointer}a{color:inherit}
 .paper-wrap{padding:clamp(14px,3vw,28px);background:linear-gradient(180deg,rgba(247,245,242,.45),rgba(239,232,226,.25))}
 .editor{min-height:67vh;max-height:calc(100vh - 285px);overflow:auto;padding:clamp(22px,4vw,48px);background:#fffdfb;border:1px solid var(--line);border-radius:9px;outline:none;color:#261f1a;font:17px/1.85 Georgia,"Times New Roman",serif;box-shadow:0 10px 35px rgba(23,20,17,.06);caret-color:var(--burgundy)}
 .editor:empty:before{content:attr(data-placeholder);color:#a39182}.editor h1,.editor h2,.editor h3,.editor h4,.editor h5,.editor h6{font-family:"Playfair Display",Georgia,serif;color:var(--burgundy);line-height:1.2}.editor h1{font-size:2.2rem}.editor h2{font-size:1.8rem}.editor h3{font-size:1.45rem}.editor blockquote{margin:1.25em 0;padding-left:17px;border-left:3px solid var(--tuscany);color:var(--umber)}.editor hr{border:0;border-top:1px solid var(--tuscany);margin:2em 0}.editor ul,.editor ol{padding-left:1.6em}
-.manuscript-footer{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:12px 16px 16px}.left-actions,.export-actions{display:flex;gap:7px;flex-wrap:wrap}.primary{border:0;background:var(--umber);color:var(--pearl);border-radius:999px;padding:10px 16px;font-weight:700}.primary:hover{background:var(--burgundy)}.ghost{border:1px solid var(--line);background:transparent;color:var(--burgundy);border-radius:999px;padding:9px 14px}.ghost:hover{background:var(--platinum)}.save-status{font:11px system-ui,sans-serif;color:var(--umber);min-height:17px}.export{border:1px solid var(--line);background:var(--platinum);color:var(--burgundy);border-radius:999px;padding:9px 12px;text-decoration:none;font:700 11px system-ui,sans-serif}.export:hover{background:var(--tuscany)}
+.manuscript-footer{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:12px 16px 16px}.left-actions,.export-actions,.manuscript-metrics{display:flex;gap:7px;flex-wrap:wrap;align-items:center}.word-count{font:700 11px system-ui,sans-serif;color:var(--burgundy);padding:8px 11px;border:1px solid var(--line);border-radius:999px;background:var(--platinum)}.primary{border:0;background:var(--umber);color:var(--pearl);border-radius:999px;padding:10px 16px;font-weight:700}.primary:hover{background:var(--burgundy)}.ghost{border:1px solid var(--line);background:transparent;color:var(--burgundy);border-radius:999px;padding:9px 14px}.ghost:hover{background:var(--platinum)}.save-status{font:11px system-ui,sans-serif;color:var(--umber);min-height:17px}.export{border:1px solid var(--line);background:var(--platinum);color:var(--burgundy);border-radius:999px;padding:9px 12px;text-decoration:none;font:700 11px system-ui,sans-serif}.export:hover{background:var(--tuscany)}
 .issues-panel{position:sticky;top:92px;height:calc(100vh - 115px);max-height:calc(100vh - 115px);border-radius:20px;overflow:hidden;display:flex;flex-direction:column}
 .issues-head{padding:15px 15px 0;border-bottom:1px solid var(--line)}.issues-title-row{display:flex;align-items:center;justify-content:space-between;gap:8px}.issues-title{margin:0;font:600 1.35rem "Playfair Display",Georgia,serif;color:var(--burgundy)}.issue-count{min-width:28px;height:28px;display:grid;place-items:center;padding:0 8px;border-radius:999px;background:var(--burgundy);color:var(--pearl);font:700 11px system-ui,sans-serif}
 .issue-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;margin-top:13px}.issue-tab{border:0;background:transparent;padding:10px 3px;color:var(--umber);border-bottom:2px solid transparent;font:700 10px system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase}.issue-tab.active{color:var(--burgundy);border-bottom-color:var(--umber)}.issue-tab span{display:block;margin-top:2px;font-size:10px;opacity:.7}
@@ -100,10 +100,13 @@ button,input,select{font:inherit}button{cursor:pointer}a{color:inherit}
       </div>
       <div class="manuscript-footer">
         <div class="left-actions">
-          <button class="primary" type="button" onclick="analyseProject()">Analyse manuscript</button>
+          <button class="primary" id="analyseButton" type="button" onclick="analyseProject()">Analyse manuscript</button>
           <button class="ghost" type="button" onclick="saveProject()">Save now</button>
         </div>
-        <div class="save-status" id="saveStatus">Changes save automatically.</div>
+        <div class="manuscript-metrics">
+          <span class="word-count" id="wordCount" aria-live="polite">0 words</span>
+          <div class="save-status" id="saveStatus">Changes save automatically.</div>
+        </div>
         <div class="export-actions">
           <a class="export" id="exportDocx" href="#">Export DOCX</a>
           <a class="export" id="exportHtml" href="#">Export HTML</a>
@@ -170,55 +173,17 @@ const saveStatus=document.getElementById('saveStatus');
 const analysisStatus=document.getElementById('analysisStatus');
 const fileInput=document.getElementById('fileInput');
 const toast=document.getElementById('toast');
+const wordCount=document.getElementById('wordCount');
+const analyseButton=document.getElementById('analyseButton');
+const WORD_COUNT_RE=/\b[A-Za-z](?:[A-Za-z'’-]*[A-Za-z])?\b/g;
 const initialProjectSlug={{ (project_slug or '')|tojson }};
 let projects=[];
 let activeProjectId=null;
 let activeProjectSlug='';
 let saveTimer=null;
 let toastTimer=null;
-let currentAnalysis={words:[],passive:[],pacing:[],flagged_count:0};
+let currentAnalysis={word_count:0,words:[],passive:[],pacing:[],flagged_count:0};
 let wordCursors={};
-
-const STOP_WORDS=new Set([
-  // Pronouns
-  'i','me','my','myself','you','your','yourself','yours',
-  'he','him','his','himself','she','her','hers','herself',
-  'it','its','itself','we','us','our','ourselves',
-  'they','them','their','theirs','themselves','who','whom','whose',
-  'which','that','this','these','those',
-  // Prepositions
-  'about','above','across','after','against','along','among','around','at',
-  'before','behind','below','beneath','beside','between','beyond','by',
-  'down','during','except','for','from','in','inside','into','like','near',
-  'of','off','on','onto','out','outside','over','past','through','throughout',
-  'to','toward','under','underneath','until','up','upon','with','within','without',
-  // Conjunctions
-  'and','but','or','nor','for','yet','so','although','because','since',
-  'unless','until','while','whereas',
-  // Articles
-  'a','an','the',
-  // Auxiliary verbs: BE, HAVE, DO and modal/semi-modal auxiliaries
-  'am','is','are','was','were','be','being','been',
-  'have','has','had','having',
-  'do','does','did',
-  'can','could','may','might','must','shall','should','will','would',
-  'ought','need','dare','used'
-]);
-const EVENT_VERBS=new Set([
-  'arrive','arrived','attack','attacked','break','broke','burst',
-  'call','called','catch','caught','change','changed','chase','chased',
-  'close','closed','crash','crashed','cry','cried','cut','die','died',
-  'discover','discovered','enter','entered','escape','escaped','fall','fell',
-  'fight','fought','find','found','grab','grabbed','hit','hold','held',
-  'jump','jumped','kill','killed','leave','left','lose','lost','open','opened',
-  'pull','pulled','push','pushed','reach','reached','run','ran','rush','rushed',
-  'scream','screamed','see','saw','send','sent','shoot','shot','shout','shouted',
-  'slip','slipped','smash','smashed','sprint','sprinted','stand','stood',
-  'start','started','stop','stopped','strike','struck','take','took','throw',
-  'threw','turn','turned','wake','woke','walk','walked','warn','warned','watch','watched'
-]);
-const DESCRIPTION_RE=/\b(?:very|quite|rather|really|extremely|beautifully|slowly|quickly|carefully|suddenly|silently|quietly|loudly|softly|deeply|[A-Za-z-]*(?:ly|ful|ous|ive|less|ish|ical))\b/gi;
-const PASSIVE_RE=/\b(?:am|is|are|was|were|be|been|being)\s+(?:\w+\s+){0,2}(?:[A-Za-z]+ed|[A-Za-z]+en|[A-Za-z]+wn|[A-Za-z]+t)\b(?:\s+by\s+(?:the|a|an)?\s*[A-Za-z][A-Za-z'-]*)?/i;
 
 function showToast(message){toast.textContent=message;toast.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(function(){toast.classList.remove('show')},2600)}
 function escapeHtml(value){return String(value||'').replace(/[&<>"']/g,function(ch){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[ch]})}
@@ -258,19 +223,21 @@ async function loadProject(projectId){
   activeProjectSlug=project.slug||'';
   titleInput.value=project.title||'Untitled manuscript';
   editor.innerHTML=project.content||'';
-  currentAnalysis=project.analysis||{words:[],passive:[],pacing:[],flagged_count:0};
+  currentAnalysis=project.analysis||{word_count:0,words:[],passive:[],pacing:[],flagged_count:0};
+  updateWordCount();
   wordCursors={};
   updateExportLinks();
   refreshOutline();
   renderIssues();
   saveStatus.textContent='Saved project';
-  analysisStatus.textContent=Object.keys(currentAnalysis).length?'Analysis saved':'Ready';
+  analysisStatus.textContent=Number(currentAnalysis.flagged_count||0)>0?(Number(currentAnalysis.flagged_count).toLocaleString()+' saved issue'+(Number(currentAnalysis.flagged_count)===1?'':'s')):'Ready';
 }
 
 projectSelect.addEventListener('change',async function(){await saveProject();await loadProject(this.value)});
 titleInput.addEventListener('input',function(){scheduleSave()});
 editor.addEventListener('input',function(){
-  currentAnalysis={words:[],passive:[],pacing:[],flagged_count:0};
+  currentAnalysis={word_count:0,words:[],passive:[],pacing:[],flagged_count:0};
+  updateWordCount();
   wordCursors={};
   renderIssues();
   refreshOutline();
@@ -391,6 +358,14 @@ function buildTextIndex(){
   while(node=walker.nextNode()){if(!node.nodeValue)continue;const block=node.parentElement?node.parentElement.closest('p,h1,h2,h3,h4,h5,h6,blockquote,li,div'):null;if(text&&block&&nodes.length&&block!==nodes[nodes.length-1].block)text+='\\n';const start=text.length;text+=node.nodeValue;nodes.push({node:node,start:start,end:text.length,block:block})}
   return {text:text,nodes:nodes};
 }
+function updateWordCount(){
+  const index=buildTextIndex();
+  WORD_COUNT_RE.lastIndex=0;
+  const matches=index.text.match(WORD_COUNT_RE)||[];
+  const count=matches.length;
+  wordCount.textContent=count.toLocaleString()+' '+(count===1?'word':'words');
+}
+
 function rangeForOffsets(index,start,end){
   let a=null,b=null;
   for(const item of index.nodes){
@@ -420,166 +395,45 @@ function jumpToSnippet(indexNumber,passive){
   selectAndScroll(rangeForOffsets(index,start,start+issue.sentence.length));
 }
 
-function clientAnalyse(value){
-  const text=value||'';
-  if(!text.trim())return {words:[],passive:[],pacing:[],flagged_count:0};
+async function analyseProject(){
+  if(!activeProjectId)return;
+  const index=buildTextIndex();
+  const manuscriptText=index.text.trim();
 
-  const counts=new Map(),contexts=new Map();
-  let match;
-  WORD_RE.lastIndex=0;
-
-  // One linear pass over the manuscript. A word is "overused" only after
-  // its fourth occurrence, and editorial function words are excluded.
-  while((match=WORD_RE.exec(text))!==null){
-    const word=match[0].toLowerCase().replace(/’/g,"'").replace(/^'+|'+$/g,'');
-    if(word.length<2||STOP_WORDS.has(word))continue;
-    counts.set(word,(counts.get(word)||0)+1);
+  if(!manuscriptText){
+    currentAnalysis={word_count:0,words:[],passive:[],pacing:[],flagged_count:0};
+    renderIssues();
+    updateWordCount();
+    analysisStatus.textContent='Nothing to analyse';
+    return;
   }
 
-  const frequent=Array.from(counts.entries())
-    .filter(function(pair){return pair[1]>3})
-    .sort(function(a,b){return b[1]-a[1]||a[0].localeCompare(b[0])})
-    .slice(0,80);
-  const frequentSet=new Set(frequent.map(function(pair){return pair[0]}));
+  analyseButton.disabled=true;
+  analyseButton.textContent='Analysing…';
+  analysisStatus.textContent='Analysing manuscript…';
 
-  const sentences=[];
-  SENTENCE_RE.lastIndex=0;
-  while((match=SENTENCE_RE.exec(text))!==null){
-    const snippet=match[0].trim();
-    if(!snippet)continue;
-    const leading=match[0].length-match[0].replace(/^\s+/,'').length;
-    const start=match.index+leading;
-    sentences.push({start:start,end:start+snippet.length,sentence:snippet});
-  }
-
-  const profiles=sentences.map(function(item){
-    WORD_RE.lastIndex=0;
-    const words=[];
-    while((match=WORD_RE.exec(item.sentence))!==null){
-      words.push(match[0].toLowerCase().replace(/’/g,"'"));
-    }
-    const eventCount=words.reduce(function(total,word){return total+(EVENT_VERBS.has(word)?1:0)},0);
-    const descriptionCount=(item.sentence.match(DESCRIPTION_RE)||[]).length;
-    return {
-      start:item.start,
-      end:item.end,
-      sentence:item.sentence,
-      word_count:words.length,
-      event_count:eventCount,
-      description_count:descriptionCount,
-      dialogue:/["“”]/.test(item.sentence)
-    };
-  });
-
-  if(frequentSet.size){
-    const seen=new Map();
-    profiles.forEach(function(item){
-      if(seen.size===frequentSet.size)return;
-      WORD_RE.lastIndex=0;
-      while((match=WORD_RE.exec(item.sentence))!==null){
-        const word=match[0].toLowerCase().replace(/’/g,"'").replace(/^'+|'+$/g,'');
-        if(!frequentSet.has(word))continue;
-        const list=seen.get(word)||[];
-        if(list.length<3&&!list.includes(item.sentence))list.push(item.sentence.slice(0,300));
-        seen.set(word,list);
-      }
+  try{
+    const response=await fetch('/api/projects/'+activeProjectId+'/analyze',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({text:manuscriptText})
     });
-    frequent.forEach(function(pair){contexts.set(pair[0],seen.get(pair[0])||[])});
+    const data=await response.json();
+    if(!response.ok)throw new Error(data.error||'Analysis failed.');
+    currentAnalysis=data;
+    renderIssues();
+    updateWordCount();
+    const issueCount=Number(data.flagged_count||0);
+    analysisStatus.textContent=issueCount===0?'No flagged issues':issueCount.toLocaleString()+' issue'+(issueCount===1?'':'s')+' found';
+    saveStatus.textContent='Analysis saved';
+  }catch(error){
+    analysisStatus.textContent='Analysis failed';
+    showToast(error.message||'The manuscript could not be analysed.');
+  }finally{
+    analyseButton.disabled=false;
+    analyseButton.textContent='Analyse manuscript';
   }
-
-  const words=frequent.map(function(pair){
-    return {word:pair[0],count:pair[1],contexts:contexts.get(pair[0])||[]};
-  });
-
-  const passive=[];
-  profiles.forEach(function(item){
-    PASSIVE_RE.lastIndex=0;
-    if(PASSIVE_RE.test(item.sentence)){
-      passive.push({
-        sentence:item.sentence.slice(0,500),
-        start:item.start,
-        end:item.end,
-        reason:/\bby\s+(?:the|a|an)?\s*[A-Za-z]/i.test(item.sentence) ? 'Passive construction with an explicit agent' : 'Passive construction'
-      });
-    }
-  });
-
-  const pacing=[];
-  function windowText(window){
-    return window.map(function(item){return item.sentence.trim()}).join(' ');
-  }
-
-  // Too fast: short consecutive sentences with concentrated event/change verbs.
-  for(let i=0;i+2<profiles.length&&pacing.length<80;i++){
-    const window=profiles.slice(i,i+3);
-    const average=window.reduce(function(sum,item){return sum+item.word_count},0)/3;
-    const events=window.reduce(function(sum,item){return sum+item.event_count},0);
-    if(average<=13&&events>=2){
-      pacing.push({
-        sentence:windowText(window).slice(0,650),
-        start:window[0].start,
-        end:window[2].end,
-        reason:'Too fast — possible event compression',
-        word_count:window.reduce(function(sum,item){return sum+item.word_count},0)
-      });
-    }
-  }
-
-  // Too slow: long, description-heavy or dialogue-heavy passages with little
-  // event movement.
-  for(let i=0;i+3<profiles.length&&pacing.length<80;i++){
-    const window=profiles.slice(i,i+4);
-    const average=window.reduce(function(sum,item){return sum+item.word_count},0)/4;
-    const events=window.reduce(function(sum,item){return sum+item.event_count},0)/4;
-    const description=window.reduce(function(sum,item){return sum+item.description_count},0)/4;
-    const dialogue=window.reduce(function(sum,item){return sum+(item.dialogue?1:0)},0)/4;
-    if(average>=30&&events<=1.5&&(description>=2||dialogue>=0.5)){
-      pacing.push({
-        sentence:windowText(window).slice(0,650),
-        start:window[0].start,
-        end:window[3].end,
-        reason:'Too slow — possible dragging passage',
-        word_count:window.reduce(function(sum,item){return sum+item.word_count},0)
-      });
-    }
-  }
-
-  // Flat dynamics: seven sentences with almost identical lengths and event
-  // activity, suggesting a prolonged single-gear rhythm.
-  for(let i=0;i+6<profiles.length&&pacing.length<100;i++){
-    const window=profiles.slice(i,i+7);
-    const lengths=window.map(function(item){return item.word_count});
-    const events=window.map(function(item){return item.event_count});
-    const mean=lengths.reduce(function(a,b){return a+b},0)/7;
-    const variance=lengths.reduce(function(sum,x){return sum+Math.pow(x-mean,2)},0)/7;
-    const stdev=Math.sqrt(variance);
-    const eventRange=Math.max.apply(null,events)-Math.min.apply(null,events);
-    if(mean>=10&&mean<=28&&stdev<=3.5&&eventRange<=1){
-      pacing.push({
-        sentence:windowText(window).slice(0,700),
-        start:window[0].start,
-        end:window[6].end,
-        reason:'Flat dynamics — sustained single-gear rhythm',
-        word_count:lengths.reduce(function(a,b){return a+b},0)
-      });
-    }
-  }
-
-  const seenPacing=new Set(),deduped=[];
-  pacing.forEach(function(item){
-    const key=item.start+'|'+item.end+'|'+item.reason;
-    if(!seenPacing.has(key)){seenPacing.add(key);deduped.push(item)}
-  });
-
-  const flagged=words.reduce(function(sum,item){return sum+Math.max(0,item.count-3)},0)+passive.length+deduped.length;
-  return {
-    words:words,
-    passive:passive.slice(0,120),
-    pacing:deduped.slice(0,100),
-    flagged_count:flagged
-  };
 }
-
 function updateExportLinks(){
   if(!activeProjectId)return;
   document.getElementById('exportDocx').href='/api/projects/'+activeProjectId+'/export/docx';
