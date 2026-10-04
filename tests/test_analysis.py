@@ -72,7 +72,7 @@ class AnalysisRulesTest(unittest.TestCase):
 
     def test_word_count_includes_function_words(self):
         result = analyse_text("I am a writer and you are here.")
-        self.assertEqual(result["word_count"], 9)
+        self.assertEqual(result["word_count"], 8)
 
 
 if __name__ == "__main__":
