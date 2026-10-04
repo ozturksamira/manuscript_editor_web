@@ -194,7 +194,25 @@ CONJUNCTIONS = {
     "and", "but", "or", "nor", "for", "yet", "so", "although", "because",
     "since", "unless", "until", "while", "whereas",
 }
-STOP_WORDS = PRONOUNS | PREPOSITIONS | CONJUNCTIONS | AUXILIARY_WORDS | {
+CONTRACTION_STOP_WORDS = {
+    "i'm", "im", "i've", "ive", "i'll", "ill", "i'd", "id",
+    "you're", "youre", "you've", "youve", "you'll", "youll", "you'd", "youd",
+    "he's", "hes", "he'll", "hell", "he'd", "hed", "he's", "hes",
+    "she's", "shes", "she'll", "shell", "she'd", "shed",
+    "it's", "its", "it'll", "itll", "it'd", "itd",
+    "we're", "were", "we've", "weve", "we'll", "well", "we'd", "wed",
+    "they're", "theyre", "they've", "theyve", "they'll", "theyll", "they'd", "theyd",
+    "who's", "whos", "who'll", "wholl", "who'd", "whod",
+    "that's", "thats", "that'll", "thatll", "that'd", "thatd",
+    "can't", "cant", "cannot", "couldn't", "couldnt", "won't", "wont",
+    "wouldn't", "wouldnt", "shouldn't", "shouldnt", "shan't", "shant",
+    "isn't", "isnt", "aren't", "arent", "wasn't", "wasnt", "weren't", "werent",
+    "haven't", "havent", "hasn't", "hasnt", "hadn't", "hadnt",
+    "don't", "dont", "doesn't", "doesnt", "didn't", "didnt",
+    "mustn't", "mustnt", "mightn't", "mightnt", "needn't", "neednt",
+    "daren't", "darent", "oughtn't", "oughtnt", "usedn't", "usednt",
+}
+STOP_WORDS = PRONOUNS | PREPOSITIONS | CONJUNCTIONS | AUXILIARY_WORDS | CONTRACTION_STOP_WORDS | {
     "a", "an", "the",
 }
 EVENT_VERBS = {
