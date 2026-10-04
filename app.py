@@ -233,7 +233,8 @@ EVENT_VERBS = {
     "stop", "stopped", "strike", "struck", "survive", "survived", "take", "took",
     "throw", "threw", "turn", "turned", "wake", "woke", "walk", "walked",
     "warn", "warned", "watch", "watched", "whisper", "whispered", "write", "wrote",
-}DESCRIPTION_RE = re.compile(
+}
+DESCRIPTION_RE = re.compile(
     r"\b(?:very|quite|rather|really|extremely|beautifully|slowly|quickly|"
     r"carefully|suddenly|silently|quietly|loudly|softly|deeply|"
     r"[A-Za-z-]*(?:ly|ful|ous|ive|less|ish|ical))\b",
