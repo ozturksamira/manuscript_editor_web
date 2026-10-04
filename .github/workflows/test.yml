@@ -27,7 +27,7 @@ jobs:
               raise SystemExit("No inline editor script found")
 
           script = scripts[-1]
-          pattern = r"const\s+initialProjectSlug\s*=\s*.*?;"
+          pattern = r"const\s+initialProjectSlug\s*=\s*[^;]*;"
           script, replacements = re.subn(
               pattern,
               "const initialProjectSlug='';",
