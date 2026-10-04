@@ -143,7 +143,7 @@ export function analyseText(value) {
       const dialogueRate = window.reduce((sum, item) => sum + item.dialogue, 0) / 4;
       const variety = window.reduce((sum, item) => sum + item.content_variety, 0) / 4;
       const dragSignal = descriptionDensity >= 0.06 || dialogueRate >= 0.5 || variety <= 0.62;
-      if (avgWords >= 14 && eventTotal <= 2 && eventDensity <= 0.04 && dragSignal) {
+      if (avgWords >= 12 && eventTotal <= 2 && eventDensity <= 0.04 && dragSignal) {
         pacing.push({ sentence: windowText(window).slice(0, 700), start: window[0].start, end: window[3].end, reason: "Too slow — possible dragging passage", word_count: totalWords, confidence: "medium" });
       }
       if (pacing.length >= 80) break;
