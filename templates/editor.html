@@ -85,6 +85,7 @@ button,input,select{font:inherit}button{cursor:pointer}a{color:inherit}
           <button class="tool" type="button" onclick="format('italic')" title="Italic"><em>I</em></button>
           <button class="tool" type="button" onclick="format('underline')" title="Underline"><u>U</u></button>
           <button class="tool" type="button" onclick="format('strikeThrough')" title="Strikethrough"><s>S</s></button>
+          <button class="tool" type="button" onclick="formatBlock('p')" title="Normal text">T</button>
           <button class="tool" type="button" onclick="formatBlock('h1')" title="Heading 1">H1</button>
           <button class="tool" type="button" onclick="formatBlock('h2')" title="Heading 2">H2</button>
           <button class="tool" type="button" onclick="formatBlock('h3')" title="Heading 3">H3</button>
@@ -178,10 +179,46 @@ let toastTimer=null;
 let currentAnalysis={words:[],passive:[],pacing:[],flagged_count:0};
 let wordCursors={};
 
-const STOP_WORDS=new Set('about after again against almost also although always among and another any around because before being between both but could did does doing down during each even every few first for from further had has have having here hers him himself his how into its itself just many might more most much must myself never not now off once only other our ours ourselves out over same she should some such than that their theirs them themselves then there these they this those through too under until very was were what when where which while who whom why will with would you your yours'.split(' '));
-const WORD_RE=/\\b[A-Za-z][A-Za-z'’-]{2,}\\b/g;
-const SENTENCE_RE=/[^.!?\\n]+(?:[.!?]+|$)/g;
-const PASSIVE_RE=/\\b(?:am|is|are|was|were|be|been|being|get|gets|got|gotten)\\s+\\w+(?:\\s+\\w+){0,3}\\s+(?:ed|en)\\b/i;
+const STOP_WORDS=new Set([
+  // Pronouns
+  'i','me','my','myself','you','your','yourself','yours',
+  'he','him','his','himself','she','her','hers','herself',
+  'it','its','itself','we','us','our','ourselves',
+  'they','them','their','theirs','themselves','who','whom','whose',
+  'which','that','this','these','those',
+  // Prepositions
+  'about','above','across','after','against','along','among','around','at',
+  'before','behind','below','beneath','beside','between','beyond','by',
+  'down','during','except','for','from','in','inside','into','like','near',
+  'of','off','on','onto','out','outside','over','past','through','throughout',
+  'to','toward','under','underneath','until','up','upon','with','within','without',
+  // Conjunctions
+  'and','but','or','nor','for','yet','so','although','because','since',
+  'unless','until','while','whereas',
+  // Articles
+  'a','an','the',
+  // Auxiliary verbs: BE, HAVE, DO and modal/semi-modal auxiliaries
+  'am','is','are','was','were','be','being','been',
+  'have','has','had','having',
+  'do','does','did',
+  'can','could','may','might','must','shall','should','will','would',
+  'ought','need','dare','used'
+]);
+const EVENT_VERBS=new Set([
+  'arrive','arrived','attack','attacked','break','broke','burst',
+  'call','called','catch','caught','change','changed','chase','chased',
+  'close','closed','crash','crashed','cry','cried','cut','die','died',
+  'discover','discovered','enter','entered','escape','escaped','fall','fell',
+  'fight','fought','find','found','grab','grabbed','hit','hold','held',
+  'jump','jumped','kill','killed','leave','left','lose','lost','open','opened',
+  'pull','pulled','push','pushed','reach','reached','run','ran','rush','rushed',
+  'scream','screamed','see','saw','send','sent','shoot','shot','shout','shouted',
+  'slip','slipped','smash','smashed','sprint','sprinted','stand','stood',
+  'start','started','stop','stopped','strike','struck','take','took','throw',
+  'threw','turn','turned','wake','woke','walk','walked','warn','warned','watch','watched'
+]);
+const DESCRIPTION_RE=/\b(?:very|quite|rather|really|extremely|beautifully|slowly|quickly|carefully|suddenly|silently|quietly|loudly|softly|deeply|[A-Za-z-]*(?:ly|ful|ous|ive|less|ish|ical))\b/gi;
+const PASSIVE_RE=/\b(?:am|is|are|was|were|be|been|being)\s+(?:\w+\s+){0,2}(?:[A-Za-z]+ed|[A-Za-z]+en|[A-Za-z]+wn|[A-Za-z]+t)\b(?:\s+by\s+(?:the|a|an)?\s*[A-Za-z][A-Za-z'-]*)?/i;
 
 function showToast(message){toast.textContent=message;toast.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(function(){toast.classList.remove('show')},2600)}
 function escapeHtml(value){return String(value||'').replace(/[&<>"']/g,function(ch){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[ch]})}
@@ -384,51 +421,163 @@ function jumpToSnippet(indexNumber,passive){
 }
 
 function clientAnalyse(value){
-  const text=value||'';if(!text.trim())return {words:[],passive:[],pacing:[],flagged_count:0};
-  const counts=new Map(),contexts=new Map();let match;
+  const text=value||'';
+  if(!text.trim())return {words:[],passive:[],pacing:[],flagged_count:0};
+
+  const counts=new Map(),contexts=new Map();
+  let match;
   WORD_RE.lastIndex=0;
+
+  // One linear pass over the manuscript. A word is "overused" only after
+  // its fourth occurrence, and editorial function words are excluded.
   while((match=WORD_RE.exec(text))!==null){
     const word=match[0].toLowerCase().replace(/’/g,"'").replace(/^'+|'+$/g,'');
-    if(word.length<4||STOP_WORDS.has(word))continue;
+    if(word.length<2||STOP_WORDS.has(word))continue;
     counts.set(word,(counts.get(word)||0)+1);
   }
-  const frequent=Array.from(counts.entries()).filter(function(pair){return pair[1]>=3}).sort(function(a,b){return b[1]-a[1]||a[0].localeCompare(b[0])}).slice(0,60);
+
+  const frequent=Array.from(counts.entries())
+    .filter(function(pair){return pair[1]>3})
+    .sort(function(a,b){return b[1]-a[1]||a[0].localeCompare(b[0])})
+    .slice(0,80);
   const frequentSet=new Set(frequent.map(function(pair){return pair[0]}));
-  const sentences=[];SENTENCE_RE.lastIndex=0;
-  while((match=SENTENCE_RE.exec(text))!==null){const snippet=match[0].trim();if(snippet){const leading=match[0].length-match[0].replace(/^\\s+/,'').length;const start=match.index+leading;sentences.push({start:start,end:start+snippet.length,sentence:snippet})}}
-  sentences.slice(0,12000).forEach(function(item){
+
+  const sentences=[];
+  SENTENCE_RE.lastIndex=0;
+  while((match=SENTENCE_RE.exec(text))!==null){
+    const snippet=match[0].trim();
+    if(!snippet)continue;
+    const leading=match[0].length-match[0].replace(/^\s+/,'').length;
+    const start=match.index+leading;
+    sentences.push({start:start,end:start+snippet.length,sentence:snippet});
+  }
+
+  const profiles=sentences.map(function(item){
     WORD_RE.lastIndex=0;
+    const words=[];
     while((match=WORD_RE.exec(item.sentence))!==null){
-      const word=match[0].toLowerCase().replace(/’/g,"'").replace(/^'+|'+$/g,'');
-      if(frequentSet.has(word)){const list=contexts.get(word)||[];if(list.length<3&&!list.includes(item.sentence))list.push(item.sentence.slice(0,260));contexts.set(word,list)}
+      words.push(match[0].toLowerCase().replace(/’/g,"'"));
+    }
+    const eventCount=words.reduce(function(total,word){return total+(EVENT_VERBS.has(word)?1:0)},0);
+    const descriptionCount=(item.sentence.match(DESCRIPTION_RE)||[]).length;
+    return {
+      start:item.start,
+      end:item.end,
+      sentence:item.sentence,
+      word_count:words.length,
+      event_count:eventCount,
+      description_count:descriptionCount,
+      dialogue:/["“”]/.test(item.sentence)
+    };
+  });
+
+  if(frequentSet.size){
+    const seen=new Map();
+    profiles.forEach(function(item){
+      if(seen.size===frequentSet.size)return;
+      WORD_RE.lastIndex=0;
+      while((match=WORD_RE.exec(item.sentence))!==null){
+        const word=match[0].toLowerCase().replace(/’/g,"'").replace(/^'+|'+$/g,'');
+        if(!frequentSet.has(word))continue;
+        const list=seen.get(word)||[];
+        if(list.length<3&&!list.includes(item.sentence))list.push(item.sentence.slice(0,300));
+        seen.set(word,list);
+      }
+    });
+    frequent.forEach(function(pair){contexts.set(pair[0],seen.get(pair[0])||[])});
+  }
+
+  const words=frequent.map(function(pair){
+    return {word:pair[0],count:pair[1],contexts:contexts.get(pair[0])||[]};
+  });
+
+  const passive=[];
+  profiles.forEach(function(item){
+    PASSIVE_RE.lastIndex=0;
+    if(PASSIVE_RE.test(item.sentence)){
+      passive.push({
+        sentence:item.sentence.slice(0,500),
+        start:item.start,
+        end:item.end,
+        reason:/\bby\s+(?:the|a|an)?\s*[A-Za-z]/i.test(item.sentence) ? 'Passive construction with an explicit agent' : 'Passive construction'
+      });
     }
   });
-  const passive=[],pacing=[],shortRun=[];
-  sentences.forEach(function(item,index){
-    const wordCount=(item.sentence.match(WORD_RE)||[]).length;
-    if(item.sentence.length<=500&&PASSIVE_RE.test(item.sentence))passive.push({sentence:item.sentence.slice(0,500),start:item.start,end:item.end,reason:'Possible passive construction'});
-    if(wordCount>40)pacing.push({sentence:item.sentence.slice(0,500),start:item.start,end:item.end,reason:'Long sentence',word_count:wordCount});
-    if(wordCount<=8)shortRun.push(item);else{if(shortRun.length>=3)shortRun.forEach(function(run){pacing.push({sentence:run.sentence.slice(0,500),start:run.start,end:run.end,reason:'Choppy sequence',word_count:(run.sentence.match(WORD_RE)||[]).length})});shortRun.length=0}
-    if(index===sentences.length-1&&shortRun.length>=3)shortRun.forEach(function(run){pacing.push({sentence:run.sentence.slice(0,500),start:run.start,end:run.end,reason:'Choppy sequence',word_count:(run.sentence.match(WORD_RE)||[]).length})});
-  });
-  const words=frequent.map(function(pair){return {word:pair[0],count:pair[1],contexts:contexts.get(pair[0])||[]}});
-  const flagged=words.reduce(function(sum,item){return sum+Math.max(0,item.count-2)},0)+passive.length+pacing.length;
-  return {words:words,passive:passive.slice(0,120),pacing:pacing.slice(0,120),flagged_count:flagged};
-}
 
-async function analyseProject(){
-  if(!activeProjectId)return;
-  analysisStatus.textContent='Analysing…';saveStatus.textContent='Running editorial checks…';
-  await new Promise(function(resolve){window.setTimeout(resolve,0)});
-  try{
-    currentAnalysis=clientAnalyse(editor.innerText);
-    wordCursors={};renderIssues();
-    analysisStatus.textContent='Analysis saved locally';saveStatus.textContent='Saving analysis…';
-    const response=await fetch('/api/projects/'+activeProjectId+'/analysis',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({analysis:currentAnalysis})});
-    if(!response.ok)throw new Error('Analysis save failed');
-    saveStatus.textContent='Analysis saved';
-    showToast('Editorial checks refreshed.');
-  }catch(error){analysisStatus.textContent='Analysis ready';saveStatus.textContent='Analysis could not be saved, but the results remain on screen';showToast('Analysis completed in the browser.')}
+  const pacing=[];
+  function windowText(window){
+    return window.map(function(item){return item.sentence.trim()}).join(' ');
+  }
+
+  // Too fast: short consecutive sentences with concentrated event/change verbs.
+  for(let i=0;i+2<profiles.length&&pacing.length<80;i++){
+    const window=profiles.slice(i,i+3);
+    const average=window.reduce(function(sum,item){return sum+item.word_count},0)/3;
+    const events=window.reduce(function(sum,item){return sum+item.event_count},0);
+    if(average<=13&&events>=2){
+      pacing.push({
+        sentence:windowText(window).slice(0,650),
+        start:window[0].start,
+        end:window[2].end,
+        reason:'Too fast — possible event compression',
+        word_count:window.reduce(function(sum,item){return sum+item.word_count},0)
+      });
+    }
+  }
+
+  // Too slow: long, description-heavy or dialogue-heavy passages with little
+  // event movement.
+  for(let i=0;i+3<profiles.length&&pacing.length<80;i++){
+    const window=profiles.slice(i,i+4);
+    const average=window.reduce(function(sum,item){return sum+item.word_count},0)/4;
+    const events=window.reduce(function(sum,item){return sum+item.event_count},0)/4;
+    const description=window.reduce(function(sum,item){return sum+item.description_count},0)/4;
+    const dialogue=window.reduce(function(sum,item){return sum+(item.dialogue?1:0)},0)/4;
+    if(average>=30&&events<=1.5&&(description>=2||dialogue>=0.5)){
+      pacing.push({
+        sentence:windowText(window).slice(0,650),
+        start:window[0].start,
+        end:window[3].end,
+        reason:'Too slow — possible dragging passage',
+        word_count:window.reduce(function(sum,item){return sum+item.word_count},0)
+      });
+    }
+  }
+
+  // Flat dynamics: seven sentences with almost identical lengths and event
+  // activity, suggesting a prolonged single-gear rhythm.
+  for(let i=0;i+6<profiles.length&&pacing.length<100;i++){
+    const window=profiles.slice(i,i+7);
+    const lengths=window.map(function(item){return item.word_count});
+    const events=window.map(function(item){return item.event_count});
+    const mean=lengths.reduce(function(a,b){return a+b},0)/7;
+    const variance=lengths.reduce(function(sum,x){return sum+Math.pow(x-mean,2)},0)/7;
+    const stdev=Math.sqrt(variance);
+    const eventRange=Math.max.apply(null,events)-Math.min.apply(null,events);
+    if(mean>=10&&mean<=28&&stdev<=3.5&&eventRange<=1){
+      pacing.push({
+        sentence:windowText(window).slice(0,700),
+        start:window[0].start,
+        end:window[6].end,
+        reason:'Flat dynamics — sustained single-gear rhythm',
+        word_count:lengths.reduce(function(a,b){return a+b},0)
+      });
+    }
+  }
+
+  const seenPacing=new Set(),deduped=[];
+  pacing.forEach(function(item){
+    const key=item.start+'|'+item.end+'|'+item.reason;
+    if(!seenPacing.has(key)){seenPacing.add(key);deduped.push(item)}
+  });
+
+  const flagged=words.reduce(function(sum,item){return sum+Math.max(0,item.count-3)},0)+passive.length+deduped.length;
+  return {
+    words:words,
+    passive:passive.slice(0,120),
+    pacing:deduped.slice(0,100),
+    flagged_count:flagged
+  };
 }
 
 function updateExportLinks(){
