@@ -91,7 +91,7 @@ async function newProject(){
   const data=await response.json();
   if(data.project){location.href=data.project.url}else{alert(data.error||'Could not create project.')}
 }
-async function logout(){await fetch('/logout',{method:'POST'});location.href='/'}
+async function logout(){sessionStorage.removeItem('mm_session_token');await fetch('/logout',{method:'POST'});location.href='/'}
 async function loadAccount(){const response=await fetch('/api/account');if(response.ok){const data=await response.json();document.getElementById('accountEmail').textContent=data.email||''}else{location.href='/login/'}}
 loadAccount().then(loadProjects);
 </script>
