@@ -287,6 +287,13 @@ async function handleApi(request, env) {
   const url = new URL(request.url);
   const path = url.pathname;
 
+  if (path === "/api/auth-status" && request.method === "GET") {
+    const user = await currentUser(request, env);
+    return json(user
+      ? { authenticated: true, user: { id: user.id, email: user.email } }
+      : { authenticated: false }, user ? 200 : 401);
+  }
+
   if (path === "/api/health" && request.method === "GET") {
     if (!env.DB) return json({ status: "error", database: "missing" }, 503);
     try {
