@@ -1,0 +1,3 @@
+# Copy to .dev.vars for local Cloudflare Worker development.
+# Never commit .dev.vars.
+SESSION_SECRET=replace-with-a-long-random-local-secret

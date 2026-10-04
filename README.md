@@ -1,144 +1,217 @@
-<p align="center">
-<img width="1366" height="768" alt="magnolia margin" src="https://github.com/user-attachments/assets/c44ed85e-837e-45b6-9aa9-ec8302d95e4e" />
-    </p>
-
 # Magnolia Margin | Manuscript Analyser & Editor
 
-A professional, full-stack manuscript analysis and editing web application built for writers who want editorial help without generative writing.
+A professional manuscript analysis and editing web application for writers who want editorial help without generative writing.
 
-* **Live Web App:** [Magnolia Margin](https://magnoliamargin.onrender.com/) *(Hosted via Render)*
-* **GitHub Repository:** [ozturksamira/manuscript_editor_web](https://github.com/ozturksamira/manuscript_editor_web)
+## Production architecture
 
----
+Magnolia Margin is designed to run globally without requiring the developer's computer to stay online and without a paid application server.
 
-## Interactive Interface & User Experience
+**Production stack**
+- Cloudflare Workers Free — globally serves the application and API.
+- Cloudflare D1 Free — persistent SQL storage for accounts, projects and manuscripts.
+- Cloudflare Workers static assets — serves the editor, login page and browser-side analysis engine.
+- GitHub — source control and optional automatic deployment through GitHub Actions.
 
-The application features a modern, full-screen **snap-scrolling slideshow layout** utilizing a custom warm color palette (Pearl, Platinum, Tuscany, Raw Umber, Old Burgundy, and Eerie Black):
+The production Worker is `src/index.js`. The original Flask application remains in `app.py` for local development and backwards compatibility, but Cloudflare is the production target.
 
-1. **Welcome Slide (Hero Section):** A light, welcoming introduction screen featuring a smooth animated down arrow (`↓`) that snaps users directly into the core editor.
-2. **Main Editor Slide:** Houses the multi-format file uploader (`.txt`, `.docx`, `.pdf`) and raw text pasting interface, connected to a dynamic tabbed dashboard:
-* **Overused Words Tab:** Displays word frequencies, count totals, and direct context-location sentence links, enhanced with a live custom search bar and multi-sorting filters (Most/Least Used, A-Z, Z-A).
-* **Passive Voice Tab:** Dynamically flags and isolates sentences containing passive constructions.
-* **Pacing Issues Tab:** Spots overly long sentences and consecutive dragging segments.
-
-
-3. **About Me Slide:** A professional footer section detailing the developer and linking directly to GitHub (`ozturksamira`).
-
-## Extended Vision
-- Develop custom stop-word filtering algorithms to isolate overused vocabulary and map occurrence counts directly to in-text context snippets.
-- Modify editorial page to look more sleek.
-- Extend and develop feature which allows users to modify their scripts' tense (e.g. first to third, past to present).
-
----
-## How the Webpage Works (Architecture Flowchart)
-
-```mermaid
-graph TD
-    A[User Opens Webpage] --> B[Hero Slide: Welcome Screen]
-    B -->|Clicks Down Arrow| C[Editor Slide: Input Interface]
-    C -->|Uploads File or Pastes Text| D[Frontend JavaScript: FormData POST Request]
-    D --> E[Flask Backend: /analyze Route]
-    E -->|If File Uploaded| F[Extract Text via docx / PyPDF2 / UTF-8 Streams]
-    E -->|If Text Pasted| G[Read Raw String Payload]
-    F & G --> H[ManuscriptProcessor Class Analysis]
-    H -->|1. Filter Stop Words & Calculate Dynamic Frequencies| I[Track Word Counts & Context Snippets]
-    H -->|2. Regex Scan| J[Detect Passive Voice Sentences]
-    H -->|3. Heuristic Scan| K[Detect Long / Consecutive Pacing Bottlenecks]
-    I & J & K --> L[Return Structured JSON Payload]
-    L --> M[Frontend: Render Interactive Tabs, Tables, Search, & Sort Filters]
-    M --> N[User Explores Results & Context Locations]
+### Why this meets the project goal
 
 ```
-
----
-
-## Key Technical Features
-
-* **Multi-Format Document Parsing:** Safely processes raw text strings, Microsoft Word (`.docx`), and Adobe PDF (`.pdf`) documents using server-side binary stream mapping (`io.BytesIO`).
-* **Advanced Frequency Analysis:** Automatically strips out extensive stop-words (pronouns, articles, conjunctions) to surface genuine overused vocabulary alongside exact occurrence counts.
-* **Contextual Location Tracking:** Maps flagged vocabulary back to the exact sentences they appear in, providing writers with immediate in-text context.
-* **Client-Side Data Filtering & Sorting:** Instantaneous DOM manipulation allowing users to search specific words and sort metrics without page reloads.
-
----
-
-## Local Installation & Setup
-
-To run or inspect this project locally, follow these steps:
-
-1. **Clone the Repository:**
-```bash
-git clone https://github.com/ozturksamira/manuscript_app.git
-cd manuscript_app
-
+Writer anywhere in the world
+        |
+        v
+Cloudflare global network
+        |
+        +--> Static Magnolia Margin interface
+        |
+        +--> Worker API
+                |
+                v
+             Cloudflare D1
+                |
+                +--> Users
+                +--> Projects
+                +--> Manuscripts
 ```
 
+Nothing depends on the developer's PC being switched on. Manuscript data is stored in D1 rather than on a local disk.
 
-2. **Create and Activate a Virtual Environment:**
+## Free-tier limits
+
+Current documented limits include:
+- Workers Free: 100,000 requests per day.
+- D1 Free: 100,000 row writes per day and 5 million row reads per day.
+- D1 Free: 500 MB maximum per database.
+- Static asset requests are handled by the Workers asset pipeline.
+- Each manuscript project is intentionally limited to about 1.5 MB of HTML so it stays below D1 row limits.
+
+This is designed to use Cloudflare's free allowances, not to guarantee unlimited usage. Cloudflare can change plan limits. When a free daily limit is exceeded, affected operations can fail until the limit resets rather than silently becoming a paid service.
+
+## Account security
+
+Passwords are never stored as plaintext. The Cloudflare Worker hashes passwords with PBKDF2-SHA-256 using Web Crypto and stores only the derived hash. Login sessions use a signed, HttpOnly, Secure, SameSite=Lax cookie.
+
+`SESSION_SECRET` is stored as a Cloudflare Worker secret and must never be committed to GitHub.
+
+## Manuscript analysis
+
+The core analysis runs in the browser rather than consuming Worker CPU on every analysis request. `public/analysis.js` provides:
+- word count;
+- words used more than 3 times, excluding pronouns, prepositions, conjunctions and auxiliary verbs;
+- passive-voice heuristics;
+- too-fast pacing heuristics;
+- too-slow/dragging passage heuristics;
+- flat-dynamics heuristics.
+
+This is deliberately a diagnostic heuristic system, not an infallible literary judgement engine. A flagged passage is a suggestion for editorial attention, not proof that the writing is wrong.
+
+## Document import/export
+
+Document parsing happens in the browser to keep the hosted Worker lightweight:
+- TXT import uses the browser File API.
+- DOCX import uses pinned Mammoth JS.
+- PDF import uses pinned PDF.js.
+- TXT and HTML export are generated by the Worker.
+- DOCX export is generated in the browser.
+
+The Worker sanitizes stored editor HTML before writing it to D1.
+
+## Cloudflare setup
+
+### 1. Create a free Cloudflare account
+
+Open Cloudflare and go to Workers & Pages. You do not need a paid Worker plan for this repository.
+
+### 2. Clone the repository
+
 ```bash
-python3 -m venv venv
-source venv/bin/activate  # On Windows use: venv\Scripts\activate
-
+git clone https://github.com/ozturksamira/manuscript_editor_web.git
+cd manuscript_editor_web
+npm install
 ```
 
+### 3. Log in to Cloudflare
 
-3. **Install Dependencies:**
 ```bash
+npx wrangler login
+```
+
+Wrangler opens a browser so you can authorize the Cloudflare account.
+
+### 4. Create the D1 database
+
+For a UK/Europe deployment, use Western Europe as the location hint:
+
+```bash
+npx wrangler d1 create magnoliamargin-db --location weur
+```
+
+The command returns a database ID. Open `wrangler.jsonc` and replace `REPLACE_WITH_YOUR_D1_DATABASE_ID` with that ID. The repository already declares the binding as `DB`, so the Worker accesses the database as `env.DB`.
+
+### 5. Apply the database migration
+
+```bash
+npx wrangler d1 migrations apply magnoliamargin-db --remote
+```
+
+This creates the `users` and `projects` tables in the real Cloudflare database.
+
+### 6. Create the authentication secret
+
+Store a long random value as a Worker secret:
+
+```bash
+npx wrangler secret put SESSION_SECRET
+```
+
+Do not put this value in `wrangler.jsonc`, `.dev.vars`, GitHub source, or the README.
+
+### 7. Deploy
+
+```bash
+npm run deploy
+```
+
+With `workers_dev` enabled, Cloudflare provides a free `workers.dev` URL. No purchased domain is required.
+
+### 8. Optional GitHub automatic deployment
+
+`.github/workflows/deploy-cloudflare.yml` can deploy the production Worker manually from GitHub Actions. Keeping it manual avoids a failing deployment until your Cloudflare database ID and GitHub secrets have been configured.
+
+Add these GitHub Actions secrets under **GitHub → Settings → Secrets and variables → Actions**:
+
+```
+CLOUDFLARE_API_TOKEN
+CLOUDFLARE_ACCOUNT_ID
+```
+
+The current Cloudflare GitHub Actions documentation recommends an API token using the **Edit Cloudflare Workers** template. Wrangler also requires the Cloudflare account ID in CI.
+
+After you have configured the database ID and secrets, run the workflow from **GitHub → Actions → Deploy Magnolia Margin to Cloudflare → Run workflow**. It installs Wrangler, applies pending D1 migrations to the remote database, and deploys the Worker.
+
+## Updating the application safely
+
+```
+GitHub code changes
+        |
+        v
+Cloudflare Worker is redeployed
+        |
+        X  D1 is NOT recreated
+        |
+        v
+Existing accounts and manuscripts remain
+```
+
+Do not delete the D1 database when deploying a new application version. Database structure changes belong in a new numbered file in `migrations/`.
+
+Example:
+
+```
+migrations/
+  0001_initial.sql
+  0002_add_new_feature.sql
+```
+
+Only migrations that have not already been applied are executed.
+
+## Local development
+
+The original Flask app remains available for local development:
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
-
+python app.py
 ```
 
+On Windows, use `.venv\\Scripts\\activate`.
 
-4. **Run the Flask Development Server:**
-```bash
-python3 app.py
+Without a `DATABASE_URL`, Flask stores its local SQLite database under `instance/`. That local database is separate from production D1.
 
-```
+## Important migration note
 
+This repository previously supported Render/Postgres. The Cloudflare deployment is now the intended production architecture.
 
-5. **Open in Your Browser:**
-Navigate to `[http://127.0.0.1:5000](http://127.0.0.1:5000)` to interact with the dashboard locally.
+An account that existed only in an old ephemeral Render SQLite filesystem cannot be reconstructed by changing the deployment code. If important old data still exists in a database backup, it must be migrated into D1 before the new site is used.
 
----
-
-## Tech Stack & Requirements (`requirements.txt`)
-
-* **Backend:** Python, Flask, Gunicorn
-* **Document Parsing:** python-docx, PyPDF2, lxml
-* **Frontend:** HTML5, CSS3 (Custom CSS Grid / Flexbox Snap Layout), JavaScript (ES6+ Asynchronous Fetch API)
-
-```text
-Flask
-gunicorn
-lxml==6.1.3
-PyPDF2==3.0.1
-python-docx==1.2.0
-typing_extensions==4.16.0
+## Project files
 
 ```
+src/index.js                         Cloudflare Worker API + routing
+public/                              Static website/editor assets
+public/analysis.js                   Browser-side manuscript analysis
+migrations/0001_initial.sql         D1 database schema
+wrangler.jsonc                       Cloudflare Worker + D1 configuration
+.github/workflows/deploy-cloudflare.yml
+                                     Optional GitHub deployment
+app.py                               Original Flask application for local use
+requirements.txt                     Original Flask/Python dependencies
+```
 
----
-
-## About the Developer
+## About the developer
 
 Built by **Samira Ozturk**.
 
-* Check out more of my open-source applications on [GitHub (@ozturksamira)](https://www.google.com/search?q=https://github.com/ozturksamira).
-
-
-## Render production storage
-
-Production storage is defined in `render.yaml`. It provisions a Render Postgres database, wires its private `connectionString` into `DATABASE_URL`, and asks Render to generate a persistent `SECRET_KEY`. Render Blueprints preserve existing environment variables when they are synced.
-
-The Flask app uses PostgreSQL whenever `DATABASE_URL` is present and uses local SQLite only for development. On Render it now refuses to start without `DATABASE_URL` so the application cannot silently fall back to an ephemeral filesystem database and lose accounts or manuscripts after a redeploy. Passwords are stored as secure password hashes, never as plaintext.
-
-### First production deployment
-
-Create or sync the Render Blueprint from this repository so the `magnoliamargin-db` database is created and `DATABASE_URL` is connected to the web service. Keep `SECRET_KEY` managed by Render; do not commit either secret values or database credentials to the repository.
-
-An account that only existed in the old ephemeral SQLite database cannot be recovered by code after the filesystem has already been reset. Once the Render Postgres database is in use, account and manuscript records live outside the web service and survive normal rebuilds and redeployments.
-
-## Project subdomains
-
-The application supports project-specific custom subdomains when `PROJECT_DOMAIN` is configured. For example, with `PROJECT_DOMAIN=magnoliamargin.example`, a project with slug `my-novel` is linked as `https://my-novel.magnoliamargin.example/`.
-
-Render supports wildcard custom domains, so add a wildcard such as `*.magnoliamargin.example` to the web service and configure the corresponding wildcard DNS record. Without a wildcard domain configured, the dashboard automatically falls back to the normal `/project/<slug>/` route.
+GitHub: https://github.com/ozturksamira
