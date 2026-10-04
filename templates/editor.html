@@ -696,6 +696,9 @@ window.addEventListener('beforeunload', function(){
 });
 
 editor.addEventListener('input', function(){
+  currentAnalysis = {words: [], passive: [], pacing: [], flagged_count: 0};
+  wordCursors = {};
+  renderIssues();
   scheduleSave();
   analysisStatus.textContent = 'Needs analysis';
 });
