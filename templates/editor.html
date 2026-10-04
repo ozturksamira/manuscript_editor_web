@@ -813,7 +813,7 @@ function selectAndScroll(range) {
 
 function jumpToWord(word) {
   const index = buildTextIndex();
-  const safeWord = String(word || '').replace(/[.*+?^()|[\\\]{}$]/g, '\\$&');
+  const safeWord = String(word || '').replace(/[^A-Za-z'’-]/g, '');
   const regex = new RegExp('\\b' + safeWord + '\\b', 'gi');
   const matches = [];
   let match;
