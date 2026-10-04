@@ -6,9 +6,6 @@ from app import analyse_text
 
 import unittest
 
-from scr.app import analyse_text
-
-
 class AnalysisRulesTest(unittest.TestCase):
     def test_overused_words_ignore_editorial_function_words(self):
         text = (
