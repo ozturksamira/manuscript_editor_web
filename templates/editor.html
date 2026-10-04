@@ -1,41 +1,912 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Writing Room — Magnolia Margin</title>
-<link href="https://fonts.googleapis.com/css2?family=Alice&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Alice&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
-:root{--pearl:#f7f5f2;--platinum:#efe8e2;--tuscany:#c0ab9a;--umber:#7b5c4b;--burgundy:#3f3027;--ink:#171411}*{box-sizing:border-box}body{margin:0;background:var(--pearl);color:var(--ink);font-family:system-ui,sans-serif}.topbar{position:sticky;top:0;z-index:5;background:rgba(247,245,242,.96);border-bottom:1px solid var(--tuscany);padding:12px clamp(16px,4vw,40px);display:flex;align-items:center;justify-content:space-between;gap:15px}.brand{font:600 1.35rem 'Playfair Display',Georgia,serif;color:var(--burgundy);text-decoration:none}.account{display:flex;align-items:center;gap:12px;font-size:14px}.logout{border:1px solid var(--umber);background:transparent;color:var(--burgundy);border-radius:22px;padding:8px 14px;cursor:pointer}.page{width:min(1100px,100%);margin:auto;padding:clamp(24px,5vw,55px) 18px 60px}.panel{background:var(--platinum);padding:clamp(16px,3vw,24px);border:1px solid var(--tuscany);border-radius:12px;box-shadow:0 5px 18px rgba(0,0,0,.04)}.label{display:block;color:var(--burgundy);font-weight:700;margin-bottom:8px}.file{width:100%;padding:8px;margin-bottom:20px;border:1px solid var(--tuscany);border-radius:6px;background:white}.editor{width:100%;min-height:360px;background:white;border:1px solid var(--tuscany);border-radius:7px;padding:18px;outline:none;line-height:1.7;font:16px Georgia,serif;overflow:auto}.editor:empty:before{content:attr(data-placeholder);color:#8c8178}.actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:12px}.primary{border:0;background:var(--umber);color:var(--pearl);border-radius:7px;padding:12px 20px;font-weight:700;cursor:pointer}.status{font-size:12px;color:var(--umber);margin-left:auto}.stats{margin:18px 0 8px;color:var(--burgundy)}.tabs{display:none;border-bottom:2px solid var(--tuscany);margin-top:18px}.tabs button{border:0;background:none;padding:12px 16px;color:var(--umber);font-weight:700;cursor:pointer}.tabs button.active{background:var(--umber);color:var(--pearl);border-radius:6px 6px 0 0}.tab{display:none;overflow:auto}.toolbar{display:flex;gap:10px;flex-wrap:wrap;padding:14px 0}.toolbar input,.toolbar select{padding:9px;border:1px solid var(--tuscany);border-radius:5px;background:white}.toolbar input{flex:1;min-width:220px}table{width:100%;border-collapse:collapse;background:white;min-width:650px}th,td{border:1px solid var(--tuscany);padding:11px;text-align:left;vertical-align:top}th{background:var(--platinum)}@media(max-width:600px){.account span{display:none}.editor{min-height:300px}.status{width:100%;margin-left:0}}
+:root{
+  --pearl:#f7f5f2;
+  --platinum:#efe8e2;
+  --tuscany:#c0ab9a;
+  --umber:#7b5c4b;
+  --burgundy:#3f3027;
+  --ink:#171411;
+  --line:rgba(63,48,39,.18);
+  --shadow:0 18px 55px rgba(23,20,17,.08);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;
+  min-height:100vh;
+  background:
+    radial-gradient(circle at top left, rgba(192,171,154,.15), transparent 34%),
+    var(--pearl);
+  color:var(--ink);
+  font-family:Alice,Georgia,serif;
+}
+button,input,select{font:inherit}
+button{cursor:pointer}
+a{color:inherit}
+.topbar{
+  position:sticky;
+  top:0;
+  z-index:20;
+  min-height:72px;
+  padding:12px clamp(18px,3vw,42px);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:18px;
+  background:rgba(247,245,242,.94);
+  backdrop-filter:blur(15px);
+  border-bottom:1px solid var(--line);
+}
+.brand{
+  font:600 clamp(1.2rem,2vw,1.5rem) "Playfair Display",Georgia,serif;
+  color:var(--burgundy);
+  text-decoration:none;
+  letter-spacing:.02em;
+}
+.account{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  font-size:.85rem;
+  color:var(--umber);
+}
+.account-email{
+  max-width:280px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.logout,.ghost,.danger{
+  border:1px solid var(--umber);
+  background:transparent;
+  color:var(--burgundy);
+  border-radius:999px;
+  padding:8px 14px;
+}
+.danger{border-color:rgba(123,92,75,.55);color:#6d3428}
+.logout:hover,.ghost:hover,.danger:hover{background:var(--platinum)}
+.workspace{
+  width:min(1550px,100%);
+  margin:0 auto;
+  padding:24px clamp(14px,3vw,34px) 42px;
+}
+.project-bar{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  margin-bottom:18px;
+  flex-wrap:wrap;
+}
+.project-select{
+  min-width:250px;
+  flex:1 1 320px;
+  border:1px solid var(--line);
+  border-radius:18px;
+  background:rgba(239,232,226,.62);
+  color:var(--burgundy);
+  padding:13px 16px;
+  outline:none;
+}
+.project-select:focus,.title-input:focus,.editor:focus{
+  border-color:var(--umber);
+  box-shadow:0 0 0 3px rgba(123,92,75,.11);
+}
+.title-input{
+  flex:0 1 330px;
+  border:1px solid transparent;
+  background:transparent;
+  color:var(--burgundy);
+  padding:10px 12px;
+  border-radius:12px;
+  font:600 1.05rem "Playfair Display",Georgia,serif;
+  outline:none;
+}
+.project-actions{display:flex;gap:8px;flex-wrap:wrap}
+.small-button{
+  border:1px solid var(--line);
+  background:var(--pearl);
+  color:var(--burgundy);
+  padding:9px 13px;
+  border-radius:12px;
+}
+.small-button:hover{background:var(--platinum)}
+.file-input{display:none}
+.layout{
+  display:grid;
+  grid-template-columns:minmax(0,3fr) minmax(265px,1fr);
+  gap:18px;
+  align-items:start;
+}
+.manuscript-panel,.issues-panel{
+  border:1px solid var(--line);
+  background:rgba(239,232,226,.58);
+  box-shadow:var(--shadow);
+}
+.manuscript-panel{
+  min-height:calc(100vh - 160px);
+  border-radius:22px;
+  overflow:hidden;
+}
+.issues-panel{
+  position:sticky;
+  top:95px;
+  max-height:calc(100vh - 119px);
+  border-radius:22px;
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
+}
+.manuscript-head{
+  padding:18px 18px 0;
+  border-bottom:1px solid var(--line);
+}
+.editor-toolbar{
+  display:flex;
+  align-items:center;
+  gap:5px;
+  flex-wrap:wrap;
+  padding:0 0 16px;
+}
+.tool{
+  min-width:36px;
+  height:35px;
+  padding:0 10px;
+  border:1px solid var(--line);
+  border-radius:10px;
+  background:var(--pearl);
+  color:var(--burgundy);
+}
+.tool:hover,.tool.active{background:var(--tuscany)}
+.tool-label{
+  font:600 11px system-ui,sans-serif;
+  letter-spacing:.09em;
+  text-transform:uppercase;
+  color:var(--umber);
+  margin:0 4px 0 6px;
+}
+.analysis-status{
+  margin-left:auto;
+  font:12px system-ui,sans-serif;
+  color:var(--umber);
+}
+.paper-wrap{
+  padding:clamp(18px,4vw,32px);
+  background:linear-gradient(180deg,rgba(247,245,242,.55),rgba(239,232,226,.32));
+}
+.editor{
+  min-height:66vh;
+  max-height:calc(100vh - 310px);
+  overflow:auto;
+  padding:clamp(24px,4vw,50px);
+  background:#fffdfb;
+  border:1px solid var(--line);
+  border-radius:10px;
+  outline:none;
+  color:#261f1a;
+  font:17px/1.85 Georgia,"Times New Roman",serif;
+  box-shadow:0 10px 35px rgba(23,20,17,.07);
+  caret-color:var(--burgundy);
+}
+.editor:empty:before{
+  content:attr(data-placeholder);
+  color:#a39182;
+}
+.editor h1,.editor h2,.editor h3,.editor h4{
+  color:var(--burgundy);
+  font-family:"Playfair Display",Georgia,serif;
+  line-height:1.2;
+}
+.editor h1{font-size:2.2rem}
+.editor h2{font-size:1.8rem}
+.editor h3{font-size:1.45rem}
+.editor blockquote{
+  margin:1.2em 0;
+  padding-left:18px;
+  border-left:3px solid var(--tuscany);
+  color:var(--umber);
+}
+.manuscript-footer{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  flex-wrap:wrap;
+  padding:14px 18px 18px;
+}
+.left-actions,.export-actions{display:flex;gap:8px;flex-wrap:wrap}
+.primary{
+  border:0;
+  background:var(--umber);
+  color:var(--pearl);
+  border-radius:999px;
+  padding:11px 17px;
+  font-weight:700;
+}
+.primary:hover{background:var(--burgundy)}
+.save-status{
+  min-height:18px;
+  font:12px system-ui,sans-serif;
+  color:var(--umber);
+}
+.export{
+  border:1px solid var(--line);
+  background:var(--platinum);
+  color:var(--burgundy);
+  border-radius:999px;
+  padding:10px 14px;
+  text-decoration:none;
+  font:700 12px system-ui,sans-serif;
+}
+.export:hover{background:var(--tuscany)}
+.issues-head{
+  padding:18px 18px 0;
+  border-bottom:1px solid var(--line);
+}
+.issues-title-row{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:10px;
+}
+.issues-title{
+  margin:0;
+  font:600 1.4rem "Playfair Display",Georgia,serif;
+  color:var(--burgundy);
+}
+.issue-count{
+  min-width:30px;
+  height:30px;
+  display:grid;
+  place-items:center;
+  padding:0 9px;
+  border-radius:999px;
+  background:var(--burgundy);
+  color:var(--pearl);
+  font:700 12px system-ui,sans-serif;
+}
+.issue-tabs{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:4px;
+  margin-top:16px;
+}
+.issue-tab{
+  border:0;
+  background:transparent;
+  padding:11px 5px;
+  color:var(--umber);
+  border-bottom:2px solid transparent;
+  font:700 11px system-ui,sans-serif;
+  text-transform:uppercase;
+  letter-spacing:.07em;
+}
+.issue-tab.active{
+  color:var(--burgundy);
+  border-bottom-color:var(--umber);
+}
+.issue-tab span{
+  display:block;
+  margin-top:2px;
+  font-size:10px;
+  opacity:.7;
+}
+.issue-list{
+  flex:1;
+  overflow:auto;
+  padding:10px;
+}
+.issue-view{display:none}
+.issue-view.active{display:block}
+.issue-empty{
+  padding:22px 13px 28px;
+  color:var(--umber);
+  text-align:center;
+  font-size:.92rem;
+  line-height:1.6;
+}
+.issue-card{
+  width:100%;
+  border:1px solid transparent;
+  background:rgba(247,245,242,.72);
+  padding:12px;
+  border-radius:15px;
+  margin-bottom:8px;
+  text-align:left;
+  color:var(--burgundy);
+  transition:.18s ease;
+}
+.issue-card:hover{
+  transform:translateY(-1px);
+  border-color:var(--tuscany);
+  background:var(--pearl);
+}
+.issue-main{
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+  align-items:baseline;
+}
+.issue-word{
+  font-family:"Playfair Display",Georgia,serif;
+  font-weight:700;
+  font-size:1.02rem;
+}
+.issue-meta{
+  font:700 10px system-ui,sans-serif;
+  color:var(--umber);
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  white-space:nowrap;
+}
+.issue-copy{
+  margin-top:5px;
+  font:12px/1.55 system-ui,sans-serif;
+  color:#6f6258;
+}
+.issue-progress{
+  margin-top:6px;
+  font:10px system-ui,sans-serif;
+  color:var(--umber);
+}
+.mobile-note{
+  display:none;
+  font:11px system-ui,sans-serif;
+  color:var(--umber);
+}
+.toast{
+  position:fixed;
+  right:22px;
+  bottom:22px;
+  z-index:50;
+  max-width:350px;
+  padding:12px 15px;
+  border-radius:14px;
+  background:var(--burgundy);
+  color:var(--pearl);
+  box-shadow:0 15px 40px rgba(0,0,0,.18);
+  font:12px/1.45 system-ui,sans-serif;
+  opacity:0;
+  transform:translateY(10px);
+  pointer-events:none;
+  transition:.2s ease;
+}
+.toast.show{opacity:1;transform:none}
+@media(max-width:1020px){
+  .layout{grid-template-columns:minmax(0,1fr)}
+  .issues-panel{
+    position:static;
+    max-height:none;
+  }
+  .issue-list{max-height:420px}
+  .mobile-note{display:block;margin-top:-4px;margin-bottom:8px}
+}
+@media(max-width:700px){
+  .topbar{align-items:flex-start}
+  .account-email{display:none}
+  .workspace{padding:15px 10px 28px}
+  .project-bar{align-items:stretch}
+  .project-select,.title-input{flex-basis:100%;max-width:none}
+  .manuscript-head{padding:14px 12px 0}
+  .paper-wrap{padding:12px}
+  .editor{min-height:62vh;max-height:none;padding:20px;font-size:16px}
+  .manuscript-footer{padding:12px}
+  .analysis-status{width:100%;margin-left:0}
+  .issues-panel{border-radius:18px}
+}
 </style>
 </head>
 <body>
-<header class="topbar"><a class="brand" href="/">Magnolia Margin</a><div class="account"><span>{{ email }}</span><button class="logout" onclick="logout()">Log out</button></div></header>
-<main class="page">
-<section class="panel">
-<form id="analyzeForm">
-<label class="label" for="fileInput">Upload a manuscript (.txt, .docx, .pdf)</label>
-<input class="file" type="file" id="fileInput" name="file" accept=".txt,.docx,application/pdf">
-<label class="label" for="richEditor">Or paste / write your text</label>
-<div class="editor" id="richEditor" contenteditable="true" data-placeholder="Start writing or paste your manuscript here…"></div>
-<input type="hidden" id="hiddenTextInput" name="text">
-<div class="actions"><button type="button" class="primary" onclick="submitAnalysis()">Analyze Manuscript</button><span class="status" id="saveStatus"></span></div>
-</form>
-</section>
-<div class="stats" id="stats"></div>
-<div class="tabs" id="tabContainer"><button class="active" onclick="openTab(this,'WordsTab')">Overused Words</button><button onclick="openTab(this,'PassiveTab')">Passive Voice</button><button onclick="openTab(this,'PacingTab')">Pacing Issues</button></div>
-<section class="tab" id="WordsTab"><div class="toolbar"><input id="wordSearch" placeholder="Search for a specific word…" oninput="renderWordsTable()"><select id="wordSort" onchange="renderWordsTable()"><option value="desc">Most Used First</option><option value="asc">Least Used First</option></select></div><table><thead><tr><th>Word</th><th>Count</th><th>Context Locations</th></tr></thead><tbody id="wordsBody"></tbody></table></section>
-<section class="tab" id="PassiveTab"><table><thead><tr><th>Sentence</th><th>Words</th></tr></thead><tbody id="passiveBody"></tbody></table></section>
-<section class="tab" id="PacingTab"><table><thead><tr><th>Sentence</th><th>Words</th><th>Issue Type</th></tr></thead><tbody id="pacingBody"></tbody></table></section>
+<header class="topbar">
+  <a class="brand" href="/">Magnolia Margin</a>
+  <div class="account">
+    <span class="account-email">{{ email }}</span>
+    <button class="logout" type="button" onclick="logout()">Log out</button>
+  </div>
+</header>
+
+<main class="workspace">
+  <div class="project-bar">
+    <select id="projectSelect" class="project-select" aria-label="Choose project"></select>
+    <input id="titleInput" class="title-input" maxlength="160" aria-label="Project title" value="Untitled manuscript">
+    <div class="project-actions">
+      <button class="small-button" type="button" onclick="createProject()">+ New project</button>
+      <button class="small-button" type="button" onclick="document.getElementById('fileInput').click()">Import manuscript</button>
+      <button class="danger" type="button" onclick="deleteProject()">Delete</button>
+      <input class="file-input" id="fileInput" type="file" accept=".txt,.docx,.pdf">
+    </div>
+  </div>
+
+  <div class="layout">
+    <section class="manuscript-panel" aria-label="Manuscript editor">
+      <div class="manuscript-head">
+        <div class="editor-toolbar" role="toolbar" aria-label="Formatting tools">
+          <span class="tool-label">Format</span>
+          <button class="tool" type="button" onclick="format('bold')" title="Bold"><strong>B</strong></button>
+          <button class="tool" type="button" onclick="format('italic')" title="Italic"><em>I</em></button>
+          <button class="tool" type="button" onclick="format('underline')" title="Underline"><u>U</u></button>
+          <button class="tool" type="button" onclick="formatBlock('h1')" title="Heading 1">H1</button>
+          <button class="tool" type="button" onclick="formatBlock('h2')" title="Heading 2">H2</button>
+          <button class="tool" type="button" onclick="formatBlock('blockquote')" title="Quote">“ ”</button>
+          <button class="tool" type="button" onclick="format('removeFormat')" title="Clear formatting">Clear</button>
+          <span class="analysis-status" id="analysisStatus">Ready</span>
+        </div>
+      </div>
+
+      <div class="paper-wrap">
+        <div
+          class="editor"
+          id="richEditor"
+          contenteditable="true"
+          spellcheck="true"
+          data-placeholder="Begin your manuscript here, or import a document…"
+          aria-label="Editable manuscript"
+        ></div>
+      </div>
+
+      <div class="manuscript-footer">
+        <div class="left-actions">
+          <button class="primary" type="button" onclick="analyzeProject()">Analyze manuscript</button>
+          <button class="ghost" type="button" onclick="saveProject()">Save now</button>
+        </div>
+        <div class="save-status" id="saveStatus">All changes are saved automatically.</div>
+        <div class="export-actions">
+          <a class="export" id="exportDocx" href="#">Export DOCX</a>
+          <a class="export" id="exportHtml" href="#">Export HTML</a>
+          <a class="export" id="exportTxt" href="#">Export TXT</a>
+        </div>
+      </div>
+    </section>
+
+    <aside class="issues-panel" aria-label="Editorial issues">
+      <div class="issues-head">
+        <div class="issues-title-row">
+          <h2 class="issues-title">Issues</h2>
+          <div class="issue-count" id="issueCount">0</div>
+        </div>
+        <div class="mobile-note">Click an issue to jump directly to its place in the manuscript.</div>
+        <div class="issue-tabs">
+          <button class="issue-tab active" type="button" onclick="openIssueView('words', this)">Words<span id="wordsCount">0</span></button>
+          <button class="issue-tab" type="button" onclick="openIssueView('passive', this)">Passive<span id="passiveCount">0</span></button>
+          <button class="issue-tab" type="button" onclick="openIssueView('pacing', this)">Pacing<span id="pacingCount">0</span></button>
+        </div>
+      </div>
+
+      <div class="issue-list">
+        <div class="issue-view active" id="wordsView"></div>
+        <div class="issue-view" id="passiveView"></div>
+        <div class="issue-view" id="pacingView"></div>
+      </div>
+    </aside>
+  </div>
 </main>
+
+<div class="toast" id="toast" role="status"></div>
+
 <script>
-const editor=document.getElementById('richEditor'),status=document.getElementById('saveStatus');let saveTimer,wordData=[],passiveData=[],pacingData=[];
-async function loadCloudProgress(){try{const r=await fetch('/load');if(r.status===401){location.href='/login/';return}const d=await r.json();if(d.content)editor.innerHTML=d.content}catch(e){console.error(e)}}
-editor.addEventListener('input',()=>{clearTimeout(saveTimer);status.textContent='Saving…';saveTimer=setTimeout(async()=>{try{const r=await fetch('/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({content:editor.innerHTML})});status.textContent=r.ok?'Saved':'Save failed';}catch(e){status.textContent='Save failed';}},900)});
-async function logout(){await fetch('/logout',{method:'POST'});location.href='/';}
-async function submitAnalysis(){document.getElementById('hiddenTextInput').value=editor.innerText;const fd=new FormData(document.getElementById('analyzeForm'));document.getElementById('stats').innerHTML='<strong>Analyzing…</strong>';try{const r=await fetch('/analyze',{method:'POST',body:fd});const d=await r.json();if(!r.ok){document.getElementById('stats').textContent=d.error||'Analysis failed';return}wordData=d.words||[];passiveData=d.passive||[];pacingData=d.pacing||[];document.getElementById('stats').innerHTML='<strong>Analysis complete.</strong>';document.getElementById('tabContainer').style.display='block';document.querySelectorAll('.tab').forEach(x=>x.style.display='none');document.getElementById('WordsTab').style.display='block';renderWordsTable()}catch(e){document.getElementById('stats').textContent='Analysis error or backend disconnected.'}}
-function renderWordsTable(){const q=document.getElementById('wordSearch').value.toLowerCase(),sort=document.getElementById('wordSort').value,t=document.getElementById('wordsBody');let rows=wordData.filter(x=>x.word.toLowerCase().includes(q)).sort((a,b)=>sort==='desc'?b.count-a.count:a.count-b.count);t.innerHTML=rows.map(x=>'<tr><td><strong>'+x.word+'</strong></td><td>'+x.count+'</td><td><ul>'+x.contexts.map(c=>'<li>'+c+'</li>').join('')+'</ul></td></tr>').join('')}
-function openTab(btn,id){document.querySelectorAll('.tab').forEach(x=>x.style.display='none');document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active'));document.getElementById(id).style.display='block';btn.classList.add('active')}
-loadCloudProgress();
+const editor = document.getElementById('richEditor');
+const projectSelect = document.getElementById('projectSelect');
+const titleInput = document.getElementById('titleInput');
+const saveStatus = document.getElementById('saveStatus');
+const analysisStatus = document.getElementById('analysisStatus');
+const fileInput = document.getElementById('fileInput');
+const toast = document.getElementById('toast');
+
+let projects = [];
+let activeProjectId = null;
+let saveTimer = null;
+let currentAnalysis = {words: [], passive: [], pacing: [], flagged_count: 0};
+let wordCursors = {};
+let toastTimer = null;
+
+function showToast(message) {
+  toast.textContent = message;
+  toast.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function(){ toast.classList.remove('show'); }, 2800);
+}
+
+function escapeHtml(value) {
+  return String(value || '').replace(/[&<>"']/g, function(ch){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[ch];
+  });
+}
+
+function format(command) {
+  document.execCommand(command, false, null);
+  editor.focus();
+  scheduleSave();
+}
+
+function formatBlock(tag) {
+  document.execCommand('formatBlock', false, '<' + tag + '>');
+  editor.focus();
+  scheduleSave();
+}
+
+function renderProjectSelect() {
+  projectSelect.innerHTML = projects.map(function(project){
+    return '<option value="' + project.id + '">' + escapeHtml(project.title) + '</option>';
+  }).join('');
+  if (activeProjectId) projectSelect.value = String(activeProjectId);
+}
+
+async function loadProjects() {
+  const response = await fetch('/api/projects');
+  if (!response.ok) {
+    location.href = '/login/';
+    return;
+  }
+  const data = await response.json();
+  projects = data.projects || [];
+  if (!projects.length) {
+    const created = await fetch('/api/projects', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({title:'Untitled manuscript'})
+    });
+    const payload = await created.json();
+    projects = [payload.project];
+  }
+  renderProjectSelect();
+
+  const stored = localStorage.getItem('mm.activeProjectId');
+  const preferred = projects.find(function(project){ return String(project.id) === stored; });
+  await loadProject(preferred ? preferred.id : projects[0].id);
+}
+
+async function loadProject(projectId) {
+  activeProjectId = Number(projectId);
+  localStorage.setItem('mm.activeProjectId', String(activeProjectId));
+  renderProjectSelect();
+
+  const response = await fetch('/api/projects/' + activeProjectId);
+  if (!response.ok) {
+    showToast('This project could not be opened.');
+    return;
+  }
+  const data = await response.json();
+  const project = data.project;
+  titleInput.value = project.title || 'Untitled manuscript';
+  editor.innerHTML = project.content || '';
+  currentAnalysis = project.analysis || {words: [], passive: [], pacing: [], flagged_count: 0};
+  wordCursors = {};
+  updateExportLinks();
+  renderIssues();
+  saveStatus.textContent = 'Saved project';
+  analysisStatus.textContent = project.analysis && Object.keys(project.analysis).length ? 'Analysis saved' : 'Ready';
+}
+
+projectSelect.addEventListener('change', function(){ loadProject(this.value); });
+
+titleInput.addEventListener('input', function(){
+  scheduleSave();
+});
+
+fileInput.addEventListener('change', async function(){
+  if (!fileInput.files.length) return;
+  const formData = new FormData();
+  formData.append('file', fileInput.files[0]);
+
+  saveStatus.textContent = 'Importing manuscript…';
+  const response = await fetch('/api/projects/import', {method:'POST', body:formData});
+  const data = await response.json();
+  fileInput.value = '';
+
+  if (!response.ok) {
+    showToast(data.error || 'Import failed.');
+    saveStatus.textContent = 'Import failed';
+    return;
+  }
+
+  projects.unshift(data.project);
+  activeProjectId = data.project.id;
+  localStorage.setItem('mm.activeProjectId', String(activeProjectId));
+  renderProjectSelect();
+  await loadProject(activeProjectId);
+  showToast('Imported into a new project. Your formatting is ready to edit.');
+});
+
+async function createProject() {
+  const title = window.prompt('Project name', 'Untitled manuscript');
+  if (title === null) return;
+
+  const response = await fetch('/api/projects', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({title:title.trim() || 'Untitled manuscript'})
+  });
+  const data = await response.json();
+
+  if (!data.project) {
+    showToast(data.error || 'Could not create project.');
+    return;
+  }
+  projects.unshift(data.project);
+  renderProjectSelect();
+  await loadProject(data.project.id);
+  showToast('New project created.');
+}
+
+async function deleteProject() {
+  if (!activeProjectId) return;
+  if (!window.confirm('Delete this manuscript project? This cannot be undone.')) return;
+
+  const response = await fetch('/api/projects/' + activeProjectId, {method:'DELETE'});
+  const data = await response.json();
+  if (!response.ok) {
+    showToast(data.error || 'Could not delete project.');
+    return;
+  }
+
+  projects = projects.filter(function(project){ return project.id !== activeProjectId; });
+  const next = projects[0];
+  renderProjectSelect();
+  await loadProject(next.id);
+  showToast('Project deleted.');
+}
+
+function scheduleSave() {
+  clearTimeout(saveTimer);
+  saveStatus.textContent = 'Unsaved changes…';
+  saveTimer = setTimeout(function(){ saveProject(); }, 1100);
+}
+
+async function saveProject(keepalive) {
+  clearTimeout(saveTimer);
+  if (!activeProjectId) return;
+
+  saveStatus.textContent = 'Saving…';
+  const payload = JSON.stringify({
+    title: titleInput.value.trim() || 'Untitled manuscript',
+    content: editor.innerHTML,
+    analysis: currentAnalysis
+  });
+
+  try {
+    const response = await fetch('/api/projects/' + activeProjectId, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:payload,
+      keepalive:!!keepalive
+    });
+    if (!response.ok) throw new Error('Save failed');
+    saveStatus.textContent = 'Saved just now';
+    const selected = projects.find(function(project){ return project.id === activeProjectId; });
+    if (selected) selected.title = titleInput.value.trim() || 'Untitled manuscript';
+    renderProjectSelect();
+    projectSelect.value = String(activeProjectId);
+  } catch (error) {
+    saveStatus.textContent = 'Save failed — retrying on your next edit';
+  }
+}
+
+document.addEventListener('visibilitychange', function(){
+  if (document.visibilityState === 'hidden') saveProject(true);
+});
+
+window.addEventListener('beforeunload', function(){
+  if (activeProjectId) saveProject(true);
+});
+
+editor.addEventListener('input', function(){
+  scheduleSave();
+  analysisStatus.textContent = 'Needs analysis';
+});
+
+function renderIssues() {
+  const words = currentAnalysis.words || [];
+  const passive = currentAnalysis.passive || [];
+  const pacing = currentAnalysis.pacing || [];
+  const total = Number(currentAnalysis.flagged_count || 0);
+
+  document.getElementById('issueCount').textContent = total;
+  document.getElementById('wordsCount').textContent = words.length;
+  document.getElementById('passiveCount').textContent = passive.length;
+  document.getElementById('pacingCount').textContent = pacing.length;
+
+  const wordsView = document.getElementById('wordsView');
+  const passiveView = document.getElementById('passiveView');
+  const pacingView = document.getElementById('pacingView');
+
+  wordsView.innerHTML = words.length ? words.map(function(item){
+    const uses = item.occurrences ? item.occurrences.length : item.count;
+    const key = encodeURIComponent(item.word);
+    return '<button class="issue-card" type="button" onclick="jumpToWord(' + JSON.stringify(item.word) + ')">' +
+      '<div class="issue-main"><span class="issue-word">' + escapeHtml(item.word) + '</span><span class="issue-meta">' + uses + ' uses</span></div>' +
+      '<div class="issue-copy">' + escapeHtml((item.contexts && item.contexts[0]) || 'Repeated word detected.') + '</div>' +
+      '<div class="issue-progress" id="word-progress-' + key + '">Click to visit use 1</div>' +
+    '</button>';
+  }).join('') : emptyIssue('No overused words have been flagged yet.');
+
+  passiveView.innerHTML = passive.length ? passive.map(function(item, index){
+    return '<button class="issue-card" type="button" onclick="jumpToSnippet(' + index + ', true)">' +
+      '<div class="issue-main"><span class="issue-word">Passive voice</span><span class="issue-meta">Issue ' + (index + 1) + '</span></div>' +
+      '<div class="issue-copy">' + escapeHtml(item.sentence) + '</div>' +
+      '<div class="issue-progress">Click to jump to this sentence</div>' +
+    '</button>';
+  }).join('') : emptyIssue('No possible passive constructions have been flagged yet.');
+
+  pacingView.innerHTML = pacing.length ? pacing.map(function(item, index){
+    return '<button class="issue-card" type="button" onclick="jumpToSnippet(' + index + ', false)">' +
+      '<div class="issue-main"><span class="issue-word">' + escapeHtml(item.reason || 'Pacing') + '</span><span class="issue-meta">' + Number(item.word_count || 0) + ' words</span></div>' +
+      '<div class="issue-copy">' + escapeHtml(item.sentence) + '</div>' +
+      '<div class="issue-progress">Click to jump to this sentence</div>' +
+    '</button>';
+  }).join('') : emptyIssue('No pacing issues have been flagged yet.');
+}
+
+function emptyIssue(message) {
+  return '<div class="issue-empty">' + escapeHtml(message) + '<br><br>Run <strong>Analyze manuscript</strong> after editing to refresh the checks.</div>';
+}
+
+function openIssueView(viewName, button) {
+  document.querySelectorAll('.issue-view').forEach(function(view){ view.classList.remove('active'); });
+  document.querySelectorAll('.issue-tab').forEach(function(tab){ tab.classList.remove('active'); });
+  document.getElementById(viewName + 'View').classList.add('active');
+  button.classList.add('active');
+}
+
+function buildTextIndex() {
+  const walker = document.createTreeWalker(editor, NodeFilter.SHOW_TEXT);
+  const nodes = [];
+  let text = '';
+  let previousBlock = null;
+  let node;
+
+  while ((node = walker.nextNode())) {
+    if (!node.nodeValue) continue;
+    const block = node.parentElement ? node.parentElement.closest('p,h1,h2,h3,h4,h5,h6,blockquote,li,div') : null;
+    if (text && block && previousBlock && block !== previousBlock) text += '\n';
+    if (!previousBlock && block && text) text += '\n';
+
+    const start = text.length;
+    text += node.nodeValue;
+    const end = text.length;
+    nodes.push({node:node,start:start,end:end});
+    previousBlock = block;
+  }
+  return {text:text,nodes:nodes};
+}
+
+function rangeForOffsets(index, start, end) {
+  let startPoint = null;
+  let endPoint = null;
+
+  for (const item of index.nodes) {
+    if (!startPoint && start >= item.start && start <= item.end) {
+      startPoint = {node:item.node, offset:Math.max(0, start - item.start)};
+    }
+    if (end >= item.start && end <= item.end) {
+      endPoint = {node:item.node, offset:Math.max(0, end - item.start)};
+      break;
+    }
+  }
+
+  if (!startPoint || !endPoint) return null;
+  const range = document.createRange();
+  range.setStart(startPoint.node, Math.min(startPoint.offset, startPoint.node.nodeValue.length));
+  range.setEnd(endPoint.node, Math.min(endPoint.offset, endPoint.node.nodeValue.length));
+  return range;
+}
+
+function selectAndScroll(range) {
+  if (!range) {
+    showToast('I could not locate that passage in the current manuscript.');
+    return;
+  }
+
+  const selection = window.getSelection();
+  selection.removeAllRanges();
+  selection.addRange(range);
+
+  const element = range.startContainer.parentElement;
+  if (element) element.scrollIntoView({behavior:'smooth',block:'center',inline:'nearest'});
+  editor.focus({preventScroll:true});
+}
+
+function jumpToWord(word) {
+  const index = buildTextIndex();
+  const safeWord = String(word || '').replace(/[.*+?^()|[\\\]{}$]/g, '\\$&');
+  const regex = new RegExp('\\b' + safeWord + '\\b', 'gi');
+  const matches = [];
+  let match;
+
+  while ((match = regex.exec(index.text)) !== null) {
+    matches.push({start:match.index,end:match.index + match[0].length});
+    if (matches.length > 1000) break;
+  }
+
+  if (!matches.length) {
+    showToast('That word is no longer present. Run analysis again.');
+    return;
+  }
+
+  const cursor = wordCursors[word] || 0;
+  const chosen = matches[cursor % matches.length];
+  wordCursors[word] = (cursor + 1) % matches.length;
+
+  const key = encodeURIComponent(word);
+  const progress = document.getElementById('word-progress-' + key);
+  if (progress) progress.textContent = 'Visiting use ' + ((cursor % matches.length) + 1) + ' of ' + matches.length;
+
+  selectAndScroll(rangeForOffsets(index, chosen.start, chosen.end));
+}
+
+function jumpToSnippet(indexNumber, passive) {
+  const list = passive ? (currentAnalysis.passive || []) : (currentAnalysis.pacing || []);
+  const issue = list[indexNumber];
+  if (!issue) return;
+
+  const index = buildTextIndex();
+  let start = index.text.indexOf(issue.sentence);
+  let end = start >= 0 ? start + issue.sentence.length : -1;
+
+  if (start < 0) {
+    const compactNeedle = issue.sentence.replace(/\s+/g, ' ').trim().toLowerCase();
+    const compactText = index.text.replace(/\s+/g, ' ').trim().toLowerCase();
+    const compactStart = compactText.indexOf(compactNeedle);
+    if (compactStart >= 0) {
+      start = compactStart;
+      end = compactStart + compactNeedle.length;
+    }
+  }
+
+  if (start < 0) {
+    showToast('That sentence is no longer present. Run analysis again.');
+    return;
+  }
+
+  selectAndScroll(rangeForOffsets(index, start, end));
+}
+
+async function analyzeProject() {
+  if (!activeProjectId) return;
+  analysisStatus.textContent = 'Analyzing…';
+  saveStatus.textContent = 'Refreshing editorial checks…';
+
+  const response = await fetch('/api/projects/' + activeProjectId + '/analyze', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({text:editor.innerText})
+  });
+  const data = await response.json();
+
+  if (!response.ok) {
+    showToast(data.error || 'Analysis failed.');
+    analysisStatus.textContent = 'Analysis failed';
+    saveStatus.textContent = 'Please try again';
+    return;
+  }
+
+  currentAnalysis = data;
+  wordCursors = {};
+  renderIssues();
+  analysisStatus.textContent = 'Analysis saved';
+  saveStatus.textContent = 'Analysis updated';
+  showToast('Editorial checks refreshed.');
+}
+
+function updateExportLinks() {
+  if (!activeProjectId) return;
+  document.getElementById('exportDocx').href = '/api/projects/' + activeProjectId + '/export/docx';
+  document.getElementById('exportHtml').href = '/api/projects/' + activeProjectId + '/export/html';
+  document.getElementById('exportTxt').href = '/api/projects/' + activeProjectId + '/export/txt';
+}
+
+async function logout() {
+  await fetch('/logout', {method:'POST'});
+  localStorage.removeItem('mm.activeProjectId');
+  location.href = '/';
+}
+
+loadProjects();
 </script>
 </body>
 </html>
