@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manuscript Analysis Dashboard</title>
+    <title>Magnolia Margin - Manuscript Analyzer</title>
     <link href="https://fonts.googleapis.com/css2?family=Alice&display=swap" rel="stylesheet">
     <style>
         /* --- Color Palette --- */
@@ -16,297 +16,111 @@
             --eerie-black: #171411;
         }
 
-        /* --- Slide-Show Layout & Snap Scrolling --- */
-        html {
-            scroll-behavior: smooth;
-            scroll-snap-type: y mandatory;
-            height: 100vh;
-        }
-        body {
-            margin: 0;
-            padding: 0;
-            font-family: system-ui, sans-serif;
-            color: var(--eerie-black);
-            background-color: var(--pearl);
-            line-height: 1.6;
-            height: 100vh;
-            overflow-y: scroll;
-            overflow-x: hidden;
-        }
+        html { scroll-behavior: smooth; scroll-snap-type: y mandatory; height: 100vh; }
+        body { margin: 0; padding: 0; font-family: system-ui, sans-serif; color: var(--eerie-black); background-color: var(--pearl); line-height: 1.6; height: 100vh; overflow-y: scroll; overflow-x: hidden; }
         * { box-sizing: border-box; }
 
-        .slide-section {
-            height: 100vh;
-            width: 100vw;
-            scroll-snap-align: start;
-            scroll-snap-stop: always;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            position: relative;
-            padding: 40px 20px;
-            overflow-y: auto;
-        }
+        .slide-section { height: 100vh; width: 100vw; scroll-snap-align: start; scroll-snap-stop: always; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative; padding: 40px 20px; overflow-y: auto; }
 
-        /* --- Slide 1: Welcome Screen (Split Code Layout) --- */
-        #welcome {
-            background-color: var(--pearl);
-            padding: 0;
-            flex-direction: row;
-            overflow: hidden;
-        }
+        /* --- Top Right Account Dropdown --- */
+        .account-dropdown { position: absolute; top: 20px; right: 30px; display: none; z-index: 100; }
+        .dropdown-btn { background: var(--old-burgundy); color: var(--pearl); border: none; padding: 10px 20px; border-radius: 30px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 8px; }
+        .dropdown-content { display: none; position: absolute; right: 0; background-color: var(--platinum); min-width: 160px; box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.1); border-radius: 8px; overflow: hidden; margin-top: 10px; }
+        .dropdown-content a { color: var(--eerie-black); padding: 12px 16px; text-decoration: none; display: block; font-size: 14px; cursor: pointer; }
+        .dropdown-content a:hover { background-color: var(--tuscany); color: var(--old-burgundy); }
+        .account-dropdown:hover .dropdown-content { display: block; }
 
-        .welcome-text {
-            width: 66.66%;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            padding: 40px;
-            text-align: center;
-            position: relative;
-        }
-        .welcome-text h1 {
-            font-family: 'Bogart', Georgia, serif;
-            font-size: 6.5rem;
-            color: var(--eerie-black);
-            margin: 0 0 10px 0;
-            font-weight: normal;
-        }
-        .welcome-text h2 {
-            font-family: 'Alice', serif;
-            font-size: 1.2rem;
-            letter-spacing: 3px;
-            text-transform: uppercase;
-            color: var(--eerie-black);
-            margin-bottom: 40px;
-            font-weight: normal;
-        }
-        .welcome-text p {
-            font-family: 'Alice', serif;
-            font-size: 1.4rem;
-            max-width: 600px;
-            color: var(--eerie-black);
-            line-height: 1.8;
-        }
+        /* --- Slide 1: Welcome Screen --- */
+        #welcome { background-color: var(--pearl); padding: 0; flex-direction: row; overflow: hidden; }
+        .welcome-text { width: 50%; height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 60px; text-align: center; position: relative; }
 
-        .welcome-image {
-            width: 33.33%;
-            height: 100vh;
-            background-image: url('/static/Marginalia.png');
-            background-size: cover;
-            background-position: center;
-        }
+        .welcome-subtitle { font-family: 'Alice', serif; font-size: 1rem; letter-spacing: 3px; text-transform: uppercase; color: var(--eerie-black); margin-bottom: 5px; }
+        .welcome-title { font-family: 'Bogart', Georgia, serif; font-size: 5.5rem; color: var(--eerie-black); margin: 0 0 30px 0; font-weight: normal; }
+        .welcome-paragraph { font-family: 'Alice', serif; font-size: 1.25rem; max-width: 550px; color: var(--eerie-black); line-height: 1.8; margin-bottom: 50px; }
+        .welcome-divider { width: 100%; max-width: 550px; border-top: 1px dashed var(--tuscany); margin-bottom: 50px; }
 
-        .down-arrow {
-            position: absolute;
-            bottom: 30px;
-            font-size: 2.5rem;
-            color: var(--eerie-black);
-            background: rgba(247, 245, 242, 0.7);
-            border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            text-decoration: none;
-            animation: bounce 2s infinite;
-            transition: 0.3s;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-        .down-arrow:hover { background: var(--pearl); color: var(--old-burgundy); }
-        @keyframes bounce {
-            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
-            40% { transform: translateY(-15px); }
-            60% { transform: translateY(-7px); }
-        }
+        .start-writing-btn { display: flex; flex-direction: column; align-items: center; text-decoration: none; color: var(--eerie-black); font-family: 'Alice', serif; font-size: 1.2rem; font-weight: bold; transition: transform 0.2s; cursor: pointer; }
+        .start-writing-btn:hover { transform: translateY(-5px); }
+        .icon-circle { background-color: var(--raw-umber); width: 60px; height: 60px; border-radius: 50%; display: flex; justify-content: center; align-items: center; margin-bottom: 15px; }
+        .icon-circle svg { width: 30px; height: 30px; fill: var(--pearl); }
 
-        /* --- Slide 2: Login Section --- */
-        #login-section {
-            background-color: var(--pearl);
-        }
+        .welcome-image { width: 50%; height: 100vh; background-image: url('/static/marginalia.png'); background-size: cover; background-position: center; border-left: 2px solid var(--tuscany); }
 
-        .login-card {
-            background-color: var(--platinum);
-            padding: 50px 40px;
-            border-radius: 24px;
-            text-align: center;
-            width: 100%;
-            max-width: 400px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
-        }
-
-        .login-card h2 {
-            font-family: 'Alice', serif;
-            color: var(--old-burgundy);
-            font-size: 1.8rem;
-            margin-top: 0;
-            margin-bottom: 30px;
-        }
-
-        .auth-btn {
-            display: block;
-            width: 100%;
-            padding: 14px;
-            margin-bottom: 15px;
-            border-radius: 30px;
-            border: none;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-
-        .btn-google, .btn-apple {
-            background-color: var(--tuscany);
-            color: var(--old-burgundy);
-        }
-
-        .btn-google:hover, .btn-apple:hover {
-            background-color: #b09987;
-        }
-
-        .divider {
-            display: flex;
-            align-items: center;
-            text-align: center;
-            color: var(--raw-umber);
-            margin: 20px 0;
-            font-size: 12px;
-            letter-spacing: 1px;
-        }
-
-        .divider::before, .divider::after {
-            content: '';
-            flex: 1;
-            border-bottom: 1px solid var(--tuscany);
-        }
-
+        /* --- Slide 2: Login / Auth Screen --- */
+        #login-section { background-color: var(--pearl); display: none; }
+        .login-card { background-color: var(--platinum); padding: 50px 40px; border-radius: 24px; text-align: center; width: 100%; max-width: 420px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
+        .login-card h2 { font-family: 'Alice', serif; color: var(--old-burgundy); font-size: 1.8rem; margin-top: 0; margin-bottom: 30px; }
+        .auth-btn { display: block; width: 100%; padding: 14px; margin-bottom: 15px; border-radius: 30px; border: none; font-size: 16px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+        .btn-google, .btn-apple { background-color: var(--tuscany); color: var(--old-burgundy); }
+        .btn-google:hover, .btn-apple:hover { background-color: #b09987; }
+        .divider { display: flex; align-items: center; text-align: center; color: var(--raw-umber); margin: 20px 0; font-size: 12px; letter-spacing: 1px; }
+        .divider::before, .divider::after { content: ''; flex: 1; border-bottom: 1px solid var(--tuscany); }
         .divider:not(:empty)::before { margin-right: .25em; }
         .divider:not(:empty)::after { margin-left: .25em; }
-
-        .email-input {
-            width: 100%;
-            padding: 14px 20px;
-            border-radius: 30px;
-            border: none;
-            background-color: var(--raw-umber);
-            color: var(--pearl);
-            font-size: 16px;
-            box-sizing: border-box;
-            margin-bottom: 15px;
-        }
-
-        .email-input::placeholder { color: var(--platinum); }
-
-        .btn-continue {
-            background-color: var(--tuscany);
-            color: var(--old-burgundy);
-            padding: 10px 30px;
-            border-radius: 20px;
-            border: none;
-            font-weight: bold;
-            cursor: pointer;
-        }
+        .auth-input { width: 100%; padding: 14px 20px; border-radius: 30px; border: none; background-color: var(--raw-umber); color: var(--pearl); font-size: 16px; box-sizing: border-box; margin-bottom: 15px; }
+        .auth-input::placeholder { color: var(--platinum); }
+        .btn-continue { background-color: var(--tuscany); color: var(--old-burgundy); padding: 12px 30px; border-radius: 30px; border: none; font-weight: bold; cursor: pointer; width: 100%; font-size: 16px; margin-top: 10px;}
+        .auth-toggle { font-size: 13px; color: var(--raw-umber); margin-top: 20px; cursor: pointer; text-decoration: underline; }
 
         /* --- Slide 3: Main Editor --- */
-        #editor {
-            background-color: var(--pearl);
-            justify-content: flex-start;
-            padding-top: 60px;
-            display: none; /* Hidden until login */
-        }
+        #editor { background-color: var(--pearl); justify-content: flex-start; padding-top: 80px; display: none; }
         .container { max-width: 1100px; width: 100%; }
-
-        .control-panel {
-            background: var(--platinum);
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            border: 1px solid var(--tuscany);
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-        }
-
-        #richEditor {
-            width: 100%; min-height: 150px; padding: 15px; margin-top: 5px;
-            border-radius: 4px; border: 1px solid var(--tuscany);
-            background-color: #fff; overflow-y: auto; outline: none;
-            color: var(--eerie-black); margin-bottom: 10px;
-        }
-
-        input[type="file"] {
-            width: 100%; padding: 8px; margin-top: 5px; margin-bottom: 10px;
-            border-radius: 4px; border: 1px solid var(--tuscany); background-color: #fff;
-        }
-
-        button.btn-primary {
-            background: var(--raw-umber); color: var(--pearl); border: none;
-            padding: 12px 24px; border-radius: 4px; cursor: pointer; font-size: 15px;
-            font-weight: bold; transition: background 0.3s;
-        }
+        .control-panel { background: var(--platinum); padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid var(--tuscany); box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        #richEditor { width: 100%; min-height: 250px; padding: 15px; margin-top: 5px; border-radius: 4px; border: 1px solid var(--tuscany); background-color: #fff; overflow-y: auto; outline: none; color: var(--eerie-black); margin-bottom: 10px; font-size: 16px;}
+        input[type="file"] { width: 100%; padding: 8px; margin-top: 5px; margin-bottom: 10px; border-radius: 4px; border: 1px solid var(--tuscany); background-color: #fff; }
+        button.btn-primary { background: var(--raw-umber); color: var(--pearl); border: none; padding: 12px 24px; border-radius: 4px; cursor: pointer; font-size: 15px; font-weight: bold; transition: background 0.3s; }
         button.btn-primary:hover { background: var(--old-burgundy); }
 
-        /* Tabs UI */
         .tab { overflow: hidden; border-bottom: 2px solid var(--tuscany); margin-top: 20px; display: none; }
-        .tab button {
-            background-color: inherit; float: left; border: none; outline: none;
-            cursor: pointer; padding: 12px 20px; transition: 0.3s; font-size: 15px;
-            font-weight: bold; color: var(--raw-umber);
-        }
+        .tab button { background-color: inherit; float: left; border: none; outline: none; cursor: pointer; padding: 12px 20px; transition: 0.3s; font-size: 15px; font-weight: bold; color: var(--raw-umber); }
         .tab button:hover { background-color: var(--platinum); }
         .tab button.active { background-color: var(--raw-umber); color: var(--pearl); border-radius: 6px 6px 0 0; }
         .tab-content { display: none; padding: 15px 0; border-top: none; overflow-x: auto; }
-
-        /* Tables & Data Area */
         table { width: 100%; border-collapse: collapse; margin-top: 10px; background-color: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.05); min-width: 600px; }
         th, td { border: 1px solid var(--tuscany); padding: 12px; text-align: left; vertical-align: top; }
         th { background: var(--platinum); color: var(--eerie-black); font-weight: bold; }
         .toolbar { display: flex; gap: 15px; margin-bottom: 15px; align-items: center; }
         .toolbar input, .toolbar select { padding: 8px; border: 1px solid var(--tuscany); border-radius: 4px; font-size: 14px; background-color: #fff; }
-        .context-list { margin: 0; padding-left: 20px; font-size: 14px; color: var(--old-burgundy); max-height: 150px; overflow-y: auto; }
-        .context-list li { margin-bottom: 6px; }
 
         /* --- Slide 4: About Me Footer --- */
-        #about {
-            background-color: var(--eerie-black);
-            color: var(--pearl);
-            text-align: center;
-        }
+        #about { background-color: var(--eerie-black); color: var(--pearl); text-align: center; display: none; }
         #about h2 { color: var(--tuscany); margin-bottom: 10px; font-size: 2.5rem; }
         #about p { font-size: 1.1rem; color: var(--platinum); max-width: 500px; margin: 10px auto 20px auto; }
-        #about a {
-            color: var(--tuscany); text-decoration: none; font-weight: bold;
-            transition: 0.3s; display: inline-block;
-        }
+        #about a { color: var(--tuscany); text-decoration: none; font-weight: bold; transition: 0.3s; display: inline-block; }
         #about a:hover { color: var(--pearl); transform: scale(1.1); }
 
-        /* --- Responsive Design --- */
-        @media (max-width: 768px) {
-            #welcome { flex-direction: column; }
-            .welcome-text { width: 100%; height: 65vh; padding: 20px; }
-            .welcome-image { width: 100%; height: 35vh; }
-            .welcome-text h1 { font-size: 3.5rem; }
-            .welcome-text h2 { font-size: 0.9rem; margin-bottom: 20px; }
-            .welcome-text p { font-size: 1.1rem; }
-            .toolbar { flex-direction: column; align-items: stretch; }
-            .tab button { padding: 10px; font-size: 13px; width: 33.33%; text-align: center; }
-            .slide-section { padding: 20px 10px; }
-            #editor { padding-top: 40px; }
-        }
     </style>
 </head>
 <body>
 
+    <!-- Editor Account Dropdown -->
+    <div class="account-dropdown" id="accountMenu">
+        <button class="dropdown-btn">
+            <span id="userDisplayName">Account</span> ▼
+        </button>
+        <div class="dropdown-content">
+            <a onclick="alert('Settings modal coming soon!')">Settings</a>
+            <a onclick="handleLogout()">Log Out</a>
+        </div>
+    </div>
+
     <!-- Slide 1: Welcome Screen -->
     <section id="welcome" class="slide-section">
         <div class="welcome-text">
-            <h1>Marginalia</h1>
-            <h2>A Manuscript Analyzer & Editor</h2>
-            <p>A tool built for writers to freely edit their manuscripts by checking for overused words, passive voice constructions, and structural pacing issues.</p>
-            <a href="#login-section" id="welcomeArrow" class="down-arrow" aria-label="Slide down to login">↓</a>
+            <div class="welcome-subtitle">Manuscript Analyser & Editor</div>
+            <h1 class="welcome-title">Magnolia Margin</h1>
+            <p class="welcome-paragraph">In a digital landscape increasingly saturated with generative AI and machine-made prose, Magnolia Margin stands as a sanctuary for authentic human storytelling. We believe that true art carries a weight, voice, and nuance that can only originate from human hands and lived experiences.</p>
+            <div class="welcome-divider"></div>
+
+            <a onclick="goToLogin()" class="start-writing-btn">
+                <div class="icon-circle">
+                    <!-- Right Arrow SVG -->
+                    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+                <span>Start Writing Free</span>
+            </a>
         </div>
         <div class="welcome-image"></div>
     </section>
@@ -314,21 +128,26 @@
     <!-- Slide 2: Login / Auth Screen -->
     <section id="login-section" class="slide-section">
         <div class="login-card">
-            <h2>Sign in or create your writing room</h2>
+            <h2 id="authTitle">Sign in to your writing room</h2>
 
-            <button class="auth-btn btn-google" onclick="handleLogin(event)">G Continue with Google</button>
-            <button class="auth-btn btn-apple" onclick="handleLogin(event)"> Continue with Apple</button>
+            <button class="auth-btn btn-google" onclick="thirdPartyLogin('Google')">G Continue with Google</button>
+            <button class="auth-btn btn-apple" onclick="thirdPartyLogin('Apple')"> Continue with Apple</button>
 
             <div class="divider">OR</div>
 
-            <form onsubmit="handleLogin(event)">
-                <input type="email" class="email-input" placeholder="... your@email.com" required>
-                <button type="submit" class="btn-continue">continue</button>
+            <form onsubmit="handleAuth(event)">
+                <input type="hidden" id="authAction" value="login">
+                <input type="email" id="emailInput" class="auth-input" placeholder="... your@email.com" required>
+                <input type="password" id="passwordInput" class="auth-input" placeholder="... password" required>
+                <button type="submit" class="btn-continue" id="authSubmitBtn">Sign In</button>
+                <div id="authError" style="color: red; font-size: 13px; margin-top: 10px;"></div>
             </form>
+
+            <div class="auth-toggle" onclick="toggleAuthMode()" id="authToggleText">Don't have an account? Create one here.</div>
         </div>
     </section>
 
-    <!-- Slide 3: Main Editor Application (Hidden until login) -->
+    <!-- Slide 3: Main Editor -->
     <section id="editor" class="slide-section">
         <div class="container">
             <div class="control-panel">
@@ -336,8 +155,8 @@
                     <label for="fileInput"><strong style="color: var(--old-burgundy);">1. Upload a File (.txt, .docx, .pdf)</strong></label>
                     <input type="file" id="fileInput" name="file" accept=".txt, .docx, application/pdf">
 
-                    <label for="richEditor"><strong style="color: var(--old-burgundy);">OR Paste Text (Retains Formatting)</strong></label>
-                    <div id="richEditor" contenteditable="true" placeholder="Paste your manuscript here..."></div>
+                    <label for="richEditor"><strong style="color: var(--old-burgundy);">OR Paste / Write Text</strong></label>
+                    <div id="richEditor" contenteditable="true" placeholder="Start writing or paste your manuscript here..."></div>
                     <span id="saveStatus" style="font-size: 12px; color: var(--raw-umber); float: right; margin-bottom: 15px;"></span>
                     <input type="hidden" id="hiddenTextInput" name="text">
 
@@ -347,7 +166,6 @@
 
             <div id="stats" style="margin-bottom: 5px; font-size: 16px; color: var(--old-burgundy);"></div>
 
-            <!-- Tabs Layout -->
             <div class="tab" id="tabContainer">
               <button class="tab-links active" onclick="openTab(this, 'WordsTab')">Overused Words</button>
               <button class="tab-links" onclick="openTab(this, 'PassiveTab')">Passive Voice</button>
@@ -356,43 +174,34 @@
 
             <div id="WordsTab" class="tab-content" style="display:block;">
                 <div class="toolbar">
-                    <input type="text" id="wordSearch" aria-label="Search for a specific word" placeholder="Search for a specific word..." onkeyup="renderWordsTable()" style="flex-grow: 1;">
-                    <select id="wordSort" aria-label="Sort words" onchange="renderWordsTable()">
+                    <input type="text" id="wordSearch" placeholder="Search for a specific word..." onkeyup="renderWordsTable()" style="flex-grow: 1;">
+                    <select id="wordSort" onchange="renderWordsTable()">
                         <option value="desc">Sort: Most Used First</option>
                         <option value="asc">Sort: Least Used First</option>
-                        <option value="az">Sort: A-Z</option>
-                        <option value="za">Sort: Z-A</option>
                     </select>
                 </div>
                 <table id="wordsTable">
-                    <thead><tr><th style="width: 15%;">Word</th><th style="width: 10%;">Count</th><th style="width: 75%;">Context Locations in Document</th></tr></thead>
+                    <thead><tr><th style="width: 15%;">Word</th><th style="width: 10%;">Count</th><th style="width: 75%;">Context Locations</th></tr></thead>
                     <tbody id="wordsBody"></tbody>
                 </table>
             </div>
 
             <div id="PassiveTab" class="tab-content">
-                <table>
-                    <thead><tr><th style="width: 85%;">Sentence</th><th style="width: 15%;">Word Count</th></tr></thead>
-                    <tbody id="passiveBody"></tbody>
-                </table>
+                <table><thead><tr><th style="width: 85%;">Sentence</th><th style="width: 15%;">Words</th></tr></thead><tbody id="passiveBody"></tbody></table>
             </div>
 
             <div id="PacingTab" class="tab-content">
-                <table>
-                    <thead><tr><th style="width: 65%;">Sentence</th><th style="width: 15%;">Word Count</th><th style="width: 20%;">Issue Type</th></tr></thead>
-                    <tbody id="pacingBody"></tbody>
-                </table>
+                <table><thead><tr><th style="width: 65%;">Sentence</th><th style="width: 15%;">Words</th><th style="width: 20%;">Issue Type</th></tr></thead><tbody id="pacingBody"></tbody></table>
             </div>
         </div>
     </section>
 
-    <!-- Slide 4: About Me Footer -->
+    <!-- Slide 4: About Me -->
     <section id="about" class="slide-section">
         <div class="container">
             <h2>About Me</h2>
-            <p>Developed by Samira <span spellcheck="false">Ozturk</span>.</p>
-            <a href="https://github.com/ozturksamira" target="_blank" rel="noopener noreferrer" aria-label="Visit my GitHub">
-                <!-- GitHub SVG Icon -->
+            <p>Developed by Samira Ozturk.</p>
+            <a href="https://github.com/ozturksamira" target="_blank" rel="noopener noreferrer">
                 <svg height="40" viewBox="0 0 16 16" width="40" fill="currentColor">
                     <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path>
                 </svg>
@@ -401,42 +210,108 @@
     </section>
 
     <script>
-        // --- Authentication Logic ---
-        function handleLogin(event) {
-            event.preventDefault(); // Prevent page reload
-
-            // Hide login, show editor
-            document.getElementById('login-section').style.display = 'none';
-            const editor = document.getElementById('editor');
-            editor.style.display = 'flex';
-
-            // Update the Welcome screen arrow to point to the editor now
-            document.getElementById('welcomeArrow').setAttribute('href', '#editor');
-
-            // Scroll to the editor smoothly
-            window.location.hash = '#editor';
+        // --- UI Flow & Authentication ---
+        function goToLogin() {
+            document.getElementById('welcome').style.display = 'none';
+            document.getElementById('login-section').style.display = 'flex';
         }
 
-        // --- Auto-Save Logic ---
+        function toggleAuthMode() {
+            const actionInput = document.getElementById('authAction');
+            const title = document.getElementById('authTitle');
+            const submitBtn = document.getElementById('authSubmitBtn');
+            const toggleText = document.getElementById('authToggleText');
+            const errorDiv = document.getElementById('authError');
+            errorDiv.innerText = '';
+
+            if (actionInput.value === 'login') {
+                actionInput.value = 'register';
+                title.innerText = 'Create your writing room';
+                submitBtn.innerText = 'Create Account';
+                toggleText.innerText = 'Already have an account? Sign in here.';
+            } else {
+                actionInput.value = 'login';
+                title.innerText = 'Sign in to your writing room';
+                submitBtn.innerText = 'Sign In';
+                toggleText.innerText = "Don't have an account? Create one here.";
+            }
+        }
+
+        async function handleAuth(event) {
+            event.preventDefault();
+            const email = document.getElementById('emailInput').value;
+            const password = document.getElementById('passwordInput').value;
+            const action = document.getElementById('authAction').value;
+            const errorDiv = document.getElementById('authError');
+
+            try {
+                const response = await fetch('/auth', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password, action })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    document.getElementById('login-section').style.display = 'none';
+                    document.getElementById('editor').style.display = 'flex';
+                    document.getElementById('about').style.display = 'block';
+                    document.getElementById('accountMenu').style.display = 'block';
+
+                    document.getElementById('userDisplayName').innerText = email.split('@')[0];
+                    loadCloudProgress(); // Load user's saved data
+                } else {
+                    errorDiv.innerText = data.error;
+                }
+            } catch (err) {
+                errorDiv.innerText = "Connection error. Ensure backend is running.";
+            }
+        }
+
+        function thirdPartyLogin(provider) {
+            alert(provider + " OAuth integration would trigger here.");
+        }
+
+        async function handleLogout() {
+            await fetch('/logout', { method: 'POST' });
+            window.location.reload();
+        }
+
+        // --- Cloud Save Logic ---
+        async function loadCloudProgress() {
+            const editor = document.getElementById('richEditor');
+            try {
+                const response = await fetch('/load');
+                const data = await response.json();
+                if (data.content) {
+                    editor.innerHTML = data.content;
+                }
+            } catch (e) { console.error("Failed to load cloud save."); }
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             const editor = document.getElementById('richEditor');
             const saveStatus = document.getElementById('saveStatus');
-
-            const savedContent = localStorage.getItem('marginalia_manuscript');
-            if (savedContent && editor) {
-                editor.innerHTML = savedContent;
-            }
-
             let timeout;
+
             if (editor) {
                 editor.addEventListener('input', () => {
                     clearTimeout(timeout);
-                    saveStatus.innerText = "Saving...";
+                    saveStatus.innerText = "Saving to cloud...";
 
-                    timeout = setTimeout(() => {
-                        localStorage.setItem('marginalia_manuscript', editor.innerHTML);
-                        saveStatus.innerText = "All progress saved.";
-                    }, 1000);
+                    timeout = setTimeout(async () => {
+                        try {
+                            await fetch('/save', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ content: editor.innerHTML })
+                            });
+                            saveStatus.innerText = "All progress securely saved.";
+                        } catch (e) {
+                            saveStatus.innerText = "Save failed. Retrying...";
+                        }
+                    }, 1500);
                 });
             }
         });
@@ -447,9 +322,7 @@
         let pacingData = [];
 
         async function submitAnalysis() {
-            // Move content from contenteditable div to hidden textarea for form submission
             document.getElementById('hiddenTextInput').value = document.getElementById('richEditor').innerText;
-
             const form = document.getElementById('analyzeForm');
             const formData = new FormData(form);
             const statsDiv = document.getElementById('stats');
@@ -478,11 +351,8 @@
                 document.querySelectorAll('.tab-links')[0].classList.add("active");
 
                 renderWordsTable();
-                renderPassiveTable();
-                renderPacingTable();
-
             } catch (error) {
-                statsDiv.innerHTML = `<strong style="color: red;">Connection error. Ensure your Flask server is running.</strong>`;
+                statsDiv.innerHTML = `<strong style="color: red;">Analysis error or backend disconnected.</strong>`;
             }
         }
 
@@ -492,13 +362,7 @@
             const sortMethod = document.getElementById('wordSort').value;
 
             let filtered = wordData.filter(w => w.word.includes(searchTerm));
-
-            filtered.sort((a, b) => {
-                if (sortMethod === 'desc') return b.count - a.count;
-                if (sortMethod === 'asc') return a.count - b.count;
-                if (sortMethod === 'az') return a.word.localeCompare(b.word);
-                if (sortMethod === 'za') return b.word.localeCompare(a.word);
-            });
+            filtered.sort((a, b) => (sortMethod === 'desc' ? b.count - a.count : a.count - b.count));
 
             tbody.innerHTML = '';
             filtered.forEach(row => {
@@ -509,31 +373,9 @@
             });
         }
 
-        function renderPassiveTable() {
-            const tbody = document.getElementById('passiveBody');
-            tbody.innerHTML = '';
-            passiveData.forEach(row => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `<td>${row.sentence}</td><td>${row.word_count}</td>`;
-                tbody.appendChild(tr);
-            });
-        }
-
-        function renderPacingTable() {
-            const tbody = document.getElementById('pacingBody');
-            tbody.innerHTML = '';
-            pacingData.forEach(row => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `<td>${row.sentence}</td><td>${row.word_count}</td><td><strong style="color: var(--raw-umber);">${row.issue}</strong></td>`;
-                tbody.appendChild(tr);
-            });
-        }
-
         function openTab(element, tabName) {
-            const tabContent = document.getElementsByClassName("tab-content");
-            for (let i = 0; i < tabContent.length; i++) { tabContent[i].style.display = "none"; }
-            const tabLinks = document.getElementsByClassName("tab-links");
-            for (let i = 0; i < tabLinks.length; i++) { tabLinks[i].classList.remove("active"); }
+            document.querySelectorAll(".tab-content").forEach(tc => tc.style.display = "none");
+            document.querySelectorAll(".tab-links").forEach(tl => tl.classList.remove("active"));
             document.getElementById(tabName).style.display = "block";
             element.classList.add("active");
         }
