@@ -3,9 +3,11 @@ const SESSION_DAYS = 30;
 const MAX_CONTENT_BYTES = 1_500_000;
 
 function json(data, status = 200, headers = {}) {
+  const responseHeaders = new Headers(headers);
+  responseHeaders.set("Content-Type", "application/json; charset=utf-8");
   return new Response(JSON.stringify(data), {
     status,
-    headers: { "Content-Type": "application/json; charset=utf-8", ...headers },
+    headers: responseHeaders,
   });
 }
 
