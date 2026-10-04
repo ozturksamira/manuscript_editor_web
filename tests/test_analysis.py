@@ -1,3 +1,9 @@
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+from app import analyse_text
+
 import unittest
 
 from scr.app import analyse_text
