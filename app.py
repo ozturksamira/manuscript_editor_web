@@ -8,7 +8,6 @@ from functools import wraps
 from html import escape
 from html.parser import HTMLParser
 from pathlib import Path
-from urllib.parse import urlparse
 
 from lxml import etree
 import docx
@@ -24,7 +23,6 @@ from flask import (
     url_for,
 )
 from sqlalchemy import (
-    Boolean,
     Column,
     DateTime,
     ForeignKey,
