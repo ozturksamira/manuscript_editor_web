@@ -1,0 +1,35 @@
+name: Test application
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install --upgrade pip
+      - run: pip install -r requirements.txt
+      - run: python -m unittest discover -s tests -p "test_*.py"
+      - name: Check embedded editor JavaScript
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          html = Path("templates/editor.html").read_text(encoding="utf-8")
+          scripts = re.findall(r"<script>(.*?)</script>", html, flags=re.S)
+          if not scripts:
+              raise SystemExit("No inline editor script found")
+
+          script = scripts[-1].replace(
+              "const initialProjectSlug={{ (project_slug or '')|tojson }};",
+              "const initialProjectSlug='';",
+          )
+          Path("/tmp/editor.js").write_text(script, encoding="utf-8")
+          PY
+          node --check /tmp/editor.js
