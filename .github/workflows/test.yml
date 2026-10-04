@@ -26,11 +26,21 @@ jobs:
           if not scripts:
               raise SystemExit("No inline editor script found")
 
-          script = scripts[-1].replace(
-              "const initialProjectSlug={{ (project_slug or '')|tojson }};",
+          script = scripts[-1]
+          pattern = r"const\s+initialProjectSlug\s*=\s*.*?;"
+          script, replacements = re.subn(
+              pattern,
               "const initialProjectSlug='';",
+              script,
+              count=1,
           )
+          if replacements != 1:
+              raise SystemExit(
+                  "Could not find the initialProjectSlug declaration in the extracted editor script"
+              )
+
           Path("/tmp/editor.js").write_text(script, encoding="utf-8")
+          print("Validated extraction: replaced initialProjectSlug template expression")
           PY
           node --check /tmp/editor.js
 
