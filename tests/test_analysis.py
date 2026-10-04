@@ -1,6 +1,6 @@
 import unittest
 
-from app import analyse_text
+from scr.app import analyse_text
 
 
 class AnalysisRulesTest(unittest.TestCase):
