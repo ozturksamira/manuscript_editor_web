@@ -4,7 +4,7 @@
 
 # Magnolia Margin | Manuscript Analyser & Editor
 
-A professional, full-stack Natural Language Processing (NLP) web application built for writers to analyze manuscripts for overused words, passive voice constructions, and structural pacing issues.
+A professional, full-stack manuscript analysis and editing web application built for writers who want editorial help without generative writing.
 
 * **Live Web App:** [Magnolia Margin](https://magnoliamargin.onrender.com/) *(Hosted via Render)*
 * **GitHub Repository:** [ozturksamira/manuscript_app](https://www.google.com/search?q=https://github.com/ozturksamira/manuscript_app)
@@ -123,3 +123,16 @@ typing_extensions==4.16.0
 Built by **Samira Ozturk**.
 
 * Check out more of my open-source applications on [GitHub (@ozturksamira)](https://www.google.com/search?q=https://github.com/ozturksamira).
+
+
+## Render production storage
+
+For production, connect the web service to a Render Postgres database and expose its connection string as the `DATABASE_URL` environment variable. The application automatically uses PostgreSQL when `DATABASE_URL` is present and falls back to local SQLite for development.
+
+Also set a strong random `SECRET_KEY` environment variable in Render. The application stores passwords as secure password hashes and uses protected, user-scoped project records.
+
+## Project subdomains
+
+The application supports project-specific custom subdomains when `PROJECT_DOMAIN` is configured. For example, with `PROJECT_DOMAIN=magnoliamargin.example`, a project with slug `my-novel` is linked as `https://my-novel.magnoliamargin.example/`.
+
+Render supports wildcard custom domains, so add a wildcard such as `*.magnoliamargin.example` to the web service and configure the corresponding wildcard DNS record. Without a wildcard domain configured, the dashboard automatically falls back to the normal `/project/<slug>/` route.
