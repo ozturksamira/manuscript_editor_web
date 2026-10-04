@@ -152,8 +152,11 @@ async function run(env, sql, ...values) {
 }
 
 async function currentUser(request, env) {
+  const authorization = request.headers.get("Authorization") || "";
+  const bearer = authorization.match(/^Bearer\\s+(.+)$/i);
   const cookies = parseCookies(request.headers.get("Cookie"));
-  const session = await verifySession(cookies[COOKIE], env.SESSION_SECRET || "");
+  const token = bearer ? bearer[1].trim() : cookies[COOKIE];
+  const session = await verifySession(token, env.SESSION_SECRET || "");
   if (!session) return null;
   const user = await first(env, "SELECT id, email FROM users WHERE id = ? LIMIT 1", session.id);
   return user ? { id: Number(user.id), email: user.email } : null;
@@ -346,7 +349,7 @@ async function handleApi(request, env) {
           throw projectError;
         }
         const token = await createSession(userId, env.SESSION_SECRET);
-        return json({ status: "success", message: "Account created successfully." }, 200, {
+        return json({ status: "success", message: "Account created successfully.", token }, 200, {
           "Set-Cookie": cookieHeader(token, SESSION_DAYS * 86400),
         });
       }
@@ -355,7 +358,7 @@ async function handleApi(request, env) {
           return json({ error: "Invalid email or password." }, 401);
         }
         const token = await createSession(existing.id, env.SESSION_SECRET);
-        return json({ status: "success", message: "Logged in successfully." }, 200, {
+        return json({ status: "success", message: "Logged in successfully.", token }, 200, {
           "Set-Cookie": cookieHeader(token, SESSION_DAYS * 86400),
         });
       }
@@ -545,13 +548,6 @@ export default {
         /^\/project\/[a-z0-9-]+\/?$/i.test(url.pathname);
 
       if (userRequired) {
-        const user = await requireUser(request, env);
-        if (!user) return Response.redirect(new URL("/login/", request.url), 302);
-        if (url.pathname === "/editor" || url.pathname === "/editor/") {
-          const row = await first(env, "SELECT slug FROM projects WHERE user_id = ? ORDER BY updated_at DESC, id DESC LIMIT 1", user.id);
-          if (!row) return Response.redirect(new URL("/projects/", request.url), 302);
-          return Response.redirect(new URL(projectUrl(row.slug), request.url), 302);
-        }
         const file = url.pathname.startsWith("/projects") ? "/projects.html" : "/editor.html";
         return asset(request, env, file);
       }
