@@ -498,6 +498,9 @@ function projectPayload(row, includeContent = false) {
 export default {
   async fetch(request, env) {
     try {
+      if (!env.SESSION_SECRET) {
+        return json({ error: "Server authentication is not configured." }, 500);
+      }
       const url = new URL(request.url);
       if (url.pathname.startsWith("/api/") || url.pathname === "/auth" || url.pathname === "/logout") {
         return await handleApi(request, env);
