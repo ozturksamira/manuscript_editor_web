@@ -44,7 +44,7 @@
         .icon-circle { background-color: var(--raw-umber); width: 60px; height: 60px; border-radius: 50%; display: flex; justify-content: center; align-items: center; margin-bottom: 15px; }
         .icon-circle svg { width: 30px; height: 30px; fill: var(--pearl); }
 
-        .welcome-image { width: 50%; height: 100vh; background-image: url('/static/marginalia.png'); background-size: cover; background-position: center; border-left: 2px solid var(--tuscany); }
+        .welcome-image { width: 50%; height: 100vh; background-image: url('/static/Marginalia.png'); background-size: cover; background-position: center; border-left: 2px solid var(--tuscany); }
 
         /* --- Slide 2: Login / Auth Screen --- */
         #login-section { background-color: var(--pearl); display: none; }
@@ -88,6 +88,178 @@
         #about p { font-size: 1.1rem; color: var(--platinum); max-width: 500px; margin: 10px auto 20px auto; }
         #about a { color: var(--tuscany); text-decoration: none; font-weight: bold; transition: 0.3s; display: inline-block; }
         #about a:hover { color: var(--pearl); transform: scale(1.1); }
+
+    
+        /* --- Responsive layout safeguards --- */
+        html {
+            min-height: 100%;
+        }
+
+        body {
+            min-height: 100%;
+        }
+
+        .slide-section {
+            width: 100%;
+            min-height: 100svh;
+            padding-inline: clamp(12px, 3vw, 40px);
+        }
+
+        .welcome-text {
+            padding: clamp(24px, 5vw, 60px);
+        }
+
+        .welcome-title {
+            font-size: clamp(2.8rem, 6vw, 5.5rem);
+            line-height: 1.05;
+        }
+
+        .welcome-paragraph {
+            width: min(100%, 550px);
+            font-size: clamp(1rem, 1.5vw, 1.25rem);
+            line-height: 1.7;
+        }
+
+        .welcome-divider {
+            width: min(100%, 550px);
+        }
+
+        .welcome-image {
+            background-image: url('/static/Marginalia.png');
+            background-repeat: no-repeat;
+            background-size: cover;
+            background-position: center;
+        }
+
+        .container {
+            width: min(100%, 1100px);
+        }
+
+        .toolbar {
+            flex-wrap: wrap;
+        }
+
+        .toolbar input,
+        .toolbar select {
+            min-width: 0;
+        }
+
+        @media (max-width: 820px) {
+            html {
+                scroll-snap-type: y proximity;
+            }
+
+            .slide-section {
+                height: auto;
+                min-height: 100svh;
+            }
+
+            #welcome {
+                min-height: 100svh;
+                height: auto;
+                overflow-y: auto;
+                overflow-x: hidden;
+                flex-direction: column;
+                justify-content: flex-start;
+            }
+
+            .welcome-text {
+                width: 100%;
+                height: auto;
+                min-height: 62svh;
+                padding: clamp(28px, 8vw, 52px) clamp(18px, 6vw, 48px);
+            }
+
+            .welcome-image {
+                width: 100%;
+                height: clamp(280px, 42svh, 460px);
+                min-height: 280px;
+                border-left: none;
+                border-top: 2px solid var(--tuscany);
+                flex: 0 0 auto;
+            }
+
+            .welcome-subtitle {
+                font-size: clamp(0.78rem, 2.5vw, 1rem);
+                letter-spacing: clamp(1.5px, 0.6vw, 3px);
+            }
+
+            .welcome-title {
+                margin-bottom: clamp(18px, 4vw, 30px);
+                max-width: 100%;
+                overflow-wrap: anywhere;
+            }
+
+            .welcome-paragraph {
+                margin-bottom: clamp(28px, 6vw, 50px);
+            }
+
+            .welcome-divider {
+                margin-bottom: clamp(28px, 6vw, 50px);
+            }
+
+            #editor {
+                padding-top: 72px;
+                padding-bottom: 28px;
+            }
+
+            .control-panel {
+                padding: clamp(14px, 3vw, 20px);
+            }
+
+            .account-dropdown {
+                top: 12px;
+                right: 12px;
+            }
+
+            .dropdown-btn {
+                padding: 9px 14px;
+            }
+
+            .toolbar {
+                gap: 10px;
+                align-items: stretch;
+            }
+
+            .toolbar input,
+            .toolbar select {
+                width: 100%;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .welcome-text {
+                min-height: 66svh;
+            }
+
+            .welcome-image {
+                height: 34svh;
+                min-height: 240px;
+            }
+
+            .start-writing-btn {
+                font-size: 1rem;
+            }
+
+            .icon-circle {
+                width: 54px;
+                height: 54px;
+            }
+
+            .login-card {
+                padding: 34px 22px;
+                border-radius: 18px;
+            }
+
+            #richEditor {
+                min-height: 220px;
+            }
+
+            .tab button {
+                padding: 10px 12px;
+                font-size: 13px;
+            }
+        }
 
     </style>
 </head>
