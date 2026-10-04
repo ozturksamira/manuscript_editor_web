@@ -86,7 +86,7 @@ function cookieHeader(value, maxAge) {
 }
 
 async function hashPassword(password) {
-  const iterations = 120000;
+  const iterations = 20000;
   const salt = crypto.getRandomValues(new Uint8Array(16));
   const key = await crypto.subtle.importKey(
     "raw",
@@ -325,12 +325,17 @@ async function handleApi(request, env) {
         const insert = await run(env, "INSERT INTO users (email, password_hash, created_at) VALUES (?, ?, ?)", email, passwordHash, createdAt);
         const userId = Number(insert?.meta?.last_row_id || 0);
         if (!userId) throw new Error("User insert returned no row id.");
-        const slug = await uniqueSlug(env, userId, "Untitled manuscript");
-        await run(
-          env,
-          "INSERT INTO projects (user_id, title, slug, source_filename, content, analysis_json, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-          userId, "Untitled manuscript", slug, "", "", "{}", createdAt, createdAt,
-        );
+        try {
+          const slug = await uniqueSlug(env, userId, "Untitled manuscript");
+          await run(
+            env,
+            "INSERT INTO projects (user_id, title, slug, source_filename, content, analysis_json, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            userId, "Untitled manuscript", slug, "", "", "{}", createdAt, createdAt,
+          );
+        } catch (projectError) {
+          await run(env, "DELETE FROM users WHERE id = ?", userId).catch(() => {});
+          throw projectError;
+        }
         const token = await createSession(userId, env.SESSION_SECRET);
         return json({ status: "success", message: "Account created successfully." }, 200, {
           "Set-Cookie": cookieHeader(token, SESSION_DAYS * 86400),
