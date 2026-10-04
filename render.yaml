@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: magnoliamargin
+    runtime: python
+    plan: free
+    repo: https://github.com/ozturksamira/manuscript_editor_web
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: magnoliamargin-db
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+
+databases:
+  - name: magnoliamargin-db
+    plan: free
+    databaseName: magnolia_margin
