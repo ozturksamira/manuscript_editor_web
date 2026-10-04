@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="google-site-verification" content="_UYONkndOfIIhkM3yX6sTW8fGEEMO17_Ohiv8DnO1l8" />    <meta charset="UTF-8">
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Manuscript Analysis Dashboard</title>
     <!-- Import Alice font from Google Fonts -->
@@ -170,10 +170,10 @@
         }
         .tab button:hover { background-color: var(--platinum); }
         .tab button.active { background-color: var(--raw-umber); color: var(--pearl); border-radius: 6px 6px 0 0; }
-        .tab-content { display: none; padding: 15px 0; border-top: none; overflow-x: auto; } /* Added overflow for mobile tables */
+        .tab-content { display: none; padding: 15px 0; border-top: none; overflow-x: auto; }
 
         /* Tables & Data Area */
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; background-color: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.05); min-width: 600px; } /* Min-width forces scroll on small screens */
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; background-color: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.05); min-width: 600px; }
         th, td { border: 1px solid var(--tuscany); padding: 12px; text-align: left; vertical-align: top; }
         th { background: var(--platinum); color: var(--eerie-black); font-weight: bold; }
         .toolbar { display: flex; gap: 15px; margin-bottom: 15px; align-items: center; }
@@ -197,51 +197,16 @@
 
         /* --- Responsive Design for Mobile & Tablets --- */
         @media (max-width: 768px) {
-            /* Adjust Welcome Screen Split */
-            #welcome {
-                flex-direction: column;
-            }
-            .welcome-text {
-                width: 100%;
-                height: 65vh;
-                padding: 20px;
-            }
-            .welcome-image {
-                width: 100%;
-                height: 35vh;
-            }
-
-            /* Scale Down Typography */
-            .welcome-text h1 {
-                font-size: 3.5rem;
-            }
-            .welcome-text h2 {
-                font-size: 0.9rem;
-                margin-bottom: 20px;
-            }
-            .welcome-text p {
-                font-size: 1.1rem;
-            }
-
-            /* Adjust Tabs & Toolbar */
-            .toolbar {
-                flex-direction: column;
-                align-items: stretch;
-            }
-            .tab button {
-                padding: 10px;
-                font-size: 13px;
-                width: 33.33%; /* Keep tabs in a single row but smaller */
-                text-align: center;
-            }
-
-            /* Adjust padding for slide sections */
-            .slide-section {
-                padding: 20px 10px;
-            }
-            #editor {
-                padding-top: 40px;
-            }
+            #welcome { flex-direction: column; }
+            .welcome-text { width: 100%; height: 65vh; padding: 20px; }
+            .welcome-image { width: 100%; height: 35vh; }
+            .welcome-text h1 { font-size: 3.5rem; }
+            .welcome-text h2 { font-size: 0.9rem; margin-bottom: 20px; }
+            .welcome-text p { font-size: 1.1rem; }
+            .toolbar { flex-direction: column; align-items: stretch; }
+            .tab button { padding: 10px; font-size: 13px; width: 33.33%; text-align: center; }
+            .slide-section { padding: 20px 10px; }
+            #editor { padding-top: 40px; }
         }
 
     </style>
@@ -251,8 +216,8 @@
     <!-- Slide 1: Welcome Screen -->
     <section id="welcome" class="slide-section">
         <div class="welcome-text">
-            <h1>Magnolia Margin</h1>
-            <h2>Manuscript Analyzer & Editor</h2>
+            <h1>Marginalia</h1>
+            <h2>A Manuscript Analyzer & Editor</h2>
             <p>A tool built for writers to freely edit their manuscripts by checking for overused words, passive voice constructions, and structural pacing issues.</p>
             <a href="#editor" class="down-arrow" aria-label="Slide down to editor">↓</a>
         </div>
@@ -336,7 +301,40 @@
         let wordData = [];
         let passiveData = [];
         let pacingData = [];
+// LocalStorage Auto-Save Logic for continuous editing
+document.addEventListener('DOMContentLoaded', () => {
+    const editor = document.getElementById('richEditor');
+    const saveStatus = document.getElementById('saveStatus');
 
+    // 1. Load saved content when returning to the page
+    const savedContent = localStorage.getItem('marginalia_manuscript');
+    if (savedContent && editor) {
+        editor.innerHTML = savedContent;
+    }
+
+    // 2. Auto-save content on input (debounced)
+    let timeout;
+    if (editor) {
+        editor.addEventListener('input', () => {
+            clearTimeout(timeout);
+            saveStatus.innerText = "Saving...";
+
+            timeout = setTimeout(() => {
+                localStorage.setItem('marginalia_manuscript', editor.innerHTML);
+                saveStatus.innerText = "All progress saved.";
+
+                // Optional: Send to backend database for cloud saving
+                /*
+                fetch('/save', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ content: editor.innerHTML })
+                });
+                */
+            }, 1000); // Saves 1 second after the user stops typing
+        });
+    }
+});
         async function submitAnalysis() {
             const form = document.getElementById('analyzeForm');
             const formData = new FormData(form);

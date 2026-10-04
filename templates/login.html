@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign in - Marginalia</title>
+    <link href="https://fonts.googleapis.com/css2?family=Alice&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --pearl: #F7F5F2;
+            --platinum: #EFE8E2;
+            --tuscany: #C0AB9A;
+            --raw-umber: #7B5C4B;
+            --old-burgundy: #3F3027;
+        }
+
+        body {
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: var(--pearl);
+            font-family: system-ui, sans-serif;
+        }
+
+        .login-card {
+            background-color: var(--platinum);
+            padding: 50px 40px;
+            border-radius: 24px;
+            text-align: center;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+        }
+
+        .login-card h2 {
+            font-family: 'Alice', serif;
+            color: var(--old-burgundy);
+            font-size: 1.8rem;
+            margin-top: 0;
+            margin-bottom: 30px;
+        }
+
+        .auth-btn {
+            display: block;
+            width: 100%;
+            padding: 14px;
+            margin-bottom: 15px;
+            border-radius: 30px;
+            border: none;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn-google, .btn-apple {
+            background-color: var(--tuscany);
+            color: var(--old-burgundy);
+        }
+
+        .btn-google:hover, .btn-apple:hover {
+            background-color: #b09987;
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            text-align: center;
+            color: var(--raw-umber);
+            margin: 20px 0;
+            font-size: 12px;
+            letter-spacing: 1px;
+        }
+
+        .divider::before, .divider::after {
+            content: '';
+            flex: 1;
+            border-bottom: 1px solid var(--tuscany);
+        }
+
+        .divider:not(:empty)::before { margin-right: .25em; }
+        .divider:not(:empty)::after { margin-left: .25em; }
+
+        .email-input {
+            width: 100%;
+            padding: 14px 20px;
+            border-radius: 30px;
+            border: none;
+            background-color: var(--raw-umber);
+            color: var(--pearl);
+            font-size: 16px;
+            box-sizing: border-box;
+            margin-bottom: 15px;
+        }
+
+        .email-input::placeholder {
+            color: var(--platinum);
+        }
+
+        .btn-continue {
+            background-color: var(--tuscany);
+            color: var(--old-burgundy);
+            padding: 10px 30px;
+            border-radius: 20px;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .brand-footer {
+            margin-top: 30px;
+            font-family: 'Alice', serif;
+            font-size: 1.5rem;
+            color: var(--old-burgundy);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="login-card">
+        <h2>Sign in or create your writing room</h2>
+
+        <button class="auth-btn btn-google">G Continue with Google</button>
+        <button class="auth-btn btn-apple"> Continue with Apple</button>
+
+        <div class="divider">OR</div>
+
+        <form action="/dashboard" method="GET">
+            <input type="email" class="email-input" placeholder="... your@email.com" required>
+            <button type="submit" class="btn-continue">continue</button>
+        </form>
+    </div>
+
+    <div class="brand-footer">
+        ✦ Marginalia
+    </div>
+
+</body>
+</html>
