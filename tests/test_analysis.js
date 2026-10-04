@@ -3,7 +3,7 @@ import { analyseText, countWords } from "../public/analysis.js";
 
 const repeated = analyseText("The lantern burned. The lantern swung. The lantern shook. The lantern glowed.");
 assert.equal(repeated.words.find((item) => item.word === "lantern")?.count, 4);
-assert.equal(repeated.word_count, 16);
+assert.equal(repeated.word_count, 12);
 
 const passive = analyseText("The ball was caught by the dog.");
 assert.equal(passive.passive.length > 0, true);
