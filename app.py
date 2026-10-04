@@ -132,24 +132,64 @@ BLOCK_TAGS = {
 WORD_RE = re.compile(r"\b[A-Za-z][A-Za-z'’-]{2,}\b")
 SENTENCE_RE = re.compile(r"[^.!?\n]+(?:[.!?]+|$)")
 PASSIVE_RE = re.compile(
-    r"\b(?:am|is|are|was|were|be|been|being|get|gets|got|gotten)"
-    r"\s+\w+(?:\s+\w+){0,3}\s+(?:ed|en)\b",
+    r"\b(?:am|is|are|was|were|be|been|being)\s+"
+    r"(?:\w+\s+){0,2}"
+    r"(?:[A-Za-z]+ed|[A-Za-z]+en|[A-Za-z]+wn|[A-Za-z]+t)\b"
+    r"(?:\s+by\s+(?:the|a|an)?\s*[A-Za-z][A-Za-z'-]*)?",
     re.IGNORECASE,
 )
-STOP_WORDS = {
-    "about", "after", "again", "against", "almost", "also", "although", "always",
-    "among", "and", "another", "any", "around", "because", "before", "being",
-    "between", "both", "but", "could", "did", "does", "doing", "down", "during",
-    "each", "even", "every", "few", "first", "for", "from", "further", "had",
-    "has", "have", "having", "here", "hers", "him", "himself", "his", "how",
-    "into", "its", "itself", "just", "many", "might", "more", "most", "much",
-    "must", "myself", "never", "not", "now", "off", "once", "only", "other",
-    "our", "ours", "ourselves", "out", "over", "same", "she", "should", "some",
-    "such", "than", "that", "their", "theirs", "them", "themselves", "then",
-    "there", "these", "they", "this", "those", "through", "too", "under",
-    "until", "very", "was", "were", "what", "when", "where", "which", "while",
-    "who", "whom", "why", "will", "with", "would", "you", "your", "yours",
+AUXILIARY_WORDS = {
+    "am", "is", "are", "was", "were", "be", "being", "been",
+    "have", "has", "had", "having",
+    "do", "does", "did",
+    "can", "could", "may", "might", "must", "shall", "should",
+    "will", "would",
+    "ought", "need", "dare", "used",
 }
+PRONOUNS = {
+    "i", "me", "my", "myself", "you", "your", "yourself", "yours",
+    "he", "him", "his", "himself", "she", "her", "hers", "herself",
+    "it", "its", "itself", "we", "us", "our", "ourselves",
+    "they", "them", "their", "theirs", "themselves",
+    "who", "whom", "whose", "which", "that", "this", "these", "those",
+}
+PREPOSITIONS = {
+    "about", "above", "across", "after", "against", "along", "among", "around",
+    "at", "before", "behind", "below", "beneath", "beside", "between", "beyond",
+    "by", "down", "during", "except", "for", "from", "in", "inside", "into",
+    "like", "near", "of", "off", "on", "onto", "out", "outside", "over",
+    "past", "through", "throughout", "to", "toward", "under", "underneath",
+    "until", "up", "upon", "with", "within", "without",
+}
+CONJUNCTIONS = {
+    "and", "but", "or", "nor", "for", "yet", "so", "although", "because",
+    "since", "unless", "until", "while", "whereas",
+}
+STOP_WORDS = PRONOUNS | PREPOSITIONS | CONJUNCTIONS | AUXILIARY_WORDS | {
+    "a", "an", "the",
+}
+EVENT_VERBS = {
+    "arrive", "arrived", "attack", "attacked", "break", "broke", "burst",
+    "call", "called", "catch", "caught", "change", "changed", "chase", "chased",
+    "close", "closed", "crash", "crashed", "cry", "cried", "cut", "cut",
+    "die", "died", "discover", "discovered", "enter", "entered", "escape",
+    "escaped", "fall", "fell", "fight", "fought", "find", "found", "grab",
+    "grabbed", "hit", "hold", "held", "jump", "jumped", "kill", "killed",
+    "leave", "left", "lose", "lost", "open", "opened", "pull", "pulled",
+    "push", "pushed", "reach", "reached", "run", "ran", "rush", "rushed",
+    "scream", "screamed", "see", "saw", "send", "sent", "shoot", "shot",
+    "shout", "shouted", "slip", "slipped", "smash", "smashed", "sprint",
+    "sprinted", "stand", "stood", "start", "started", "stop", "stopped",
+    "strike", "struck", "take", "took", "throw", "threw", "turn", "turned",
+    "wake", "woke", "walk", "walked", "warn", "warned", "watch", "watched",
+}
+DESCRIPTION_RE = re.compile(
+    r"\b(?:very|quite|rather|really|extremely|beautifully|slowly|quickly|"
+    r"carefully|suddenly|silently|quietly|loudly|softly|deeply|"
+    r"[A-Za-z-]*(?:ly|ful|ous|ive|less|ish|ical))\b",
+    re.IGNORECASE,
+)
+
 
 
 def slugify(value, fallback="project"):
@@ -379,58 +419,120 @@ def _run_html(run):
 
 
 def docx_to_html(raw_bytes):
-    # Parse the DOCX XML directly: it avoids the repeated Python object creation
-    # that python-docx performs and is noticeably faster on large manuscripts.
+    # Read the DOCX package directly. In addition to being faster for large
+    # manuscripts, this makes heading detection independent of Word's style
+    # naming conventions: outline levels and style definitions are both checked.
     ns = {"w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main"}
+    qn = lambda local: "{%s}%s" % (ns["w"], local)
+
     with zipfile.ZipFile(io.BytesIO(raw_bytes)) as archive:
-        root = etree.fromstring(archive.read("word/document.xml"))
+        document_root = etree.fromstring(archive.read("word/document.xml"))
+        style_map = {}
+
+        if "word/styles.xml" in archive.namelist():
+            styles_root = etree.fromstring(archive.read("word/styles.xml"))
+            for style in styles_root.xpath(".//w:style[@w:type='paragraph']", namespaces=ns):
+                style_id = style.get(qn("styleId"), "")
+                name_node = style.find("w:name", ns)
+                style_name = name_node.get(qn("val"), "") if name_node is not None else ""
+                outline_node = style.find(".//w:outlineLvl", ns)
+                outline_level = outline_node.get(qn("val")) if outline_node is not None else None
+
+                level = None
+                match = re.search(r"(?:heading|titre)\s*([1-6])", style_name, re.IGNORECASE)
+                if not match:
+                    match = re.search(r"(?:heading|titre)([1-6])", style_id, re.IGNORECASE)
+                if match:
+                    level = int(match.group(1))
+                elif outline_level is not None and outline_level.isdigit():
+                    level = min(6, int(outline_level) + 1)
+
+                if style_id:
+                    style_map[style_id] = {"name": style_name, "level": level}
 
     blocks = []
-    for paragraph in root.xpath(".//w:body/w:p", namespaces=ns):
+    body = document_root.find("w:body", ns)
+    paragraphs = body.findall("w:p", ns) if body is not None else []
+
+    for paragraph in paragraphs:
         ppr = paragraph.find("w:pPr", ns)
-        style_name = ""
+        style_id = ""
         if ppr is not None:
             pstyle = ppr.find("w:pStyle", ns)
             if pstyle is not None:
-                style_name = pstyle.get("{%s}val" % ns["w"], "") or ""
+                style_id = pstyle.get(qn("val"), "") or ""
 
-        heading = re.search(r"(?:heading|titre)([1-6])", style_name, flags=re.IGNORECASE)
-        body = "".join(_run_html(run) for run in paragraph.xpath("./w:r", namespaces=ns))
-        if not body:
-            body = "<br>"
+        style_info = style_map.get(style_id, {})
+        style_name = style_info.get("name", "") or ""
+        heading_level = style_info.get("level")
+
+        if ppr is not None and heading_level is None:
+            outline_node = ppr.find("w:outlineLvl", ns)
+            if outline_node is not None and outline_node.get(qn("val"), "").isdigit():
+                heading_level = min(6, int(outline_node.get(qn("val"))) + 1)
+
+        heading_match = re.search(
+            r"(?:heading|titre)\s*([1-6])",
+            style_name,
+            flags=re.IGNORECASE,
+        )
+        if heading_match:
+            heading_level = int(heading_match.group(1))
+
+        run_html = []
+        for child in paragraph:
+            tag = etree.QName(child).localname
+            if tag == "r":
+                run_html.append(_run_html(child))
+            elif tag == "hyperlink":
+                for run in child.xpath(".//w:r", namespaces=ns):
+                    run_html.append(_run_html(run))
+
+        paragraph_body = "".join(run_html)
+        if not paragraph_body:
+            paragraph_body = "<br>"
 
         paragraph_styles = []
         if ppr is not None:
             jc = ppr.find("w:jc", ns)
             if jc is not None:
-                align = jc.get("{%s}val" % ns["w"], "")
+                align = jc.get(qn("val"), "")
                 if align in {"left", "center", "right", "both", "justify"}:
-                    paragraph_styles.append("text-align:" + ("justify" if align == "both" else align))
+                    paragraph_styles.append(
+                        "text-align:" + ("justify" if align in {"both", "justify"} else align)
+                    )
 
             shd = ppr.find("w:shd", ns)
-            fill = shd.get("{%s}fill" % ns["w"], "") if shd is not None else ""
+            fill = shd.get(qn("fill"), "") if shd is not None else ""
             if re.fullmatch(r"[0-9A-Fa-f]{6}", fill or ""):
                 paragraph_styles.append(f"background-color:#{fill}")
 
             borders = ppr.find("w:pBdr", ns)
             if borders is not None:
+                separator_found = False
                 for side_name in ("bottom", "top"):
                     side = borders.find(f"w:{side_name}", ns)
-                    if side is not None:
-                        val = side.get("{%s}val" % ns["w"], "")
-                        if val and val != "nil":
-                            blocks.append("<hr>")
-                            break
+                    if side is not None and side.get(qn("val"), "") not in {"", "nil"}:
+                        separator_found = True
+                        break
+                if separator_found:
+                    blocks.append("<hr>")
 
-        style_attr = f' style="{";".join(paragraph_styles)}"' if paragraph_styles else ""
-        if heading:
-            tag = "h" + heading.group(1)
+        style_attr = (
+            ' style="' + escape(";".join(paragraph_styles), quote=True) + '"'
+            if paragraph_styles else ""
+        )
+
+        if heading_level:
+            tag = f"h{heading_level}"
         elif "quote" in style_name.lower():
             tag = "blockquote"
+        elif style_name.lower() in {"title", "subtitle"}:
+            tag = "h1" if style_name.lower() == "title" else "h2"
         else:
             tag = "p"
 
-        blocks.append(f"<{tag}{style_attr}>{body}</{tag}>")
+        blocks.append(f"<{tag}{style_attr}>{paragraph_body}</{tag}>")
 
     return "".join(blocks)
 
@@ -471,108 +573,171 @@ def sentence_spans(value):
     return output
 
 
+def _sentence_profile(snippet):
+    words = [match.group(0).lower().replace("’", "'") for match in WORD_RE.finditer(snippet)]
+    word_count = len(words)
+    event_count = sum(1 for word in words if word in EVENT_VERBS)
+    description_count = len(DESCRIPTION_RE.findall(snippet))
+    dialogue = 1 if re.search(r'["“”]', snippet) else 0
+    questions = snippet.count("?")
+    exclamations = snippet.count("!")
+    return {
+        "word_count": word_count,
+        "event_count": event_count,
+        "description_count": description_count,
+        "dialogue": dialogue,
+        "questions": questions,
+        "exclamations": exclamations,
+    }
+
+
 def analyse_text(value):
     value = value or ""
     if not value.strip():
         return {"words": [], "passive": [], "pacing": [], "flagged_count": 0}
 
-    # One linear scan for word frequencies. Do not return every occurrence
-    # position to the browser; the editor can locate occurrences on demand.
-    counts = {}
-    contexts = {}
+    # Designed for 50,000–200,000 word manuscripts: linear scans only, small
+    # rolling windows, and capped result sets.
     sentence_ranges = sentence_spans(value)
+    counts = {}
 
     for match in WORD_RE.finditer(value):
         word = match.group(0).lower().replace("’", "'").strip("'")
-        if len(word) < 4 or word in STOP_WORDS:
+        if len(word) < 2 or word in STOP_WORDS:
             continue
         counts[word] = counts.get(word, 0) + 1
 
-    frequent = [(word, count) for word, count in counts.items() if count >= 3]
-    frequent.sort(key=lambda pair: (-pair[1], pair[0]))
-    frequent = frequent[:60]
-
+    frequent = sorted(
+        ((word, count) for word, count in counts.items() if count > 3),
+        key=lambda pair: (-pair[1], pair[0]),
+    )[:80]
     frequent_set = {word for word, _ in frequent}
-    if frequent_set:
-        seen = {word: 0 for word in frequent_set}
-        for start, end, snippet in sentence_ranges:
-            for match in WORD_RE.finditer(snippet):
-                word = match.group(0).lower().replace("’", "'").strip("'")
-                if word in frequent_set and seen[word] < 3:
-                    contexts.setdefault(word, []).append(snippet[:260])
-                    seen[word] += 1
+
+    contexts = {}
+    for start, end, snippet in sentence_ranges:
+        if len(contexts) >= len(frequent_set) and frequent_set:
+            break
+        for match in WORD_RE.finditer(snippet):
+            word = match.group(0).lower().replace("’", "'").strip("'")
+            if word in frequent_set:
+                bucket = contexts.setdefault(word, [])
+                if len(bucket) < 3 and snippet[:300] not in bucket:
+                    bucket.append(snippet[:300])
 
     words = [
-        {
-            "word": word,
-            "count": count,
-            "contexts": contexts.get(word, []),
-        }
+        {"word": word, "count": count, "contexts": contexts.get(word, [])}
         for word, count in frequent
     ]
 
     passive = []
+    profiles = []
+    for start, end, snippet in sentence_ranges:
+        profile = _sentence_profile(snippet)
+        profile.update({"start": start, "end": end, "sentence": snippet})
+        profiles.append(profile)
+
+        # Strong passive signal: be + past participle. A "by" phrase gives
+        # extra confidence that the grammatical subject is receiving the action.
+        matches = list(PASSIVE_RE.finditer(snippet))
+        if matches:
+            for match in matches[:2]:
+                matched = match.group(0)
+                has_agent = bool(re.search(r"\bby\s+(?:the|a|an)?\s*[A-Za-z]", matched, re.IGNORECASE))
+                passive.append({
+                    "sentence": snippet[:500],
+                    "start": start,
+                    "end": end,
+                    "reason": "Passive construction" + (" with an explicit agent" if has_agent else ""),
+                })
+                if len(passive) >= 120:
+                    break
+
+        if len(passive) >= 120:
+            # Keep building profiles for pacing; passive scanning is already capped.
+            continue
+
     pacing = []
-    short_run = []
 
-    for index, (start, end, snippet) in enumerate(sentence_ranges):
-        word_count = len(WORD_RE.findall(snippet))
+    def window_text(window):
+        return " ".join(item["sentence"].strip() for item in window)
 
-        if len(snippet) <= 500 and PASSIVE_RE.search(snippet):
-            passive.append({
-                "sentence": snippet[:500],
-                "start": start,
-                "end": end,
-                "reason": "Possible passive construction",
-            })
-
-        if word_count > 40:
+    # Too fast: several short sentences containing multiple event/change verbs.
+    for i in range(max(0, len(profiles) - 2)):
+        window = profiles[i:i + 3]
+        avg_words = sum(item["word_count"] for item in window) / 3
+        event_total = sum(item["event_count"] for item in window)
+        if avg_words <= 13 and event_total >= 2:
             pacing.append({
-                "sentence": snippet[:500],
-                "start": start,
-                "end": end,
-                "reason": "Long sentence",
-                "word_count": word_count,
+                "sentence": window_text(window)[:650],
+                "start": window[0]["start"],
+                "end": window[-1]["end"],
+                "reason": "Too fast — possible event compression",
+                "word_count": sum(item["word_count"] for item in window),
             })
-
-        if word_count <= 8:
-            short_run.append((start, end, snippet, word_count))
-        else:
-            if len(short_run) >= 3:
-                pacing.extend(
-                    {
-                        "sentence": item[2][:500],
-                        "start": item[0],
-                        "end": item[1],
-                        "reason": "Choppy sequence",
-                        "word_count": item[3],
-                    }
-                    for item in short_run
-                )
-            short_run = []
-
-        if index == len(sentence_ranges) - 1 and len(short_run) >= 3:
-            pacing.extend(
-                {
-                    "sentence": item[2][:500],
-                    "start": item[0],
-                    "end": item[1],
-                    "reason": "Choppy sequence",
-                    "word_count": item[3],
-                }
-                for item in short_run
-            )
-
-        if len(passive) >= 120 and len(pacing) >= 120:
+        if len(pacing) >= 80:
             break
 
-    words_repeats = sum(max(0, item["count"] - 2) for item in words)
-    flagged_count = words_repeats + len(passive) + len(pacing)
+    # Too slow: sustained long sentences, low event/action density and
+    # description-heavy prose. This is a diagnostic rather than a judgement.
+    if len(pacing) < 80:
+        for i in range(max(0, len(profiles) - 3)):
+            window = profiles[i:i + 4]
+            avg_words = sum(item["word_count"] for item in window) / 4
+            avg_events = sum(item["event_count"] for item in window) / 4
+            avg_description = sum(item["description_count"] for item in window) / 4
+            dialogue_rate = sum(item["dialogue"] for item in window) / 4
+            if (
+                avg_words >= 30
+                and avg_events <= 1.5
+                and (avg_description >= 2.0 or dialogue_rate >= 0.5)
+            ):
+                pacing.append({
+                    "sentence": window_text(window)[:650],
+                    "start": window[0]["start"],
+                    "end": window[-1]["end"],
+                    "reason": "Too slow — possible dragging passage",
+                    "word_count": sum(item["word_count"] for item in window),
+                })
+            if len(pacing) >= 80:
+                break
 
+    # Flat dynamics: a longer run whose sentence lengths and action levels
+    # barely change. This targets a story staying in one gear for too long.
+    if len(pacing) < 100 and len(profiles) >= 7:
+        for i in range(len(profiles) - 6):
+            window = profiles[i:i + 7]
+            lengths = [item["word_count"] for item in window]
+            events = [item["event_count"] for item in window]
+            mean_len = sum(lengths) / 7
+            variance = sum((x - mean_len) ** 2 for x in lengths) / 7
+            stdev = variance ** 0.5
+            event_range = max(events) - min(events)
+            if 10 <= mean_len <= 28 and stdev <= 3.5 and event_range <= 1:
+                pacing.append({
+                    "sentence": window_text(window)[:700],
+                    "start": window[0]["start"],
+                    "end": window[-1]["end"],
+                    "reason": "Flat dynamics — sustained single-gear rhythm",
+                    "word_count": sum(lengths),
+                })
+            if len(pacing) >= 100:
+                break
+
+    # Deduplicate overlapping findings so long manuscripts do not flood the UI.
+    unique_pacing = []
+    seen_windows = set()
+    for item in pacing:
+        key = (item["start"], item["end"], item["reason"])
+        if key not in seen_windows:
+            unique_pacing.append(item)
+            seen_windows.add(key)
+    pacing = unique_pacing[:100]
+
+    flagged_count = sum(item["count"] - 3 for item in words) + len(passive) + len(pacing)
     return {
         "words": words,
         "passive": passive[:120],
-        "pacing": pacing[:120],
+        "pacing": pacing,
         "flagged_count": flagged_count,
     }
 
