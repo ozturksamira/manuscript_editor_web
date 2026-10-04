@@ -33,3 +33,6 @@ jobs:
           Path("/tmp/editor.js").write_text(script, encoding="utf-8")
           PY
           node --check /tmp/editor.js
+
+      - name: Run Cloudflare analysis tests
+        run: node tests/test_analysis.js
