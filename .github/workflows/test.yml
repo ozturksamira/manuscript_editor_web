@@ -34,5 +34,11 @@ jobs:
           PY
           node --check /tmp/editor.js
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check Cloudflare Worker JavaScript
+        run: node --check src/index.js
       - name: Run Cloudflare analysis tests
         run: node tests/test_analysis.js
