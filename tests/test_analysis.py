@@ -21,6 +21,7 @@ class AnalysisRulesTest(unittest.TestCase):
         self.assertNotIn("and", words)
         self.assertNotIn("was", words)
         self.assertNotIn("can't", words)
+        self.assertNotIn("could've", words)
 
     def test_passive_voice_with_explicit_agent_is_flagged(self):
         result = analyse_text("The ball was caught by the dog.")
