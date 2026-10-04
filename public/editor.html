@@ -167,6 +167,20 @@ button,input,select{font:inherit}button{cursor:pointer}a{color:inherit}
 <div class="toast" id="toast" role="status"></div>
 
 <script>
+(function(){
+  const token=sessionStorage.getItem('mm_session_token');
+  const nativeFetch=window.fetch.bind(window);
+  window.fetch=function(input,init){
+    init=init||{};
+    const headers=new Headers(init.headers||{});
+    if(token&&!headers.has('Authorization'))headers.set('Authorization','Bearer '+token);
+    init.headers=headers;
+    init.credentials='include';
+    return nativeFetch(input,init);
+  };
+})();
+</script>
+<script>
 const editor=document.getElementById('richEditor');
 const projectSelect=document.getElementById('projectSelect');
 const titleInput=document.getElementById('titleInput');
