@@ -55,6 +55,20 @@ footer{padding:55px 20px 30px;display:flex;justify-content:space-between;align-i
   </footer>
 </main>
 <script>
+(function(){
+  const token=sessionStorage.getItem('mm_session_token');
+  const nativeFetch=window.fetch.bind(window);
+  window.fetch=function(input,init){
+    init=init||{};
+    const headers=new Headers(init.headers||{});
+    if(token&&!headers.has('Authorization'))headers.set('Authorization','Bearer '+token);
+    init.headers=headers;
+    init.credentials='include';
+    return nativeFetch(input,init);
+  };
+})();
+</script>
+<script>
 function escapeHtml(value){return String(value||'').replace(/[&<>"']/g,function(ch){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[ch]})}
 async function loadProjects(){
   const response=await fetch('/api/projects');
