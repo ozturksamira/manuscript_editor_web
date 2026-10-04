@@ -136,7 +136,7 @@ With `workers_dev` enabled, Cloudflare provides a free `workers.dev` URL. No pur
 
 ### 8. Optional GitHub automatic deployment
 
-`.github/workflows/deploy-cloudflare.yml` can deploy on every push to `main`.
+`.github/workflows/deploy-cloudflare.yml` can deploy the production Worker manually from GitHub Actions. Keeping it manual avoids a failing deployment until your Cloudflare database ID and GitHub secrets have been configured.
 
 Add these GitHub Actions secrets under **GitHub → Settings → Secrets and variables → Actions**:
 
@@ -147,7 +147,7 @@ CLOUDFLARE_ACCOUNT_ID
 
 The current Cloudflare GitHub Actions documentation recommends an API token using the **Edit Cloudflare Workers** template. Wrangler also requires the Cloudflare account ID in CI.
 
-The workflow installs Wrangler, applies pending D1 migrations to the remote database, and deploys the Worker.
+After you have configured the database ID and secrets, run the workflow from **GitHub → Actions → Deploy Magnolia Margin to Cloudflare → Run workflow**. It installs Wrangler, applies pending D1 migrations to the remote database, and deploys the Worker.
 
 ## Updating the application safely
 
