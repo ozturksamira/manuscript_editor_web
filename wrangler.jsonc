@@ -13,7 +13,7 @@
     {
       "binding": "DB",
       "database_name": "magnoliamargin-db",
-      "database_id": "d4b607d3-97ab-4129-bb78-6f9eb27cfaf8"
+      "database_id": "d4b607d3-97ab-4129-bb78-6f9eb27cfaf8",
       "migrations_dir": "./migrations"
     }
   ]
