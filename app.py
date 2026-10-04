@@ -84,7 +84,7 @@ if PROJECT_DOMAIN:
     )
 else:
     app.config.update(
-        SESSION_COOKIE_SECURE=bool(os.environ.get("RENDER")),
+        SESSION_COOKIE_SECURE=IS_RENDER,
         SESSION_COOKIE_HTTPONLY=True,
         SESSION_COOKIE_SAMESITE="Lax",
     )
@@ -802,7 +802,7 @@ def analyse_text(value):
                 or variety <= 0.62
             )
             if (
-                avg_words >= 22
+                avg_words >= 18
                 and event_total <= 2
                 and event_density <= 0.04
                 and drag_signal
@@ -840,7 +840,7 @@ def analyse_text(value):
             rhythm_variance = sum((score - rhythm_mean) ** 2 for score in rhythm_scores) / 8
             rhythm_stdev = rhythm_variance ** 0.5
             if (
-                7 <= mean_len <= 28
+                5 <= mean_len <= 28
                 and stdev <= 4.5
                 and event_range <= 1
                 and rhythm_stdev <= 1.7
