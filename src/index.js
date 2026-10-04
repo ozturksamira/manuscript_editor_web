@@ -81,7 +81,7 @@ function cookieHeader(value, maxAge) {
     "Path=/",
     "HttpOnly",
     "Secure",
-    "SameSite=Lax",
+    "SameSite=None",
   ];
   if (maxAge !== undefined) parts.push(`Max-Age=${maxAge}`);
   return parts.join("; ");
