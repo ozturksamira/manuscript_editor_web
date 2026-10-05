@@ -15,7 +15,7 @@ class FrontendRegressionTest(unittest.TestCase):
         self.assertIn('id="nextSection"', html)
         self.assertIn("function navigateSection(delta)", html)
         self.assertIn("function jumpToOffsets(start,end)", html)
-        self.assertIn("function findWordOccurrence(index,word,occurrence)", html)
+        self.assertIn("function findWordOccurrences(index,word)", html)
         self.assertNotIn("function openSidebarTab(", html)
 
     def test_issue_navigation_returns_to_writing_pane(self):
