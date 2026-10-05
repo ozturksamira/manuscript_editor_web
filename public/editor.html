@@ -687,7 +687,7 @@ function renderIssues(){
   }else views.pacing.innerHTML='<div class="issue-empty">No pacing issues have been flagged.</div>';
 }
 function cleanIssueText(value){
-  return String(value||'').replace(/\\r\\n/g,' ').replace(/\\n/g,' ').replace(/\\r/g,' ').replace(/\\s+/g,' ').trim();
+  return String(value||'').replace(/\\r\\n/g,' ').replace(/\\n/g,' ').replace(/\\r/g,' ').replace(/\r?\n/g,' ').replace(/\s+/g,' ').trim();
 }
 function openWordSearch(word,anchor){
   const matches=findWordOccurrences(buildTextIndex(),word);
