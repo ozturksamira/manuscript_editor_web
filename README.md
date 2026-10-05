@@ -20,9 +20,12 @@ The application features a modern, full-screen **snap-scrolling slideshow layout
 * **Pacing Issues Tab:** Spots overly long sentences and consecutive dragging segments.
 
 ## Extended Vision
-- Develop editorial page to open tabs for sections/headers.
-- Extend analysis feature to take users to where issues have been flagged.
-- Extend and develop feature which allows users to modify their scripts' tense (e.g. first to third, past to present).
+- Add a find and replace feature.
+- Develop Analyse Manuscript feature to check for new headings and additions to the Contents tab.
+- Extend Passive Voice feature to show users replacement/fixing options.
+- Develop Pacing feature flag better issues.
+- Find a way for Overused Words feature not to flag names, possibly by not flagging capitalised words(?). -> When regular overused words are flagged, change code to ignore case lettering.
+- Add feature which allows users to modify their scripts' tense (e.g. first to third, past to present).
 
 ## Production
 
