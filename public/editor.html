@@ -42,8 +42,20 @@ button,input,select{font:inherit}button{cursor:pointer}a{color:inherit}
 .project-footer{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;margin-top:22px;padding:15px 4px 0;border-top:1px solid var(--line);color:var(--umber);font:10px system-ui,sans-serif}.project-footer-links{display:flex;gap:7px}.mini-link{width:32px;height:32px;border:1px solid var(--line);border-radius:50%;display:grid;place-items:center;background:var(--platinum);text-decoration:none;color:var(--burgundy)}.mini-link:hover{background:var(--tuscany)}.mini-link svg{width:15px;height:15px}
 .modal-backdrop{position:fixed;inset:0;z-index:100;background:rgba(23,20,17,.35);display:none;align-items:center;justify-content:center;padding:20px}.modal-backdrop.open{display:flex}.settings-modal{width:min(430px,100%);background:var(--pearl);border:1px solid var(--tuscany);border-radius:22px;padding:24px;box-shadow:0 25px 80px rgba(23,20,17,.25)}.settings-modal h2{margin:0;color:var(--burgundy);font:600 1.6rem "Playfair Display",Georgia,serif}.settings-modal p{font-size:13px;line-height:1.65;color:var(--umber)}.settings-field{width:100%;border:1px solid var(--line);background:white;border-radius:11px;padding:11px;margin-top:7px;outline:none}.delete-box{margin-top:18px;padding-top:16px;border-top:1px solid var(--line)}.delete-account{background:#6d3428;border:0;border-radius:999px;color:var(--pearl);padding:10px 14px;font-weight:700}.close-settings{border:1px solid var(--line);background:transparent;border-radius:999px;color:var(--burgundy);padding:9px 13px}.settings-actions{display:flex;justify-content:flex-end;gap:7px;margin-top:14px}.settings-error{min-height:18px;color:#8f3329;font:11px system-ui,sans-serif}
 .toast{position:fixed;right:20px;bottom:20px;z-index:120;max-width:340px;padding:11px 14px;border-radius:13px;background:var(--burgundy);color:var(--pearl);font:11px/1.45 system-ui,sans-serif;opacity:0;transform:translateY(8px);pointer-events:none;transition:.2s}.toast.show{opacity:1;transform:none}
+.mobile-pane-tabs{display:none}
 @media(max-width:1180px){.layout{grid-template-columns:230px minmax(0,1fr)}}
-@media(max-width:980px){.layout{grid-template-columns:1fr}.sidebar-panel{position:static;height:auto;max-height:360px;order:2}.manuscript-panel{order:1}.issue-list{max-height:none}}
+@media(max-width:980px){
+  .mobile-pane-tabs{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin:0 0 10px;padding:4px;border:1px solid var(--line);border-radius:14px;background:var(--platinum)}
+  .mobile-pane-tab{border:0;border-radius:10px;background:transparent;color:var(--umber);padding:9px 10px;font:700 11px system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase}
+  .mobile-pane-tab.active{background:var(--pearl);color:var(--burgundy);box-shadow:0 2px 8px rgba(23,20,17,.06)}
+  .layout{grid-template-columns:1fr}
+  .outline-panel{position:static;height:205px;max-height:205px;order:0}
+  .manuscript-panel{order:1}
+  .issues-panel{order:2;position:static;height:auto;max-height:none}
+  .layout.mobile-issues .outline-panel,.layout.mobile-issues .manuscript-panel{display:none}
+  .layout.mobile-writing .issues-panel{display:none}
+  .issue-list{max-height:none}
+}
 @media(max-width:700px){.topbar{align-items:flex-start}.account-email{display:none}.workspace{padding:13px 9px 22px}.project-bar{align-items:stretch}.project-select,.title-input{flex-basis:100%;max-width:none}.layout{grid-template-columns:1fr}.outline-panel{position:static;height:205px}.manuscript-panel,.issues-panel{grid-column:auto}.editor{max-height:none;min-height:60vh;padding:20px;font-size:16px}.analysis-status{width:100%;margin-left:0}.project-footer{align-items:flex-start;flex-direction:column}}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/mammoth@1.13.0/mammoth.browser.min.js"></script>
@@ -70,6 +82,11 @@ button,input,select{font:inherit}button{cursor:pointer}a{color:inherit}
       <button class="danger" type="button" onclick="deleteProject()">Delete project</button>
       <input class="file-input" id="fileInput" type="file" accept=".txt,.docx,.pdf">
     </div>
+  </div>
+
+  <div class="mobile-pane-tabs" role="tablist" aria-label="Editorial workspace">
+    <button id="mobileWritingTab" class="mobile-pane-tab active" type="button" role="tab" aria-selected="true" onclick="setMobilePane('writing')">Writing</button>
+    <button id="mobileIssuesTab" class="mobile-pane-tab" type="button" role="tab" aria-selected="false" onclick="setMobilePane('issues')">Issues</button>
   </div>
 
   <div class="layout">
@@ -306,6 +323,20 @@ function textToHtml(value){
   if(paragraphs.length===1 && !paragraphs[0].trim())return '<p><br></p>';
   return paragraphs.map(function(paragraph){return '<p>'+escapeHtml(paragraph).replace(/\n/g,'<br>')+'</p>'}).join('');
 }
+function setMobilePane(name){
+  const layout=document.querySelector('.layout');
+  const writing=name!=='issues';
+  layout.classList.toggle('mobile-writing',writing);
+  layout.classList.toggle('mobile-issues',!writing);
+  document.getElementById('mobileWritingTab').classList.toggle('active',writing);
+  document.getElementById('mobileIssuesTab').classList.toggle('active',!writing);
+  document.getElementById('mobileWritingTab').setAttribute('aria-selected',String(writing));
+  document.getElementById('mobileIssuesTab').setAttribute('aria-selected',String(!writing));
+}
+function openSidebarTab(name){
+  if(name==='analysis')setMobilePane('issues');
+  else setMobilePane('writing');
+}
 function normalizeSections(){
   const existing=Array.from(editor.querySelectorAll(':scope > .mm-section'));
   if(existing.length){
@@ -459,7 +490,7 @@ function refreshOutline(){
     button.textContent=sectionTitle(section,index);
     button.title=sectionTitle(section,index);
     button.addEventListener('click',function(){
-      openSidebarTab('headers',document.getElementById('headersTab'));
+      openSidebarTab('headers');
       setActiveSection(index,true);
     });
     list.appendChild(button);
@@ -526,7 +557,7 @@ function selectAndScroll(range){
     const sectionIndex=sections.indexOf(section);
     if(sectionIndex>=0)setActiveSection(sectionIndex,false);
   }
-  openSidebarTab('analysis',document.getElementById('analysisTab'));
+  openSidebarTab('analysis');
   const selection=window.getSelection();selection.removeAllRanges();selection.addRange(range);
   if(element)element.scrollIntoView({behavior:'smooth',block:'center'});
   editor.focus({preventScroll:true});
