@@ -94,7 +94,7 @@ function passiveFindings(snippet, start) {
 }
 
 export function analyseText(value) {
-  const text = String(value || "").replace(/\\r\\n/g, " ").replace(/\\n/g, " ").replace(/\\r/g, " ");
+  const text = String(value || "");
   if (!text.trim()) return { word_count: 0, words: [], passive: [], pacing: [], flagged_count: 0 };
   const spans = sentenceSpans(text);
   const counts = new Map();
