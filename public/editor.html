@@ -33,7 +33,17 @@ button,input,select{font:inherit}button{cursor:pointer}a{color:inherit}
 .editor-toolbar{display:flex;align-items:center;gap:5px;flex-wrap:wrap;padding-bottom:13px}.tool-label{font:600 10px system-ui,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--umber);margin-right:2px}.tool{min-width:34px;height:33px;padding:0 9px;border:1px solid var(--line);border-radius:9px;background:var(--pearl);color:var(--burgundy)}.tool:hover{background:var(--tuscany)}.analysis-status{margin-left:auto;font:11px system-ui,sans-serif;color:var(--umber)}
 .paper-wrap{padding:clamp(14px,3vw,28px);background:linear-gradient(180deg,rgba(247,245,242,.45),rgba(239,232,226,.25))}
 .editor{min-height:67vh;max-height:calc(100vh - 285px);overflow:auto;padding:clamp(22px,4vw,48px);background:#fffdfb;border:1px solid var(--line);border-radius:9px;outline:none;color:#261f1a;font:17px/1.85 Georgia,"Times New Roman",serif;box-shadow:0 10px 35px rgba(23,20,17,.06);caret-color:var(--burgundy)}
-.editor:empty:before{content:attr(data-placeholder);color:#a39182}.editor h1,.editor h2,.editor h3,.editor h4,.editor h5,.editor h6{font-family:"Playfair Display",Georgia,serif;color:var(--burgundy);line-height:1.2}.editor h1{font-size:2.2rem}.editor h2{font-size:1.8rem}.editor h3{font-size:1.45rem}.editor blockquote{margin:1.25em 0;padding-left:17px;border-left:3px solid var(--tuscany);color:var(--umber)}.editor hr{border:0;border-top:1px solid var(--tuscany);margin:2em 0}.editor ul,.editor ol{padding-left:1.6em}
+.editor:empty:before{content:attr(data-placeholder);color:#a39182}
+.editor.has-sections > .mm-section{display:none;min-height:100%}
+.editor.has-sections > .mm-section.mm-section-active{display:block}
+.editor.has-sections > .mm-section > :first-child{margin-top:0}
+.editor h1,.editor h2,.editor h3,.editor h4,.editor h5,.editor h6{font-family:"Playfair Display",Georgia,serif;color:var(--burgundy);line-height:1.2}.editor h1{font-size:2.2rem}.editor h2{font-size:1.8rem}.editor h3{font-size:1.45rem}.editor blockquote{margin:1.25em 0;padding-left:17px;border-left:3px solid var(--tuscany);color:var(--umber)}.editor hr{border:0;border-top:1px solid var(--tuscany);margin:2em 0}.editor ul,.editor ol{padding-left:1.6em}
+.section-nav{display:none;align-items:center;justify-content:space-between;gap:10px;margin-top:12px;padding:9px 2px 0}
+.has-sections + .section-nav{display:flex}
+.section-nav-button{border:1px solid var(--line);background:var(--pearl);color:var(--burgundy);border-radius:999px;padding:8px 12px;font:700 11px system-ui,sans-serif}
+.section-nav-button:hover:not(:disabled){background:var(--tuscany)}
+.section-nav-button:disabled{opacity:.38;cursor:default}
+.section-nav-label{text-align:center;color:var(--umber);font:700 10px/1.4 system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase}
 .manuscript-footer{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:12px 16px 16px}.left-actions,.export-actions,.manuscript-metrics{display:flex;gap:7px;flex-wrap:wrap;align-items:center}.word-count{font:700 11px system-ui,sans-serif;color:var(--burgundy);padding:8px 11px;border:1px solid var(--line);border-radius:999px;background:var(--platinum)}.primary{border:0;background:var(--umber);color:var(--pearl);border-radius:999px;padding:10px 16px;font-weight:700}.primary:hover{background:var(--burgundy)}.ghost{border:1px solid var(--line);background:transparent;color:var(--burgundy);border-radius:999px;padding:9px 14px}.ghost:hover{background:var(--platinum)}.save-status{font:11px system-ui,sans-serif;color:var(--umber);min-height:17px}.export{border:1px solid var(--line);background:var(--platinum);color:var(--burgundy);border-radius:999px;padding:9px 12px;text-decoration:none;font:700 11px system-ui,sans-serif}.export:hover{background:var(--tuscany)}
 .issues-panel{position:sticky;top:92px;height:calc(100vh - 115px);max-height:calc(100vh - 115px);border-radius:20px;overflow:hidden;display:flex;flex-direction:column}
 .issues-head{padding:15px 15px 0;border-bottom:1px solid var(--line)}.issues-title-row{display:flex;align-items:center;justify-content:space-between;gap:8px}.issues-title{margin:0;font:600 1.35rem "Playfair Display",Georgia,serif;color:var(--burgundy)}.issue-count{min-width:28px;height:28px;display:grid;place-items:center;padding:0 8px;border-radius:999px;background:var(--burgundy);color:var(--pearl);font:700 11px system-ui,sans-serif}
@@ -115,6 +125,11 @@ button,input,select{font:inherit}button{cursor:pointer}a{color:inherit}
       </div>
       <div class="paper-wrap">
         <div class="editor" id="richEditor" contenteditable="true" spellcheck="true" data-placeholder="Begin your manuscript here, or import a document…" aria-label="Editable manuscript"></div>
+        <div class="section-nav" id="sectionNav" aria-label="Section navigation">
+          <button class="section-nav-button" id="prevSection" type="button">← Previous</button>
+          <span class="section-nav-label" id="sectionNavLabel">Section 1 of 1</span>
+          <button class="section-nav-button" id="nextSection" type="button">Next →</button>
+        </div>
       </div>
       <div class="manuscript-footer">
         <div class="left-actions">
@@ -221,9 +236,9 @@ let countWordsEngine=null;
 
 function showToast(message){toast.textContent=message;toast.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(function(){toast.classList.remove('show')},2600)}
 function escapeHtml(value){return String(value||'').replace(/[&<>"']/g,function(ch){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[ch]})}
-function format(command){document.execCommand(command,false,null);editor.focus();normalizeSections();refreshOutline();scheduleSave()}
-function formatBlock(tag){document.execCommand('formatBlock',false,'<'+tag+'>');editor.focus();normalizeSections();refreshOutline();scheduleSave()}
-function insertRule(){document.execCommand('insertHorizontalRule',false,null);editor.focus();normalizeSections();refreshOutline();scheduleSave()}
+function format(command){document.execCommand(command,false,null);editor.focus();normalizeSections(false);refreshOutline();scheduleSave()}
+function formatBlock(tag){document.execCommand('formatBlock',false,'<'+tag+'>');editor.focus();normalizeSections(true);refreshOutline();scheduleSave()}
+function insertRule(){document.execCommand('insertHorizontalRule',false,null);editor.focus();normalizeSections(false);refreshOutline();scheduleSave()}
 
 function renderProjectSelect(){
   projectSelect.innerHTML=projects.map(function(project){return '<option value="'+project.id+'">'+escapeHtml(project.title)+'</option>'}).join('');
@@ -257,7 +272,7 @@ async function loadProject(projectId){
   activeProjectSlug=project.slug||'';
   titleInput.value=project.title||'Untitled manuscript';
   editor.innerHTML=project.content||'';
-  normalizeSections();
+  normalizeSections(true);
   currentAnalysis=project.analysis||{word_count:0,words:[],passive:[],pacing:[],flagged_count:0};
   updateWordCount();
   wordCursors={};
@@ -270,6 +285,9 @@ async function loadProject(projectId){
 
 projectSelect.addEventListener('change',async function(){await saveProject();await loadProject(this.value)});
 titleInput.addEventListener('input',function(){scheduleSave()});
+document.getElementById('prevSection').addEventListener('click',function(){navigateSection(-1)});
+document.getElementById('nextSection').addEventListener('click',function(){navigateSection(1)});
+
 editor.addEventListener('input',function(){
   currentAnalysis={word_count:0,words:[],passive:[],pacing:[],flagged_count:0};
   updateWordCount();
@@ -337,20 +355,37 @@ function openSidebarTab(name){
   if(name==='analysis')setMobilePane('issues');
   else setMobilePane('writing');
 }
-function normalizeSections(){
+function normalizeSections(force){
   const existing=Array.from(editor.querySelectorAll(':scope > .mm-section'));
-  if(existing.length){
+  const headingCount=editor.querySelectorAll('.mm-section h1,.mm-section h2,.mm-section h3,.mm-section h4,.mm-section h5,.mm-section h6').length;
+  const needsRebuild=!existing.length || Boolean(force) || headingCount>existing.length;
+  if(!needsRebuild){
     editor.classList.add('has-sections');
+    existing.forEach(function(section,index){section.dataset.sectionIndex=String(index)});
     const active=existing.findIndex(function(section){return section.classList.contains('mm-section-active')});
     setActiveSection(active>=0?active:0,false);
     return existing;
   }
+
+  let preferredIndex=existing.findIndex(function(section){return section.classList.contains('mm-section-active')});
+  if(!existing.length)preferredIndex=0;
+
+  if(existing.length){
+    const fragment=document.createDocumentFragment();
+    existing.forEach(function(section){
+      Array.from(section.childNodes).forEach(function(node){fragment.appendChild(node)});
+    });
+    editor.replaceChildren(fragment);
+  }
+
   const children=Array.from(editor.childNodes);
   const headings=children.filter(function(node){return node.nodeType===1&&/^H[1-6]$/.test(node.tagName)});
   if(!headings.length){
     editor.classList.remove('has-sections');
+    document.getElementById('sectionNav').style.display='none';
     return [];
   }
+
   const fragment=document.createDocumentFragment();
   let section=null,index=0;
   children.forEach(function(node){
@@ -365,39 +400,59 @@ function normalizeSections(){
       section=document.createElement('div');
       section.className='mm-section';
       section.dataset.sectionIndex=String(index++);
-      const intro=document.createElement('h2');
-      intro.textContent='Introduction';
-      section.appendChild(intro);
       fragment.appendChild(section);
     }
     section.appendChild(node);
   });
   editor.replaceChildren(fragment);
   editor.classList.add('has-sections');
-  setActiveSection(0,false);
-  return Array.from(editor.querySelectorAll(':scope > .mm-section'));
+  const sections=Array.from(editor.querySelectorAll(':scope > .mm-section'));
+  setActiveSection(Math.max(0,Math.min(preferredIndex,sections.length-1)),false);
+  return sections;
+}
+function updateSectionNav(){
+  const nav=document.getElementById('sectionNav');
+  const sections=Array.from(editor.querySelectorAll(':scope > .mm-section'));
+  if(!sections.length){
+    nav.style.display='none';
+    return;
+  }
+  nav.style.display='flex';
+  const active=Math.max(0,sections.findIndex(function(section){return section.classList.contains('mm-section-active')}));
+  document.getElementById('sectionNavLabel').textContent=sectionTitle(sections[active],active)+' · '+(active+1)+' of '+sections.length;
+  document.getElementById('prevSection').disabled=active===0;
+  document.getElementById('nextSection').disabled=active===sections.length-1;
+}
+function navigateSection(delta){
+  const sections=Array.from(editor.querySelectorAll(':scope > .mm-section'));
+  if(!sections.length)return;
+  const active=Math.max(0,sections.findIndex(function(section){return section.classList.contains('mm-section-active')}));
+  setMobilePane('writing');
+  setActiveSection(active+Number(delta||0),true);
 }
 function setActiveSection(index,scroll){
   const sections=Array.from(editor.querySelectorAll(':scope > .mm-section'));
-  if(!sections.length)return;
+  if(!sections.length){
+    updateSectionNav();
+    return;
+  }
   const safe=Math.max(0,Math.min(Number(index)||0,sections.length-1));
   sections.forEach(function(section,i){section.classList.toggle('mm-section-active',i===safe)});
   document.querySelectorAll('.outline-item').forEach(function(button,i){button.classList.toggle('active',i===safe)});
+  updateSectionNav();
   if(scroll){
-    const active=sections[safe];
-    if(active)active.scrollIntoView({behavior:'smooth',block:'nearest'});
+    requestAnimationFrame(function(){
+      const active=sections[safe];
+      if(!active)return;
+      editor.scrollTo({top:Math.max(0,active.offsetTop-18),behavior:'smooth'});
+    });
+  }else{
+    editor.scrollTop=0;
   }
 }
 function sectionTitle(section,index){
   const heading=section.querySelector('h1,h2,h3,h4,h5,h6');
   return (heading&&heading.textContent.trim())||('Section '+(index+1));
-}
-function openSidebarTab(name,button){
-  document.querySelectorAll('.sidebar-view').forEach(function(view){view.classList.remove('active')});
-  document.querySelectorAll('.sidebar-tab').forEach(function(tab){tab.classList.remove('active');tab.setAttribute('aria-selected','false')});
-  document.getElementById(name+'View').classList.add('active');
-  button.classList.add('active');
-  button.setAttribute('aria-selected','true');
 }
 fileInput.addEventListener('change',async function(){
   if(!fileInput.files.length)return;
@@ -473,7 +528,7 @@ document.addEventListener('visibilitychange',function(){if(document.visibilitySt
 window.addEventListener('beforeunload',function(){if(activeProjectId)saveProject(true)});
 
 function refreshOutline(){
-  normalizeSections();
+  normalizeSections(false);
   const list=document.getElementById('outlineList');
   const sections=Array.from(editor.querySelectorAll(':scope > .mm-section'));
   if(!sections.length){
@@ -490,7 +545,7 @@ function refreshOutline(){
     button.textContent=sectionTitle(section,index);
     button.title=sectionTitle(section,index);
     button.addEventListener('click',function(){
-      openSidebarTab('headers');
+      setMobilePane('writing');
       setActiveSection(index,true);
     });
     list.appendChild(button);
@@ -499,6 +554,29 @@ function refreshOutline(){
   document.querySelectorAll('.outline-item').forEach(function(button,i){button.classList.toggle('active',i===activeIndex)});
 }
 
+function issueCard(title,meta,copy,action){
+  const button=document.createElement('button');
+  button.type='button';
+  button.className='issue-card';
+  const main=document.createElement('div');
+  main.className='issue-main';
+  const word=document.createElement('span');
+  word.className='issue-word';
+  word.textContent=title;
+  const metaEl=document.createElement('span');
+  metaEl.className='issue-meta';
+  metaEl.textContent=meta;
+  main.append(word,metaEl);
+  const copyEl=document.createElement('div');
+  copyEl.className='issue-copy';
+  copyEl.textContent=copy;
+  const progress=document.createElement('div');
+  progress.className='issue-progress';
+  progress.textContent='Click to jump to this location';
+  button.append(main,copyEl,progress);
+  button.addEventListener('click',function(){action(progress)});
+  return button;
+}
 function renderIssues(){
   const words=currentAnalysis.words||[],passive=currentAnalysis.passive||[],pacing=currentAnalysis.pacing||[];
   document.getElementById('issueCount').textContent=Number(currentAnalysis.flagged_count||0);
@@ -506,18 +584,45 @@ function renderIssues(){
   document.getElementById('passiveCount').textContent=passive.length;
   document.getElementById('pacingCount').textContent=pacing.length;
 
-  document.getElementById('wordsView').innerHTML=words.length?words.map(function(item){
-    const key=encodeURIComponent(item.word);
-    return '<button class="issue-card" type="button" onclick="jumpToWord('+JSON.stringify(item.word)+')"><div class="issue-main"><span class="issue-word">'+escapeHtml(item.word)+'</span><span class="issue-meta">'+item.count+' uses</span></div><div class="issue-copy">'+escapeHtml((item.contexts&&item.contexts[0])||'Repeated word detected.')+'</div><div class="issue-progress" id="word-progress-'+key+'">Click to visit use 1</div></button>'
-  }).join(''):'<div class="issue-empty">No overused words have been flagged. Run an analysis after editing.</div>';
+  const views={
+    words:document.getElementById('wordsView'),
+    passive:document.getElementById('passiveView'),
+    pacing:document.getElementById('pacingView')
+  };
+  Object.values(views).forEach(function(view){view.replaceChildren()});
 
-  document.getElementById('passiveView').innerHTML=passive.length?passive.map(function(item,index){
-    return '<button class="issue-card" type="button" onclick="jumpToSnippet('+index+',true)"><div class="issue-main"><span class="issue-word">Passive voice</span><span class="issue-meta">Issue '+(index+1)+'</span></div><div class="issue-copy">'+escapeHtml(item.sentence)+'</div><div class="issue-progress">Click to jump to this sentence</div></button>'
-  }).join(''):'<div class="issue-empty">No possible passive constructions have been flagged.</div>';
+  if(words.length){
+    words.forEach(function(item){
+      const card=issueCard(item.word,item.count+' uses',(item.contexts&&item.contexts[0])||'Repeated word detected.',function(progress){
+        jumpToWord(item.word,progress);
+      });
+      views.words.appendChild(card);
+    });
+  }else{
+    views.words.innerHTML='<div class="issue-empty">No overused words have been flagged. Run an analysis after editing.</div>';
+  }
 
-  document.getElementById('pacingView').innerHTML=pacing.length?pacing.map(function(item,index){
-    return '<button class="issue-card" type="button" onclick="jumpToSnippet('+index+',false)"><div class="issue-main"><span class="issue-word">'+escapeHtml(item.reason||'Pacing')+'</span><span class="issue-meta">'+Number(item.word_count||0)+' words</span></div><div class="issue-copy">'+escapeHtml(item.sentence)+'</div><div class="issue-progress">Click to jump to this sentence</div></button>'
-  }).join(''):'<div class="issue-empty">No pacing issues have been flagged.</div>';
+  if(passive.length){
+    passive.forEach(function(item,index){
+      const card=issueCard('Passive voice','Issue '+(index+1),item.sentence,function(){
+        jumpToOffsets(item.start,item.end);
+      });
+      views.passive.appendChild(card);
+    });
+  }else{
+    views.passive.innerHTML='<div class="issue-empty">No possible passive constructions have been flagged.</div>';
+  }
+
+  if(pacing.length){
+    pacing.forEach(function(item,index){
+      const card=issueCard(item.reason||'Pacing',Number(item.word_count||0)+' words',item.sentence,function(){
+        jumpToOffsets(item.start,item.end);
+      });
+      views.pacing.appendChild(card);
+    });
+  }else{
+    views.pacing.innerHTML='<div class="issue-empty">No pacing issues have been flagged.</div>';
+  }
 }
 
 function openIssueView(viewName,button){
@@ -527,53 +632,103 @@ function openIssueView(viewName,button){
 }
 
 function buildTextIndex(){
-  const walker=document.createTreeWalker(editor,NodeFilter.SHOW_TEXT),nodes=[];let text='',node;
-  while(node=walker.nextNode()){if(!node.nodeValue)continue;const block=node.parentElement?node.parentElement.closest('p,h1,h2,h3,h4,h5,h6,blockquote,li,div'):null;if(text&&block&&nodes.length&&block!==nodes[nodes.length-1].block)text+='\\n';const start=text.length;text+=node.nodeValue;nodes.push({node:node,start:start,end:text.length,block:block})}
+  const walker=document.createTreeWalker(editor,NodeFilter.SHOW_TEXT),nodes=[];
+  let text='',node;
+  while(node=walker.nextNode()){
+    if(!node.nodeValue)continue;
+    const block=node.parentElement?node.parentElement.closest('p,h1,h2,h3,h4,h5,h6,blockquote,li'):null;
+    const previous=nodes[nodes.length-1];
+    if(text&&block&&previous&&block!==previous.block)text+='\n';
+    const start=text.length;
+    text+=node.nodeValue;
+    nodes.push({node:node,start:start,end:text.length,block:block});
+  }
   return {text:text,nodes:nodes};
 }
 function updateWordCount(){
   const index=buildTextIndex();
-  WORD_COUNT_RE.lastIndex=0;
   const matches=index.text.match(WORD_COUNT_RE)||[];
   const count=typeof countWordsEngine==='function'?countWordsEngine(index.text):matches.length;
   wordCount.textContent=count.toLocaleString()+' '+(count===1?'word':'words');
 }
-
 function rangeForOffsets(index,start,end){
-  let a=null,b=null;
+  start=Number(start);end=Number(end);
+  if(!Number.isFinite(start)||!Number.isFinite(end)||start<0||end<start)return null;
+  let startPoint=null,endPoint=null;
   for(const item of index.nodes){
-    if(!a&&start>=item.start&&start<=item.end)a={node:item.node,offset:Math.min(start-item.start,item.node.nodeValue.length)};
-    if(end>=item.start&&end<=item.end){b={node:item.node,offset:Math.min(end-item.start,item.node.nodeValue.length)};break}
+    if(!startPoint&&start>=item.start&&start<=item.end){
+      startPoint={node:item.node,offset:Math.min(start-item.start,item.node.nodeValue.length)};
+    }
+    if(end>=item.start&&end<=item.end){
+      endPoint={node:item.node,offset:Math.min(end-item.start,item.node.nodeValue.length)};
+      break;
+    }
   }
-  if(!a||!b)return null;
-  const range=document.createRange();range.setStart(a.node,a.offset);range.setEnd(b.node,b.offset);return range;
+  if(!startPoint||!endPoint)return null;
+  const range=document.createRange();
+  range.setStart(startPoint.node,startPoint.offset);
+  range.setEnd(endPoint.node,endPoint.offset);
+  return range;
+}
+function scrollRangeIntoEditor(range){
+  const rect=range.getBoundingClientRect(),editorRect=editor.getBoundingClientRect();
+  const center=editorRect.top+(editor.clientHeight/2);
+  editor.scrollTop+=rect.top+(rect.height/2)-center;
 }
 function selectAndScroll(range){
-  if(!range){showToast('That passage could not be located in the current manuscript.');return}
+  if(!range){showToast('That passage could not be located in the manuscript. Run the analysis again if you recently changed the text.');return}
+  setMobilePane('writing');
   const element=range.startContainer.parentElement;
   const section=element&&element.closest('.mm-section');
+  const sections=Array.from(editor.querySelectorAll(':scope > .mm-section'));
   if(section){
-    const sections=Array.from(editor.querySelectorAll(':scope > .mm-section'));
     const sectionIndex=sections.indexOf(section);
     if(sectionIndex>=0)setActiveSection(sectionIndex,false);
   }
-  openSidebarTab('analysis');
-  const selection=window.getSelection();selection.removeAllRanges();selection.addRange(range);
-  if(element)element.scrollIntoView({behavior:'smooth',block:'center'});
+  const selection=window.getSelection();
+  selection.removeAllRanges();
+  selection.addRange(range);
   editor.focus({preventScroll:true});
+  requestAnimationFrame(function(){scrollRangeIntoEditor(range)});
 }
-function jumpToWord(word){
-  const index=buildTextIndex(),safeWord=String(word||'').replace(/[^A-Za-z'’-]/g,''),regex=new RegExp('\\\\b'+safeWord+'\\\\b','gi'),matches=[];let match;
-  while((match=regex.exec(index.text))!==null){matches.push({start:match.index,end:match.index+match[0].length});if(matches.length>1500)break}
-  if(!matches.length){showToast('That word is no longer present. Run the analysis again.');return}
-  const cursor=wordCursors[word]||0,chosen=matches[cursor%matches.length];wordCursors[word]=(cursor+1)%matches.length;
-  const progress=document.getElementById('word-progress-'+encodeURIComponent(word));if(progress)progress.textContent='Visiting use '+((cursor%matches.length)+1)+' of '+matches.length;
-  selectAndScroll(rangeForOffsets(index,chosen.start,chosen.end));
+function jumpToOffsets(start,end){
+  const index=buildTextIndex();
+  const range=rangeForOffsets(index,start,end);
+  selectAndScroll(range);
 }
-function jumpToSnippet(indexNumber,passive){
-  const list=passive?(currentAnalysis.passive||[]):(currentAnalysis.pacing||[]),issue=list[indexNumber];if(!issue)return;
-  const index=buildTextIndex();const start=index.text.indexOf(issue.sentence);if(start<0){showToast('That sentence is no longer present. Run the analysis again.');return}
-  selectAndScroll(rangeForOffsets(index,start,start+issue.sentence.length));
+function findWordOccurrence(index,word,occurrence){
+  const target=String(word||'').toLowerCase().replace(/’/g,"'");
+  const matches=[...index.text.matchAll(WORD_COUNT_RE)];
+  let seen=0;
+  for(const match of matches){
+    const normalized=String(match[0]||'').toLowerCase().replace(/’/g,"'");
+    if(normalized!==target)continue;
+    if(seen===occurrence)return {start:match.index,end:match.index+match[0].length,total:seen+1};
+    seen++;
+  }
+  return null;
+}
+function jumpToWord(word,progress){
+  const index=buildTextIndex();
+  const occurrence=Number(wordCursors[word]||0);
+  const found=findWordOccurrence(index,word,occurrence);
+  if(!found){
+    if(occurrence>0){
+      wordCursors[word]=0;
+      const first=findWordOccurrence(index,word,0);
+      if(first){
+        if(progress)progress.textContent='Visiting use 1 of '+first.total;
+        selectAndScroll(rangeForOffsets(index,first.start,first.end));
+        return;
+      }
+    }
+    showToast('That word is no longer present in the manuscript. Run the analysis again.');
+    return;
+  }
+  wordCursors[word]=occurrence+1;
+  const total=findWordOccurrence(index,word,occurrence)?.total||occurrence+1;
+  if(progress)progress.textContent='Visiting use '+(occurrence+1)+' of '+total;
+  selectAndScroll(rangeForOffsets(index,found.start,found.end));
 }
 
 async function analyseProject(){
@@ -595,6 +750,7 @@ async function analyseProject(){
 
   try{
     currentAnalysis=analyseTextEngine(manuscriptText);
+    wordCursors={};
     renderIssues();
     updateWordCount();
     await saveProject();
