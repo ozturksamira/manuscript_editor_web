@@ -5,7 +5,15 @@ const PRONOUNS = new Set(["i","me","my","myself","you","your","yourself","yours"
 const PREPOSITIONS = new Set(["about","above","across","after","against","along","among","around","at","before","behind","below","beneath","beside","between","beyond","by","down","during","except","for","from","in","inside","into","like","near","of","off","on","onto","out","outside","over","past","through","throughout","to","toward","under","underneath","until","up","upon","with","within","without"]);
 const CONJUNCTIONS = new Set(["and","but","or","nor","for","yet","so","although","because","since","unless","until","while","whereas"]);
 const CONTRACTION_STOP_WORDS = new Set(["i'm","i’ve","i'll","i’d","you're","you’ve","you'll","you’d","he's","he’ll","he’d","she's","she’ll","she’d","it's","it’ll","it’d","we're","we’ve","we'll","we’d","they're","they’ve","they'll","they’d","who's","who’ll","who’d","that's","that’ll","that’d","can't","couldn't","won't","wouldn't","shouldn't","shan't","isn't","aren't","wasn't","weren't","ain't","haven't","hasn't","hadn't","don't","doesn't","didn't","could've","couldn’t","would've","wouldn’t","should've","shouldn’t","might've","mightn’t","must've","mustn’t","needn't","daren't","oughtn't","usedn't","cannot"]);
-const STOP_WORDS = new Set([...PRONOUNS, ...PREPOSITIONS, ...CONJUNCTIONS, ...AUXILIARY_WORDS, ...CONTRACTION_STOP_WORDS, "a", "an", "the"]);
+const COMMON_GRAMMAR_WORDS = new Set([
+  "a","an","the","and","but","or","nor","so","yet","as","if","then","than",
+  "not","no","yes","back","away","very","just","also","too","still","already",
+  "again","ever","never","now","here","there","when","where","why","how",
+  "what","who","whom","which","this","that","these","those","some","any",
+  "all","each","every","both","either","neither","more","most","less","least",
+  "much","many","few","little","own","same","such"
+]);
+const STOP_WORDS = new Set([...PRONOUNS, ...PREPOSITIONS, ...CONJUNCTIONS, ...AUXILIARY_WORDS, ...CONTRACTION_STOP_WORDS, ...COMMON_GRAMMAR_WORDS]);
 const EVENT_VERBS = new Set(["arrive","arrived","attack","attacked","avoid","avoided","break","broke","burst","build","built","call","called","catch","caught","change","changed","chase","chased","choose","chose","close","closed","crash","crashed","cry","cried","cut","cutting","die","died","discover","discovered","drag","dragged","drive","drove","escape","escaped","enter","entered","explode","exploded","fall","fell","fight","fought","find","found","flee","fled","grab","grabbed","hit","hold","held","jump","jumped","kick","kicked","kill","killed","leave","left","lose","lost","open","opened","pull","pulled","push","pushed","reach","reached","raise","raised","react","reacted","run","ran","rush","rushed","scream","screamed","search","searched","see","saw","send","sent","shake","shook","shoot","shot","shout","shouted","slam","slammed","slip","slipped","smash","smashed","sprint","sprinted","stand","stood","start","started","stop","stopped","strike","struck","survive","survived","take","took","throw","threw","turn","turned","wake","woke","walk","walked","warn","warned","watch","watched","whisper","whispered","write","wrote"]);
 const DESCRIPTION_RE = /\b(?:very|quite|rather|really|extremely|beautifully|slowly|quickly|carefully|suddenly|silently|quietly|loudly|softly|deeply|[A-Za-z-]*(?:ly|ful|ous|ive|less|ish|ical))\b/gi;
 const IRREGULAR_PARTICIPLES = new Set(["arisen","awoken","been","begun","bitten","blown","born","bought","bound","broken","brought","built","burnt","caught","chosen","come","cost","cut","dealt","done","drawn","driven","eaten","fallen","felt","fought","found","flown","forgiven","forgotten","frozen","given","gone","grown","heard","held","hidden","hit","hurt","kept","known","laid","led","left","lent","let","lost","made","meant","met","paid","put","read","ridden","run","said","seen","sent","set","shaken","shown","shut","sung","sold","spent","spoken","stood","stolen","stuck","struck","sworn","swum","taken","taught","torn","told","thought","thrown","understood","woken","won","worn","written"]);
@@ -86,7 +94,7 @@ function passiveFindings(snippet, start) {
 }
 
 export function analyseText(value) {
-  const text = String(value || "");
+  const text = String(value || "").replace(/\\r\\n/g, " ").replace(/\\n/g, " ").replace(/\\r/g, " ");
   if (!text.trim()) return { word_count: 0, words: [], passive: [], pacing: [], flagged_count: 0 };
   const spans = sentenceSpans(text);
   const counts = new Map();
