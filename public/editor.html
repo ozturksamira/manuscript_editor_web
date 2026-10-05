@@ -39,6 +39,14 @@ button,input,select{font:inherit}button{cursor:pointer}a{color:inherit}
 .editor.has-sections > .mm-section > :first-child{margin-top:0}
 .editor h1,.editor h2,.editor h3,.editor h4,.editor h5,.editor h6{font-family:"Playfair Display",Georgia,serif;color:var(--burgundy);line-height:1.2}.editor h1{font-size:2.2rem}.editor h2{font-size:1.8rem}.editor h3{font-size:1.45rem}.editor blockquote{margin:1.25em 0;padding-left:17px;border-left:3px solid var(--tuscany);color:var(--umber)}.editor hr{border:0;border-top:1px solid var(--tuscany);margin:2em 0}.editor ul,.editor ol{padding-left:1.6em}
 .section-nav{display:none;align-items:center;justify-content:space-between;gap:10px;margin-top:12px;padding:9px 2px 0}
+.writing-jump{position:absolute;right:18px;bottom:18px;z-index:5;width:38px;height:38px;border:1px solid var(--line);border-radius:50%;background:rgba(247,245,242,.94);color:var(--burgundy);box-shadow:0 8px 22px rgba(23,20,17,.14);font:700 20px/1 system-ui,sans-serif}.writing-jump:hover{background:var(--tuscany)}
+.paper-wrap{position:relative}
+.words-tools{display:flex;align-items:center;gap:7px;padding:5px 2px 10px;position:sticky;top:0;z-index:2;background:rgba(239,232,226,.96)}
+.words-sort{flex:1;border:1px solid var(--line);border-radius:9px;background:var(--pearl);color:var(--burgundy);padding:7px 8px;font:700 10px system-ui,sans-serif}
+.words-find{border:1px solid var(--line);background:var(--pearl);color:var(--burgundy);border-radius:9px;padding:7px 10px;font:700 10px system-ui,sans-serif}
+.words-find:hover,.words-sort:hover{background:var(--tuscany)}
+.word-search-popover{position:fixed;z-index:110;width:min(310px,calc(100vw - 28px));padding:14px;border:1px solid var(--tuscany);border-radius:16px;background:var(--pearl);box-shadow:0 20px 55px rgba(23,20,17,.22);display:none}.word-search-popover.open{display:block}
+.word-search-title{font:700 1rem "Playfair Display",Georgia,serif;color:var(--burgundy)}.word-search-meta{margin-top:3px;color:var(--umber);font:10px system-ui,sans-serif}.word-search-context{margin-top:9px;padding:9px;border-radius:10px;background:var(--platinum);font:11px/1.5 system-ui,sans-serif;color:#6f6258}.word-search-actions{display:flex;justify-content:space-between;gap:6px;margin-top:10px}.word-search-actions button{border:1px solid var(--line);background:var(--pearl);color:var(--burgundy);border-radius:9px;padding:7px 9px;font:700 10px system-ui,sans-serif}.word-search-actions button:hover{background:var(--tuscany)}
 .has-sections + .section-nav{display:flex}
 .section-nav-button{border:1px solid var(--line);background:var(--pearl);color:var(--burgundy);border-radius:999px;padding:8px 12px;font:700 11px system-ui,sans-serif}
 .section-nav-button:hover:not(:disabled){background:var(--tuscany)}
@@ -125,6 +133,7 @@ button,input,select{font:inherit}button{cursor:pointer}a{color:inherit}
       </div>
       <div class="paper-wrap">
         <div class="editor" id="richEditor" contenteditable="true" spellcheck="true" data-placeholder="Begin your manuscript here, or import a document…" aria-label="Editable manuscript"></div>
+        <button class="writing-jump" id="writingJumpBottom" type="button" title="Jump to bottom of writing section" aria-label="Jump to bottom of writing section">↓</button>
         <div class="section-nav" id="sectionNav" aria-label="Section navigation">
           <button class="section-nav-button" id="prevSection" type="button">← Previous</button>
           <span class="section-nav-label" id="sectionNavLabel">Section 1 of 1</span>
@@ -178,6 +187,17 @@ button,input,select{font:inherit}button{cursor:pointer}a{color:inherit}
   </footer>
 </main>
 
+<div class="word-search-popover" id="wordSearchPopover" role="dialog" aria-label="Find overused word">
+  <div class="word-search-title" id="wordSearchTitle"></div>
+  <div class="word-search-meta" id="wordSearchMeta"></div>
+  <div class="word-search-context" id="wordSearchContext"></div>
+  <div class="word-search-actions">
+    <button type="button" id="wordPrev">← Previous</button>
+    <button type="button" id="wordNext">Next →</button>
+    <button type="button" id="wordClose">Close</button>
+  </div>
+</div>
+
 <div class="modal-backdrop" id="settingsBackdrop">
   <section class="settings-modal" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
     <h2 id="settingsTitle">Account settings</h2>
@@ -230,7 +250,7 @@ let activeProjectSlug='';
 let saveTimer=null;
 let toastTimer=null;
 let currentAnalysis={word_count:0,words:[],passive:[],pacing:[],flagged_count:0};
-let wordCursors={};
+let wordCursors={},activeWord=null,wordSortMode='count-desc';
 let analyseTextEngine=null;
 let countWordsEngine=null;
 
@@ -286,6 +306,13 @@ async function loadProject(projectId){
 projectSelect.addEventListener('change',async function(){await saveProject();await loadProject(this.value)});
 titleInput.addEventListener('input',function(){scheduleSave()});
 document.getElementById('prevSection').addEventListener('click',function(){navigateSection(-1)});
+document.getElementById('writingJumpBottom').addEventListener('click',function(){
+  document.querySelector('.manuscript-footer').scrollIntoView({behavior:'smooth',block:'end'});
+});
+document.getElementById('wordPrev').addEventListener('click',function(){moveWordOccurrence(-1)});
+document.getElementById('wordNext').addEventListener('click',function(){moveWordOccurrence(1)});
+document.getElementById('wordClose').addEventListener('click',closeWordSearch);
+
 document.getElementById('nextSection').addEventListener('click',function(){navigateSection(1)});
 
 editor.addEventListener('input',function(){
@@ -305,6 +332,7 @@ async function fileToHtml(file){
     if(!window.mammoth) throw new Error('DOCX import engine could not be loaded.');
     const result=await window.mammoth.convertToHtml({
       arrayBuffer:await file.arrayBuffer(),
+      includeDefaultStyleMap:true,
       styleMap:[
         "p[style-name='Title'] => h1:fresh",
         "p[style-name='Subtitle'] => h2:fresh",
@@ -314,13 +342,18 @@ async function fileToHtml(file){
         "p[style-name='Heading 4'] => h4:fresh",
         "p[style-name='Heading 5'] => h5:fresh",
         "p[style-name='Heading 6'] => h6:fresh",
+        "p[style-name='Heading1'] => h1:fresh",
+        "p[style-name='Heading2'] => h2:fresh",
+        "p[style-name='Heading3'] => h3:fresh",
         "p[style-name='Chapter'] => h1:fresh",
         "p[style-name='Chapter Title'] => h1:fresh",
+        "p[style-name='Chapter Heading'] => h1:fresh",
         "p[style-name='Section Heading'] => h2:fresh",
+        "p[style-name='Section Title'] => h2:fresh",
         "p[style-name='Subheading'] => h3:fresh"
       ]
     });
-    return result.value;
+    return promoteImportedHeadings(result.value);
   }
   if(name.endsWith('.pdf')){
     const pdfjs=await import('https://cdn.jsdelivr.net/npm/pdfjs-dist@6.3.289/build/pdf.mjs');
@@ -335,6 +368,25 @@ async function fileToHtml(file){
     return textToHtml(pages.join('\n\n'));
   }
   throw new Error('Unsupported file type. Please use .txt, .docx, or .pdf.');
+}
+function promoteImportedHeadings(value){
+  const template=document.createElement('template');
+  template.innerHTML=String(value||'');
+  const paragraphs=Array.from(template.content.querySelectorAll('p'));
+  paragraphs.forEach(function(paragraph){
+    const text=paragraph.textContent.trim();
+    if(!text||text.length>120||/[.!?]$/.test(text))return;
+    const style=String(paragraph.getAttribute('style')||'').toLowerCase();
+    const className=String(paragraph.className||'').toLowerCase();
+    const looksLikeLabel=/^(chapter|part|section|prologue|epilogue|introduction|conclusion|appendix)\b/i.test(text);
+    const looksStyled=/heading|title|subtitle|chapter|section/.test(style+' '+className);
+    const allCaps=text===text.toUpperCase()&&/[A-Z]/.test(text)&&text.length<=80;
+    if(!looksStyled&&!looksLikeLabel&&!allCaps)return;
+    const heading=document.createElement(looksLikeLabel||allCaps?'h1':'h2');
+    while(paragraph.firstChild)heading.appendChild(paragraph.firstChild);
+    paragraph.replaceWith(heading);
+  });
+  return template.innerHTML;
 }
 function textToHtml(value){
   const paragraphs=String(value||'').split(/\n\s*\n/);
@@ -581,17 +633,36 @@ function renderIssues(){
   document.getElementById('passiveCount').textContent=passive.length;
   document.getElementById('pacingCount').textContent=pacing.length;
 
-  const views={
-    words:document.getElementById('wordsView'),
-    passive:document.getElementById('passiveView'),
-    pacing:document.getElementById('pacingView')
-  };
+  const views={words:document.getElementById('wordsView'),passive:document.getElementById('passiveView'),pacing:document.getElementById('pacingView')};
   Object.values(views).forEach(function(view){view.replaceChildren()});
 
   if(words.length){
-    words.forEach(function(item){
+    const tools=document.createElement('div');
+    tools.className='words-tools';
+    const sort=document.createElement('select');
+    sort.className='words-sort';
+    sort.setAttribute('aria-label','Sort overused words');
+    [['count-desc','Most to least'],['count-asc','Least to most'],['alpha','A–Z'],['alpha-desc','Z–A']].forEach(function(pair){
+      const option=document.createElement('option');option.value=pair[0];option.textContent=pair[1];sort.appendChild(option);
+    });
+    sort.value=wordSortMode;
+    sort.addEventListener('change',function(){wordSortMode=this.value;renderIssues()});
+    const find=document.createElement('button');
+    find.type='button';find.className='words-find';find.textContent='Find word';
+    find.addEventListener('click',function(){if(activeWord)openWordSearch(activeWord)});
+    tools.append(sort,find);views.words.appendChild(tools);
+
+    const sorted=words.slice().sort(function(a,b){
+      if(wordSortMode==='alpha')return a.word.localeCompare(b.word);
+      if(wordSortMode==='alpha-desc')return b.word.localeCompare(a.word);
+      return wordSortMode==='count-asc' ? a.count-b.count||a.word.localeCompare(b.word) : b.count-a.count||a.word.localeCompare(b.word);
+    });
+    sorted.forEach(function(item){
       const card=issueCard(item.word,item.count+' uses',(item.contexts&&item.contexts[0])||'Repeated word detected.',function(progress){
-        jumpToWord(item.word,progress);
+        activeWord=item.word;
+        openWordSearch(item.word,card);
+        moveWordOccurrence(0);
+        if(progress)progress.textContent='Find window opened';
       });
       views.words.appendChild(card);
     });
@@ -601,25 +672,70 @@ function renderIssues(){
 
   if(passive.length){
     passive.forEach(function(item,index){
-      const card=issueCard('Passive voice','Issue '+(index+1),item.sentence,function(){
+      const card=issueCard('Passive voice','Issue '+(index+1),cleanIssueText(item.sentence),function(){
         jumpToOffsets(item.start,item.end);
       });
       views.passive.appendChild(card);
     });
-  }else{
-    views.passive.innerHTML='<div class="issue-empty">No possible passive constructions have been flagged.</div>';
-  }
+  }else views.passive.innerHTML='<div class="issue-empty">No possible passive constructions have been flagged.</div>';
 
   if(pacing.length){
     pacing.forEach(function(item,index){
-      const card=issueCard(item.reason||'Pacing',Number(item.word_count||0)+' words',item.sentence,function(){
+      const card=issueCard(cleanIssueText(item.reason||'Pacing'),Number(item.word_count||0)+' words',cleanIssueText(item.sentence),function(){
         jumpToOffsets(item.start,item.end);
       });
       views.pacing.appendChild(card);
     });
+  }else views.pacing.innerHTML='<div class="issue-empty">No pacing issues have been flagged.</div>';
+}
+function cleanIssueText(value){
+  return String(value||'').replace(/\\r\\n/g,' ').replace(/\\n/g,' ').replace(/\\r/g,' ').replace(/\r?\n/g,' ').replace(/\s+/g,' ').trim();
+}
+function openWordSearch(word,anchor){
+  const matches=findWordOccurrences(buildTextIndex(),word);
+  if(!matches.length){showToast('That word is no longer present in the manuscript. Run the analysis again.');return}
+  activeWord=word;
+  if(typeof wordCursors[word]!=='number')wordCursors[word]=0;
+  const pop=document.getElementById('wordSearchPopover');
+  if(anchor){
+    const rect=anchor.getBoundingClientRect();
+    pop.style.left=Math.min(window.innerWidth-330,Math.max(14,rect.left-245))+'px';
+    pop.style.top=Math.min(window.innerHeight-180,Math.max(14,rect.top+rect.height+8))+'px';
   }else{
-    views.pacing.innerHTML='<div class="issue-empty">No pacing issues have been flagged.</div>';
+    pop.style.left='50%';pop.style.top='18%';pop.style.transform='translateX(-50%)';
   }
+  pop.classList.add('open');
+  pop.style.transform=anchor?'':'translateX(-50%)';
+  updateWordSearchPopup();
+}
+function updateWordSearchPopup(){
+  if(!activeWord)return;
+  const matches=findWordOccurrences(buildTextIndex(),activeWord);
+  if(!matches.length){closeWordSearch();return}
+  const index=Number(wordCursors[activeWord]||0)%matches.length;
+  const found=matches[index];
+  document.getElementById('wordSearchTitle').textContent=activeWord;
+  document.getElementById('wordSearchMeta').textContent='Use '+(index+1)+' of '+matches.length;
+  document.getElementById('wordSearchContext').textContent=getOccurrenceContext(found.start,found.end);
+}
+function moveWordOccurrence(delta){
+  if(!activeWord)return;
+  const matches=findWordOccurrences(buildTextIndex(),activeWord);
+  if(!matches.length)return;
+  let next=(Number(wordCursors[activeWord]||0)+Number(delta||0))%matches.length;
+  if(next<0)next+=matches.length;
+  wordCursors[activeWord]=next;
+  const found=matches[next];
+  selectAndScroll(rangeForOffsets(buildTextIndex(),found.start,found.end));
+  updateWordSearchPopup();
+}
+function closeWordSearch(){
+  document.getElementById('wordSearchPopover').classList.remove('open');
+  activeWord=null;
+}
+function getOccurrenceContext(start,end){
+  const text=buildTextIndex().text;
+  return text.slice(Math.max(0,start-70),Math.min(text.length,end+100)).replace(/\\s+/g,' ').trim();
 }
 
 function openIssueView(viewName,button){
@@ -703,17 +819,10 @@ function findWordOccurrences(index,word){
   return matches;
 }
 function jumpToWord(word,progress){
-  const index=buildTextIndex();
-  const matches=findWordOccurrences(index,word);
-  if(!matches.length){
-    showToast('That word is no longer present in the manuscript. Run the analysis again.');
-    return;
-  }
-  const cursor=Number(wordCursors[word]||0)%matches.length;
-  const found=matches[cursor];
-  wordCursors[word]=(cursor+1)%matches.length;
-  if(progress)progress.textContent='Visiting use '+(cursor+1)+' of '+matches.length;
-  selectAndScroll(rangeForOffsets(index,found.start,found.end));
+  activeWord=word;
+  openWordSearch(word);
+  moveWordOccurrence(0);
+  if(progress)progress.textContent='Find window opened';
 }
 
 async function analyseProject(){

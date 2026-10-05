@@ -26,8 +26,8 @@ const flat = analyseText(
 );
 assert.equal(flat.pacing.some((item) => item.reason.startsWith("Flat dynamics")), true);
 
-const stopTest = analyseText("I am a writer and you are here. I am here because I write.");
-assert.equal(stopTest.words.some((item) => ["i", "am", "and", "you", "are", "because"].includes(item.word)), false);
+const stopTest = analyseText("I am a writer and you are here. I am here because I write. But no one went back and away as before.");
+assert.equal(stopTest.words.some((item) => ["i", "am", "and", "you", "are", "because", "but", "no", "back", "away", "as"].includes(item.word)), false);
 assert.equal(countWords("I am a writer and you are here."), 8);
 
 console.log("Cloudflare analysis tests passed.");
