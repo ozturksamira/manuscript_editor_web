@@ -70,6 +70,22 @@ class FrontendRegressionTest(unittest.TestCase):
         footer = html[footer_start:footer_end]
         self.assertNotIn('id="analyseButton"', footer)
 
+    def test_editor_has_chapter_analysis_and_fixed_page_navigation(self):
+        html = (ROOT / "public" / "editor.html").read_text(encoding="utf-8")
+        self.assertIn('id="analyseChapterButton"', html)
+        self.assertIn('onclick="analyseChapter()"', html)
+        self.assertIn("async function analyseChapter()", html)
+        self.assertIn("buildTextIndex(section)", html)
+        self.assertIn("id=" + '"writingJumpTop"', html)
+        self.assertIn("window.scrollTo({top:0,behavior:'smooth'})", html)
+        self.assertIn("id=" + '"writingJumpBottom"', html)
+        self.assertIn("position:fixed", html)
+        self.assertIn('class="editor-pane-tabs"', html)
+        self.assertIn('id="mobileIssuesTab"', html)
+        self.assertIn('class="issues-screen"', html)
+        self.assertIn("layout.classList.toggle('issues-mode',!writing)", html)
+        self.assertNotIn('class="issues-panel" aria-label="Editorial issues"', html.split('class="issues-screen"', 1)[0])
+
     def test_editor_keeps_project_rename_delete_api_paths(self):
         html = (ROOT / "public" / "editor.html").read_text(encoding="utf-8")
         self.assertIn("'/api/projects/'+activeProjectId", html)
