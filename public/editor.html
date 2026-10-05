@@ -332,6 +332,7 @@ async function fileToHtml(file){
     if(!window.mammoth) throw new Error('DOCX import engine could not be loaded.');
     const result=await window.mammoth.convertToHtml({
       arrayBuffer:await file.arrayBuffer(),
+      includeDefaultStyleMap:true,
       styleMap:[
         "p[style-name='Title'] => h1:fresh",
         "p[style-name='Subtitle'] => h2:fresh",
@@ -341,13 +342,18 @@ async function fileToHtml(file){
         "p[style-name='Heading 4'] => h4:fresh",
         "p[style-name='Heading 5'] => h5:fresh",
         "p[style-name='Heading 6'] => h6:fresh",
+        "p[style-name='Heading1'] => h1:fresh",
+        "p[style-name='Heading2'] => h2:fresh",
+        "p[style-name='Heading3'] => h3:fresh",
         "p[style-name='Chapter'] => h1:fresh",
         "p[style-name='Chapter Title'] => h1:fresh",
+        "p[style-name='Chapter Heading'] => h1:fresh",
         "p[style-name='Section Heading'] => h2:fresh",
+        "p[style-name='Section Title'] => h2:fresh",
         "p[style-name='Subheading'] => h3:fresh"
       ]
     });
-    return result.value;
+    return promoteImportedHeadings(result.value);
   }
   if(name.endsWith('.pdf')){
     const pdfjs=await import('https://cdn.jsdelivr.net/npm/pdfjs-dist@6.3.289/build/pdf.mjs');
@@ -362,6 +368,25 @@ async function fileToHtml(file){
     return textToHtml(pages.join('\n\n'));
   }
   throw new Error('Unsupported file type. Please use .txt, .docx, or .pdf.');
+}
+function promoteImportedHeadings(value){
+  const template=document.createElement('template');
+  template.innerHTML=String(value||'');
+  const paragraphs=Array.from(template.content.querySelectorAll('p'));
+  paragraphs.forEach(function(paragraph){
+    const text=paragraph.textContent.trim();
+    if(!text||text.length>120||/[.!?]$/.test(text))return;
+    const style=String(paragraph.getAttribute('style')||'').toLowerCase();
+    const className=String(paragraph.className||'').toLowerCase();
+    const looksLikeLabel=/^(chapter|part|section|prologue|epilogue|introduction|conclusion|appendix)\b/i.test(text);
+    const looksStyled=/heading|title|subtitle|chapter|section/.test(style+' '+className);
+    const allCaps=text===text.toUpperCase()&&/[A-Z]/.test(text)&&text.length<=80;
+    if(!looksStyled&&!looksLikeLabel&&!allCaps)return;
+    const heading=document.createElement(looksLikeLabel||allCaps?'h1':'h2');
+    while(paragraph.firstChild)heading.appendChild(paragraph.firstChild);
+    paragraph.replaceWith(heading);
+  });
+  return template.innerHTML;
 }
 function textToHtml(value){
   const paragraphs=String(value||'').split(/\n\s*\n/);
