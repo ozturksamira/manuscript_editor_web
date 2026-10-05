@@ -24,14 +24,25 @@ button,input,select{font:inherit}button{cursor:pointer}a{color:inherit}
 .project-select{flex:1 1 300px;min-width:220px;border:1px solid var(--line);border-radius:15px;background:rgba(239,232,226,.62);color:var(--burgundy);padding:11px 14px;outline:none}
 .title-input{flex:0 1 320px;border:1px solid transparent;background:transparent;color:var(--burgundy);padding:8px 10px;border-radius:10px;outline:none;font:600 1.02rem "Playfair Display",Georgia,serif}.project-select:focus,.title-input:focus{border-color:var(--umber);box-shadow:0 0 0 3px rgba(123,92,75,.1)}
 .project-actions{display:flex;gap:7px;flex-wrap:wrap}.small-button,.danger{border:1px solid var(--line);background:var(--pearl);color:var(--burgundy);border-radius:11px;padding:8px 12px;font-size:12px}.small-button:hover,.danger:hover{background:var(--platinum)}.danger{color:#6d3428}.file-input{display:none}
-.layout{display:grid;grid-template-columns:165px minmax(0,1fr) 292px;gap:15px;align-items:start}
-.outline-panel,.manuscript-panel,.issues-panel{border:1px solid var(--line);background:rgba(239,232,226,.56);box-shadow:var(--shadow)}
+.layout{display:grid;grid-template-columns:165px minmax(0,1fr);gap:15px;align-items:start}
+.layout.issues-mode{grid-template-columns:1fr}
+.issues-screen{display:none;min-height:calc(100vh - 150px);border:1px solid var(--line);background:rgba(239,232,226,.56);box-shadow:var(--shadow);border-radius:20px;overflow:hidden}
+.layout.issues-mode + .issues-screen{display:flex;flex-direction:column}
+.layout.issues-mode .outline-panel,.layout.issues-mode .manuscript-panel{display:none}
+.editor-pane-tabs{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin:0 0 12px;padding:4px;border:1px solid var(--line);border-radius:14px;background:var(--platinum)}
+.editor-pane-tab{border:0;border-radius:10px;background:transparent;color:var(--umber);padding:9px 10px;font:700 11px system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase}
+.editor-pane-tab.active{background:var(--pearl);color:var(--burgundy);box-shadow:0 2px 8px rgba(23,20,17,.06)}
+.editor-fixed-jumps{position:fixed;right:24px;top:50%;transform:translateY(-50%);z-index:80;display:flex;flex-direction:column;gap:7px}
+.editor-fixed-jump{width:42px;height:42px;border:1px solid var(--line);border-radius:50%;background:rgba(247,245,242,.96);color:var(--burgundy);box-shadow:0 8px 22px rgba(23,20,17,.16);font:700 20px/1 system-ui,sans-serif;backdrop-filter:blur(10px)}
+.editor-fixed-jump:hover{background:var(--tuscany)}
+
+.outline-panel,.manuscript-panel{border:1px solid var(--line);background:rgba(239,232,226,.56);box-shadow:var(--shadow)}
 .outline-panel{position:sticky;top:92px;height:calc(100vh - 115px);overflow:hidden;border-radius:18px;padding:14px 10px}
 .outline-title{margin:0 5px 9px;font:600 1.02rem "Playfair Display",Georgia,serif;color:var(--burgundy)}.outline-list{height:calc(100% - 32px);overflow:auto;padding-right:2px}.outline-empty{padding:9px 5px;color:var(--umber);font-size:11px;line-height:1.6}.outline-item{display:block;width:100%;border:0;background:transparent;text-align:left;color:var(--umber);padding:8px 8px;margin:1px 0;border-radius:9px;font-size:11px;line-height:1.35}.outline-item:hover{background:var(--pearl);color:var(--burgundy)}.outline-item.level-1{font-family:"Playfair Display",Georgia,serif;font-weight:700;color:var(--burgundy);font-size:12px}.outline-item.level-2{padding-left:16px}.outline-item.level-3,.outline-item.level-4{padding-left:24px;font-size:10px}
 .manuscript-panel{min-height:calc(100vh - 150px);border-radius:20px;overflow:hidden}
 .manuscript-head{padding:15px 16px 0;border-bottom:1px solid var(--line)}
 .editor-toolbar{display:flex;align-items:center;gap:5px;flex-wrap:wrap;padding-bottom:10px}.tool-label{font:600 10px system-ui,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--umber);margin-right:2px}.tool{min-width:34px;height:33px;padding:0 9px;border:1px solid var(--line);border-radius:9px;background:var(--pearl);color:var(--burgundy)}.tool:hover{background:var(--tuscany)}.analysis-status{margin-left:auto;font:11px system-ui,sans-serif;color:var(--umber)}
-.editor-top-actions{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 0 13px;border-top:1px solid var(--line);padding-top:10px}.editor-top-actions .primary{padding:9px 15px}.writing-jump{position:static;width:38px;height:38px;flex:0 0 38px;border:1px solid var(--line);border-radius:50%;background:var(--pearl);color:var(--burgundy);box-shadow:0 5px 16px rgba(23,20,17,.12);font:700 20px/1 system-ui,sans-serif}.writing-jump:hover{background:var(--tuscany)}
+.editor-top-actions{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 0 13px;border-top:1px solid var(--line);padding-top:10px}.editor-top-actions .primary{padding:9px 15px}.writing-jump{display:none}
 .paper-wrap{padding:clamp(14px,3vw,28px);background:linear-gradient(180deg,rgba(247,245,242,.45),rgba(239,232,226,.25))}
 .editor{min-height:67vh;max-height:calc(100vh - 285px);overflow:auto;padding:clamp(22px,4vw,48px);background:#fffdfb;border:1px solid var(--line);border-radius:9px;outline:none;color:#261f1a;font:17px/1.85 Georgia,"Times New Roman",serif;box-shadow:0 10px 35px rgba(23,20,17,.06);caret-color:var(--burgundy)}
 .editor:empty:before{content:attr(data-placeholder);color:#a39182}
@@ -40,7 +51,6 @@ button,input,select{font:inherit}button{cursor:pointer}a{color:inherit}
 .editor.has-sections > .mm-section > :first-child{margin-top:0}
 .editor h1,.editor h2,.editor h3,.editor h4,.editor h5,.editor h6{font-family:"Playfair Display",Georgia,serif;color:var(--burgundy);line-height:1.2}.editor h1{font-size:2.2rem}.editor h2{font-size:1.8rem}.editor h3{font-size:1.45rem}.editor blockquote{margin:1.25em 0;padding-left:17px;border-left:3px solid var(--tuscany);color:var(--umber)}.editor hr{border:0;border-top:1px solid var(--tuscany);margin:2em 0}.editor ul,.editor ol{padding-left:1.6em}
 .section-nav{display:none;align-items:center;justify-content:space-between;gap:10px;margin-top:12px;padding:9px 2px 0}
-.writing-jump{position:absolute;right:18px;bottom:18px;z-index:5;width:38px;height:38px;border:1px solid var(--line);border-radius:50%;background:rgba(247,245,242,.94);color:var(--burgundy);box-shadow:0 8px 22px rgba(23,20,17,.14);font:700 20px/1 system-ui,sans-serif}.writing-jump:hover{background:var(--tuscany)}
 .paper-wrap{position:relative}
 .words-tools{display:flex;align-items:center;gap:7px;padding:5px 2px 10px;position:sticky;top:0;z-index:2;background:rgba(239,232,226,.96)}
 .words-sort{flex:1;border:1px solid var(--line);border-radius:9px;background:var(--pearl);color:var(--burgundy);padding:7px 8px;font:700 10px system-ui,sans-serif}
@@ -64,16 +74,13 @@ button,input,select{font:inherit}button{cursor:pointer}a{color:inherit}
 .mobile-pane-tabs{display:none}
 @media(max-width:1180px){.layout{grid-template-columns:230px minmax(0,1fr)}}
 @media(max-width:980px){
-  .mobile-pane-tabs{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin:0 0 10px;padding:4px;border:1px solid var(--line);border-radius:14px;background:var(--platinum)}
-  .mobile-pane-tab{border:0;border-radius:10px;background:transparent;color:var(--umber);padding:9px 10px;font:700 11px system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase}
-  .mobile-pane-tab.active{background:var(--pearl);color:var(--burgundy);box-shadow:0 2px 8px rgba(23,20,17,.06)}
   .layout{grid-template-columns:1fr}
   .outline-panel{position:static;height:205px;max-height:205px;order:0}
   .manuscript-panel{order:1}
-  .issues-panel{order:2;position:static;height:auto;max-height:none}
-  .layout.mobile-issues .outline-panel,.layout.mobile-issues .manuscript-panel{display:none}
-  .layout.mobile-writing .issues-panel{display:none}
+  .issues-screen{min-height:calc(100vh - 150px)}
+  .issues-panel{position:static;height:100%;max-height:none}
   .issue-list{max-height:none}
+  .editor-fixed-jumps{right:14px}
 }
 @media(max-width:700px){.topbar{align-items:flex-start}.account-email{display:none}.workspace{padding:13px 9px 22px}.project-bar{align-items:stretch}.project-select,.title-input{flex-basis:100%;max-width:none}.layout{grid-template-columns:1fr}.outline-panel{position:static;height:205px}.manuscript-panel,.issues-panel{grid-column:auto}.editor{max-height:none;min-height:60vh;padding:20px;font-size:16px}.analysis-status{width:100%;margin-left:0}.project-footer{align-items:flex-start;flex-direction:column}}
 </style>
@@ -103,9 +110,9 @@ button,input,select{font:inherit}button{cursor:pointer}a{color:inherit}
     </div>
   </div>
 
-  <div class="mobile-pane-tabs" role="tablist" aria-label="Editorial workspace">
-    <button id="mobileWritingTab" class="mobile-pane-tab active" type="button" role="tab" aria-selected="true" onclick="setMobilePane('writing')">Writing</button>
-    <button id="mobileIssuesTab" class="mobile-pane-tab" type="button" role="tab" aria-selected="false" onclick="setMobilePane('issues')">Issues</button>
+  <div class="editor-pane-tabs" role="tablist" aria-label="Editorial workspace">
+    <button id="mobileWritingTab" class="editor-pane-tab active" type="button" role="tab" aria-selected="true" onclick="setMobilePane('writing')">Writing</button>
+    <button id="mobileIssuesTab" class="editor-pane-tab" type="button" role="tab" aria-selected="false" onclick="setMobilePane('issues')">Issues</button>
   </div>
 
   <div class="layout">
@@ -131,9 +138,11 @@ button,input,select{font:inherit}button{cursor:pointer}a{color:inherit}
           <button class="tool" type="button" onclick="format('removeFormat')" title="Clear formatting">Clear</button>
           <span class="analysis-status" id="analysisStatus">Ready</span>
         </div>
-        <div class="editor-top-actions" aria-label="Writing actions">
-          <button class="primary" id="analyseButton" type="button" onclick="analyseProject()">Analyse manuscript</button>
-          <button class="writing-jump" id="writingJumpBottom" type="button" title="Jump to bottom of writing section" aria-label="Jump to bottom of writing section">↓</button>
+        <div class="editor-top-actions" aria-label="Writing analysis actions">
+          <div class="left-actions">
+            <button class="primary" id="analyseButton" type="button" onclick="analyseProject()">Analyse manuscript</button>
+            <button class="primary" id="analyseChapterButton" type="button" onclick="analyseChapter()">Analyse Chapter</button>
+          </div>
         </div>
       </div>
       <div class="paper-wrap">
@@ -160,7 +169,10 @@ button,input,select{font:inherit}button{cursor:pointer}a{color:inherit}
       </div>
     </section>
 
-    <aside class="issues-panel" aria-label="Editorial issues">
+  </div
+
+  <section class="issues-screen" id="issuesScreen" aria-label="Editorial issues">
+    <div class="issues-panel" aria-label="Editorial issues">
       <div class="issues-head">
         <div class="issues-title-row"><h2 class="issues-title">Issues</h2><div class="issue-count" id="issueCount">0</div></div>
         <div class="issue-tabs">
@@ -175,7 +187,8 @@ button,input,select{font:inherit}button{cursor:pointer}a{color:inherit}
         <div class="issue-view" id="pacingView"></div>
       </div>
     </aside>
-  </div>
+
+  </section>>
 
   <footer class="project-footer">
     <div class="project-footer-links">
@@ -188,6 +201,10 @@ button,input,select{font:inherit}button{cursor:pointer}a{color:inherit}
     </div>
     <span>Built to keep the writer at the centre.</span>
   </footer>
+  <div class="editor-fixed-jumps" aria-label="Page navigation">
+    <button class="editor-fixed-jump" id="writingJumpTop" type="button" title="Jump to top of editorial page" aria-label="Jump to top of editorial page">↑</button>
+    <button class="editor-fixed-jump" id="writingJumpBottom" type="button" title="Jump to bottom of writing section" aria-label="Jump to bottom of writing section">↓</button>
+  </div>
 </main>
 
 <div class="word-search-popover" id="wordSearchPopover" role="dialog" aria-label="Find overused word">
@@ -245,6 +262,7 @@ const fileInput=document.getElementById('fileInput');
 const toast=document.getElementById('toast');
 const wordCount=document.getElementById('wordCount');
 const analyseButton=document.getElementById('analyseButton');
+const analyseChapterButton=document.getElementById('analyseChapterButton');
 const WORD_COUNT_RE=/\b[A-Za-z](?:[A-Za-z'’-]*[A-Za-z])?\b/g;
 const initialProjectSlug=decodeURIComponent((location.pathname.match(/^\/project\/([^/]+)\/?$/)||[])[1]||'');
 let projects=[];
@@ -253,6 +271,7 @@ let activeProjectSlug='';
 let saveTimer=null;
 let toastTimer=null;
 let currentAnalysis={word_count:0,words:[],passive:[],pacing:[],flagged_count:0};
+let visibleAnalysis=currentAnalysis;
 let wordCursors={},activeWord=null,wordSortMode='count-desc';
 let analyseTextEngine=null;
 let countWordsEngine=null;
@@ -297,6 +316,7 @@ async function loadProject(projectId){
   editor.innerHTML=project.content||'';
   normalizeSections(true);
   currentAnalysis=project.analysis||{word_count:0,words:[],passive:[],pacing:[],flagged_count:0};
+  visibleAnalysis=currentAnalysis;
   updateWordCount();
   wordCursors={};
   updateExportLinks();
@@ -309,6 +329,9 @@ async function loadProject(projectId){
 projectSelect.addEventListener('change',async function(){await saveProject();await loadProject(this.value)});
 titleInput.addEventListener('input',function(){scheduleSave()});
 document.getElementById('prevSection').addEventListener('click',function(){navigateSection(-1)});
+document.getElementById('writingJumpTop').addEventListener('click',function(){
+  window.scrollTo({top:0,behavior:'smooth'});
+});
 document.getElementById('writingJumpBottom').addEventListener('click',function(){
   document.querySelector('.manuscript-footer').scrollIntoView({behavior:'smooth',block:'end'});
 });
@@ -399,8 +422,7 @@ function textToHtml(value){
 function setMobilePane(name){
   const layout=document.querySelector('.layout');
   const writing=name!=='issues';
-  layout.classList.toggle('mobile-writing',writing);
-  layout.classList.toggle('mobile-issues',!writing);
+  layout.classList.toggle('issues-mode',!writing);
   document.getElementById('mobileWritingTab').classList.toggle('active',writing);
   document.getElementById('mobileIssuesTab').classList.toggle('active',!writing);
   document.getElementById('mobileWritingTab').setAttribute('aria-selected',String(writing));
@@ -630,8 +652,9 @@ function issueCard(title,meta,copy,action){
   return button;
 }
 function renderIssues(){
-  const words=currentAnalysis.words||[],passive=currentAnalysis.passive||[],pacing=currentAnalysis.pacing||[];
-  document.getElementById('issueCount').textContent=Number(currentAnalysis.flagged_count||0);
+  const analysis=visibleAnalysis||currentAnalysis;
+  const words=analysis.words||[],passive=analysis.passive||[],pacing=analysis.pacing||[];
+  document.getElementById('issueCount').textContent=Number(analysis.flagged_count||0);
   document.getElementById('wordsCount').textContent=words.length;
   document.getElementById('passiveCount').textContent=passive.length;
   document.getElementById('pacingCount').textContent=pacing.length;
@@ -747,8 +770,9 @@ function openIssueView(viewName,button){
   document.getElementById(viewName+'View').classList.add('active');button.classList.add('active');
 }
 
-function buildTextIndex(){
-  const walker=document.createTreeWalker(editor,NodeFilter.SHOW_TEXT),nodes=[];
+function buildTextIndex(root){
+  root=root||editor;
+  const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT),nodes=[];
   let text='',node;
   while(node=walker.nextNode()){
     if(!node.nodeValue)continue;
@@ -847,6 +871,7 @@ async function analyseProject(){
 
   try{
     currentAnalysis=analyseTextEngine(manuscriptText);
+    visibleAnalysis=currentAnalysis;
     wordCursors={};
     renderIssues();
     updateWordCount();
@@ -854,12 +879,43 @@ async function analyseProject(){
     const issueCount=Number(currentAnalysis.flagged_count||0);
     analysisStatus.textContent=issueCount===0?'No flagged issues':issueCount.toLocaleString()+' issue'+(issueCount===1?'':'s')+' found';
     saveStatus.textContent='Analysis saved';
+    setMobilePane('writing');
   }catch(error){
     analysisStatus.textContent='Analysis failed';
     showToast(error.message||'The manuscript could not be analysed.');
   }finally{
     analyseButton.disabled=false;
     analyseButton.textContent='Analyse manuscript';
+  }
+}
+async function analyseChapter(){
+  if(!activeProjectId||typeof analyseTextEngine!=='function')return;
+  const sections=Array.from(editor.querySelectorAll(':scope > .mm-section'));
+  const activeIndex=sections.findIndex(function(section){return section.classList.contains('mm-section-active')});
+  if(activeIndex<0){showToast('Add a heading to create a chapter section first.');return}
+  const section=sections[activeIndex];
+  const localIndex=buildTextIndex(section);
+  const globalIndex=buildTextIndex(editor);
+  const firstNode=localIndex.nodes[0]&&localIndex.nodes[0].node;
+  const globalStart=firstNode ? ((globalIndex.nodes.find(function(item){return item.node===firstNode})||{}).start||0) : 0;
+  if(!localIndex.text.trim()){
+    visibleAnalysis={word_count:0,words:[],passive:[],pacing:[],flagged_count:0};
+    renderIssues();analysisStatus.textContent='Chapter is empty';setMobilePane('writing');return;
+  }
+  analyseChapterButton.disabled=true;analyseButton.disabled=true;
+  analyseChapterButton.textContent='Analysing…';analysisStatus.textContent='Analysing current chapter locally…';
+  try{
+    const result=analyseTextEngine(localIndex.text);
+    result.passive=(result.passive||[]).map(function(item){return Object.assign({},item,{start:Number(item.start||0)+globalStart,end:Number(item.end||0)+globalStart})});
+    result.pacing=(result.pacing||[]).map(function(item){return Object.assign({},item,{start:Number(item.start||0)+globalStart,end:Number(item.end||0)+globalStart})});
+    visibleAnalysis=result;wordCursors={};renderIssues();
+    const issueCount=Number(result.flagged_count||0);
+    analysisStatus.textContent=issueCount===0?'No chapter issues':issueCount.toLocaleString()+' chapter issue'+(issueCount===1?'':'s')+' found';
+    setMobilePane('writing');
+  }catch(error){
+    analysisStatus.textContent='Chapter analysis failed';showToast(error.message||'The chapter could not be analysed.');
+  }finally{
+    analyseChapterButton.disabled=false;analyseButton.disabled=false;analyseChapterButton.textContent='Analyse Chapter';
   }
 }
 function updateExportLinks(){
