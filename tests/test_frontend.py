@@ -39,6 +39,23 @@ class FrontendRegressionTest(unittest.TestCase):
         self.assertNotRegex(html, r'onclick="renameProject\(')
         self.assertNotRegex(html, r'onclick="removeProject\(')
 
+    def test_editor_has_word_sort_search_and_bottom_jump(self):
+        html = (ROOT / "public" / "editor.html").read_text(encoding="utf-8")
+        self.assertIn("Most to least", html)
+        self.assertIn("A–Z", html)
+        self.assertIn("wordSearchPopover", html)
+        self.assertIn("wordNext", html)
+        self.assertIn("wordPrev", html)
+        self.assertIn("writingJumpBottom", html)
+        self.assertIn("manuscript-footer').scrollIntoView", html)
+        self.assertIn("function promoteImportedHeadings(value)", html)
+        self.assertIn("includeDefaultStyleMap:true", html)
+
+    def test_issue_text_removes_literal_newline_markers(self):
+        html = (ROOT / "public" / "editor.html").read_text(encoding="utf-8")
+        self.assertIn("replace(/\\\\n/g,' ')", html)
+        self.assertIn("replace(/\\r?\\n/g,' ')", html)
+
     def test_editor_keeps_project_rename_delete_api_paths(self):
         html = (ROOT / "public" / "editor.html").read_text(encoding="utf-8")
         self.assertIn("'/api/projects/'+activeProjectId", html)
