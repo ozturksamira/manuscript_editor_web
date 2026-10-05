@@ -30,7 +30,8 @@ button,input,select{font:inherit}button{cursor:pointer}a{color:inherit}
 .outline-title{margin:0 5px 9px;font:600 1.02rem "Playfair Display",Georgia,serif;color:var(--burgundy)}.outline-list{height:calc(100% - 32px);overflow:auto;padding-right:2px}.outline-empty{padding:9px 5px;color:var(--umber);font-size:11px;line-height:1.6}.outline-item{display:block;width:100%;border:0;background:transparent;text-align:left;color:var(--umber);padding:8px 8px;margin:1px 0;border-radius:9px;font-size:11px;line-height:1.35}.outline-item:hover{background:var(--pearl);color:var(--burgundy)}.outline-item.level-1{font-family:"Playfair Display",Georgia,serif;font-weight:700;color:var(--burgundy);font-size:12px}.outline-item.level-2{padding-left:16px}.outline-item.level-3,.outline-item.level-4{padding-left:24px;font-size:10px}
 .manuscript-panel{min-height:calc(100vh - 150px);border-radius:20px;overflow:hidden}
 .manuscript-head{padding:15px 16px 0;border-bottom:1px solid var(--line)}
-.editor-toolbar{display:flex;align-items:center;gap:5px;flex-wrap:wrap;padding-bottom:13px}.tool-label{font:600 10px system-ui,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--umber);margin-right:2px}.tool{min-width:34px;height:33px;padding:0 9px;border:1px solid var(--line);border-radius:9px;background:var(--pearl);color:var(--burgundy)}.tool:hover{background:var(--tuscany)}.analysis-status{margin-left:auto;font:11px system-ui,sans-serif;color:var(--umber)}
+.editor-toolbar{display:flex;align-items:center;gap:5px;flex-wrap:wrap;padding-bottom:10px}.tool-label{font:600 10px system-ui,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--umber);margin-right:2px}.tool{min-width:34px;height:33px;padding:0 9px;border:1px solid var(--line);border-radius:9px;background:var(--pearl);color:var(--burgundy)}.tool:hover{background:var(--tuscany)}.analysis-status{margin-left:auto;font:11px system-ui,sans-serif;color:var(--umber)}
+.editor-top-actions{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 0 13px;border-top:1px solid var(--line);padding-top:10px}.editor-top-actions .primary{padding:9px 15px}.writing-jump{position:static;width:38px;height:38px;flex:0 0 38px;border:1px solid var(--line);border-radius:50%;background:var(--pearl);color:var(--burgundy);box-shadow:0 5px 16px rgba(23,20,17,.12);font:700 20px/1 system-ui,sans-serif}.writing-jump:hover{background:var(--tuscany)}
 .paper-wrap{padding:clamp(14px,3vw,28px);background:linear-gradient(180deg,rgba(247,245,242,.45),rgba(239,232,226,.25))}
 .editor{min-height:67vh;max-height:calc(100vh - 285px);overflow:auto;padding:clamp(22px,4vw,48px);background:#fffdfb;border:1px solid var(--line);border-radius:9px;outline:none;color:#261f1a;font:17px/1.85 Georgia,"Times New Roman",serif;box-shadow:0 10px 35px rgba(23,20,17,.06);caret-color:var(--burgundy)}
 .editor:empty:before{content:attr(data-placeholder);color:#a39182}
@@ -98,7 +99,7 @@ button,input,select{font:inherit}button{cursor:pointer}a{color:inherit}
       <button class="small-button" type="button" onclick="createProject()">+ New project</button>
       <button class="small-button" type="button" onclick="document.getElementById('fileInput').click()">Import manuscript</button>
       <button class="danger" type="button" onclick="deleteProject()">Delete project</button>
-      <input class="file-input" id="fileInput" type="file" accept=".txt,.docx,.pdf">
+      <input class="file-input" id="fileInput" type="file" accept=".txt,.docx,.pdf,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/pdf">
     </div>
   </div>
 
@@ -130,10 +131,13 @@ button,input,select{font:inherit}button{cursor:pointer}a{color:inherit}
           <button class="tool" type="button" onclick="format('removeFormat')" title="Clear formatting">Clear</button>
           <span class="analysis-status" id="analysisStatus">Ready</span>
         </div>
+        <div class="editor-top-actions" aria-label="Writing actions">
+          <button class="primary" id="analyseButton" type="button" onclick="analyseProject()">Analyse manuscript</button>
+          <button class="writing-jump" id="writingJumpBottom" type="button" title="Jump to bottom of writing section" aria-label="Jump to bottom of writing section">↓</button>
+        </div>
       </div>
       <div class="paper-wrap">
         <div class="editor" id="richEditor" contenteditable="true" spellcheck="true" data-placeholder="Begin your manuscript here, or import a document…" aria-label="Editable manuscript"></div>
-        <button class="writing-jump" id="writingJumpBottom" type="button" title="Jump to bottom of writing section" aria-label="Jump to bottom of writing section">↓</button>
         <div class="section-nav" id="sectionNav" aria-label="Section navigation">
           <button class="section-nav-button" id="prevSection" type="button">← Previous</button>
           <span class="section-nav-label" id="sectionNavLabel">Section 1 of 1</span>
@@ -142,7 +146,6 @@ button,input,select{font:inherit}button{cursor:pointer}a{color:inherit}
       </div>
       <div class="manuscript-footer">
         <div class="left-actions">
-          <button class="primary" id="analyseButton" type="button" onclick="analyseProject()">Analyse manuscript</button>
           <button class="ghost" type="button" onclick="saveProject()">Save now</button>
         </div>
         <div class="manuscript-metrics">
