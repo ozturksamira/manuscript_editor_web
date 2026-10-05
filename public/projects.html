@@ -78,58 +78,122 @@ async function loadProjects(){
   const data=await response.json();
   const projects=data.projects||[];
   const grid=document.getElementById('projectGrid');
-  if(!projects.length){grid.innerHTML='<div class="empty">No projects yet. Create your first manuscript project above.</div>';return}
-  grid.innerHTML=projects.map(function(project){
-    const filename=project.source_filename ? escapeHtml(project.source_filename) : 'Writing project';
-    return '<article class="card" tabindex="0" role="link" data-url="'+escapeHtml(project.url)+'" onclick="openProject(event,this)" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openProject(event,this)}">' +
-      '<div><div class="card-kicker">Project</div><h2>'+escapeHtml(project.title)+'</h2><div class="card-meta">'+filename+'</div></div>' +
-      '<div class="arrow">→</div>' +
-      '<div class="card-actions" onclick="event.stopPropagation()">' +
-        '<button class="more-button" type="button" aria-label="Project options for '+escapeHtml(project.title)+'" aria-expanded="false" onclick="toggleProjectMenu(event,this)">···</button>' +
-        '<div class="project-menu">' +
-          '<button type="button" onclick="renameProject(event,'+Number(project.id)+','+JSON.stringify(project.title)+')">Rename</button>' +
-          '<button class="menu-delete" type="button" onclick="removeProject(event,'+Number(project.id)+','+JSON.stringify(project.title)+')">Delete</button>' +
-        '</div>' +
-      '</div></article>';
-  }).join('');
+  grid.replaceChildren();
+  if(!projects.length){
+    const empty=document.createElement('div');
+    empty.className='empty';
+    empty.textContent='No projects yet. Create your first manuscript project above.';
+    grid.appendChild(empty);
+    return;
+  }
+
+  projects.forEach(function(project){
+    const card=document.createElement('article');
+    card.className='card';
+    card.tabIndex=0;
+    card.setAttribute('role','link');
+    card.dataset.url=project.url||'';
+    card.addEventListener('click',function(event){
+      if(event.target.closest('.card-actions'))return;
+      openProject(card.dataset.url);
+    });
+    card.addEventListener('keydown',function(event){
+      if((event.key==='Enter'||event.key===' ')&&!event.target.closest('.card-actions')){
+        event.preventDefault();
+        openProject(card.dataset.url);
+      }
+    });
+
+    const body=document.createElement('div');
+    const kicker=document.createElement('div');
+    kicker.className='card-kicker';
+    kicker.textContent='Project';
+    const title=document.createElement('h2');
+    title.textContent=project.title||'Untitled manuscript';
+    const meta=document.createElement('div');
+    meta.className='card-meta';
+    meta.textContent=project.source_filename||'Writing project';
+    body.append(kicker,title,meta);
+
+    const arrow=document.createElement('div');
+    arrow.className='arrow';
+    arrow.textContent='→';
+
+    const actions=document.createElement('div');
+    actions.className='card-actions';
+
+    const more=document.createElement('button');
+    more.type='button';
+    more.className='more-button';
+    more.setAttribute('aria-label','Project options for '+(project.title||'Untitled manuscript'));
+    more.setAttribute('aria-expanded','false');
+    more.textContent='···';
+
+    const menu=document.createElement('div');
+    menu.className='project-menu';
+
+    const rename=document.createElement('button');
+    rename.type='button';
+    rename.textContent='Rename';
+    rename.addEventListener('click',function(event){
+      event.stopPropagation();
+      renameProject(project.id,project.title||'Untitled manuscript');
+    });
+
+    const remove=document.createElement('button');
+    remove.type='button';
+    remove.className='menu-delete';
+    remove.textContent='Delete';
+    remove.addEventListener('click',function(event){
+      event.stopPropagation();
+      removeProject(project.id,project.title||'Untitled manuscript');
+    });
+
+    menu.append(rename,remove);
+    more.addEventListener('click',function(event){
+      event.stopPropagation();
+      toggleProjectMenu(more);
+    });
+    actions.append(more,menu);
+    card.append(body,arrow,actions);
+    grid.appendChild(card);
+  });
 }
-function openProject(event,card){
-  if(event.target.closest('.card-actions'))return;
-  const url=card.getAttribute('data-url');
+function openProject(url){
   if(url)location.href=url;
 }
-function closeProjectMenus(except){
-  document.querySelectorAll('.project-menu.open').forEach(function(menu){
-    if(menu!==except)menu.classList.remove('open');
-  });
-  document.querySelectorAll('.more-button[aria-expanded="true"]').forEach(function(button){
-    if(!except||button.nextElementSibling!==except)button.setAttribute('aria-expanded','false');
-  });
+function closeProjectMenus(){
+  document.querySelectorAll('.project-menu.open').forEach(function(menu){menu.classList.remove('open')});
+  document.querySelectorAll('.more-button[aria-expanded="true"]').forEach(function(button){button.setAttribute('aria-expanded','false')});
 }
-function toggleProjectMenu(event,button){
-  event.stopPropagation();
-  const menu=button.nextElementSibling,willOpen=!menu.classList.contains('open');
-  closeProjectMenus(willOpen?menu:null);
-  menu.classList.toggle('open',willOpen);
-  button.setAttribute('aria-expanded',String(willOpen));
+function toggleProjectMenu(button){
+  const menu=button.nextElementSibling;
+  const willOpen=!menu.classList.contains('open');
+  closeProjectMenus();
+  if(willOpen){
+    menu.classList.add('open');
+    button.setAttribute('aria-expanded','true');
+  }
 }
-async function renameProject(event,projectId,currentTitle){
-  event.stopPropagation();
+async function renameProject(projectId,currentTitle){
   const title=window.prompt('Rename project',currentTitle);
   if(title===null)return;
   const trimmed=title.trim();
   if(!trimmed){alert('Project name cannot be empty.');return}
-  const response=await fetch('/api/projects/'+projectId,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title:trimmed})});
-  const data=await response.json();
+  const response=await fetch('/api/projects/'+encodeURIComponent(projectId),{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({title:trimmed})
+  });
+  const data=await response.json().catch(function(){return {}});
   if(!response.ok){alert(data.error||'Could not rename project.');return}
   closeProjectMenus();
   await loadProjects();
 }
-async function removeProject(event,projectId,title){
-  event.stopPropagation();
+async function removeProject(projectId,title){
   if(!window.confirm('Delete "'+title+'"? This cannot be undone.'))return;
-  const response=await fetch('/api/projects/'+projectId,{method:'DELETE'});
-  const data=await response.json();
+  const response=await fetch('/api/projects/'+encodeURIComponent(projectId),{method:'DELETE'});
+  const data=await response.json().catch(function(){return {}});
   if(!response.ok){alert(data.error||'Could not delete project.');return}
   closeProjectMenus();
   await loadProjects();
