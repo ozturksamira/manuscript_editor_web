@@ -56,6 +56,20 @@ class FrontendRegressionTest(unittest.TestCase):
         self.assertIn("replace(/\\\\n/g,' ')", html)
         self.assertIn("replace(/\\r?\\n/g,' ')", html)
 
+    def test_editor_imports_pdf_and_keeps_actions_at_top(self):
+        html = (ROOT / "public" / "editor.html").read_text(encoding="utf-8")
+        self.assertIn('accept=".txt,.docx,.pdf,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/pdf"', html)
+        self.assertIn("if(name.endsWith('.pdf'))", html)
+        self.assertIn("pdfjs-dist@6.3.289", html)
+        self.assertIn('class="editor-top-actions"', html)
+        self.assertIn('id="analyseButton"', html)
+        self.assertIn('id="writingJumpBottom"', html)
+        self.assertLess(html.index('class="editor-top-actions"'), html.index('class="paper-wrap"'))
+        footer_start = html.index('<div class="manuscript-footer">')
+        footer_end = html.index('</div>\\n      </div>', footer_start) if '</div>\\n      </div>' in html[footer_start:] else len(html)
+        footer = html[footer_start:footer_end]
+        self.assertNotIn('id="analyseButton"', footer)
+
     def test_editor_keeps_project_rename_delete_api_paths(self):
         html = (ROOT / "public" / "editor.html").read_text(encoding="utf-8")
         self.assertIn("'/api/projects/'+activeProjectId", html)
