@@ -237,7 +237,7 @@ let countWordsEngine=null;
 function showToast(message){toast.textContent=message;toast.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(function(){toast.classList.remove('show')},2600)}
 function escapeHtml(value){return String(value||'').replace(/[&<>"']/g,function(ch){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[ch]})}
 function format(command){document.execCommand(command,false,null);editor.focus();normalizeSections(false);refreshOutline();scheduleSave()}
-function formatBlock(tag){document.execCommand('formatBlock',false,'<'+tag+'>');editor.focus();normalizeSections(true);refreshOutline();scheduleSave()}
+function formatBlock(tag){document.execCommand('formatBlock',false,'<'+tag+'>');editor.focus();normalizeSections(false);refreshOutline();scheduleSave()}
 function insertRule(){document.execCommand('insertHorizontalRule',false,null);editor.focus();normalizeSections(false);refreshOutline();scheduleSave()}
 
 function renderProjectSelect(){
@@ -692,38 +692,26 @@ function jumpToOffsets(start,end){
   const range=rangeForOffsets(index,start,end);
   selectAndScroll(range);
 }
-function findWordOccurrence(index,word,occurrence){
+function findWordOccurrences(index,word){
   const target=String(word||'').toLowerCase().replace(/’/g,"'");
-  const matches=[...index.text.matchAll(WORD_COUNT_RE)];
-  let seen=0;
-  for(const match of matches){
+  const matches=[];
+  for(const match of index.text.matchAll(WORD_COUNT_RE)){
     const normalized=String(match[0]||'').toLowerCase().replace(/’/g,"'");
-    if(normalized!==target)continue;
-    if(seen===occurrence)return {start:match.index,end:match.index+match[0].length,total:seen+1};
-    seen++;
+    if(normalized===target)matches.push({start:match.index,end:match.index+match[0].length});
   }
-  return null;
+  return matches;
 }
 function jumpToWord(word,progress){
   const index=buildTextIndex();
-  const occurrence=Number(wordCursors[word]||0);
-  const found=findWordOccurrence(index,word,occurrence);
-  if(!found){
-    if(occurrence>0){
-      wordCursors[word]=0;
-      const first=findWordOccurrence(index,word,0);
-      if(first){
-        if(progress)progress.textContent='Visiting use 1 of '+first.total;
-        selectAndScroll(rangeForOffsets(index,first.start,first.end));
-        return;
-      }
-    }
+  const matches=findWordOccurrences(index,word);
+  if(!matches.length){
     showToast('That word is no longer present in the manuscript. Run the analysis again.');
     return;
   }
-  wordCursors[word]=occurrence+1;
-  const total=findWordOccurrence(index,word,occurrence)?.total||occurrence+1;
-  if(progress)progress.textContent='Visiting use '+(occurrence+1)+' of '+total;
+  const cursor=Number(wordCursors[word]||0)%matches.length;
+  const found=matches[cursor];
+  wordCursors[word]=(cursor+1)%matches.length;
+  if(progress)progress.textContent='Visiting use '+(cursor+1)+' of '+matches.length;
   selectAndScroll(rangeForOffsets(index,found.start,found.end));
 }
 
