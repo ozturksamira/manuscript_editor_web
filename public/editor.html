@@ -351,10 +351,6 @@ function setMobilePane(name){
   document.getElementById('mobileWritingTab').setAttribute('aria-selected',String(writing));
   document.getElementById('mobileIssuesTab').setAttribute('aria-selected',String(!writing));
 }
-function openSidebarTab(name){
-  if(name==='analysis')setMobilePane('issues');
-  else setMobilePane('writing');
-}
 function normalizeSections(force){
   const existing=Array.from(editor.querySelectorAll(':scope > .mm-section'));
   const headingCount=editor.querySelectorAll('.mm-section h1,.mm-section h2,.mm-section h3,.mm-section h4,.mm-section h5,.mm-section h6').length;
@@ -734,9 +730,9 @@ function jumpToWord(word,progress){
 async function analyseProject(){
   if(!activeProjectId||typeof analyseTextEngine!=='function')return;
   const index=buildTextIndex();
-  const manuscriptText=index.text.trim();
+  const manuscriptText=index.text;
 
-  if(!manuscriptText){
+  if(!manuscriptText.trim()){
     currentAnalysis={word_count:0,words:[],passive:[],pacing:[],flagged_count:0};
     renderIssues();
     updateWordCount();
