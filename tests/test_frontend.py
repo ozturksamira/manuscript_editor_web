@@ -20,9 +20,10 @@ class FrontendRegressionTest(unittest.TestCase):
 
     def test_issue_navigation_returns_to_writing_pane(self):
         html = (ROOT / "public" / "editor.html").read_text(encoding="utf-8")
-        match = re.search(r"function selectAndScroll\(range\)\{(.*?)\n\}", html, re.S)
-        self.assertIsNotNone(match)
-        self.assertIn("setMobilePane('writing')", match.group(1))
+        start = html.index("function selectAndScroll(range){")
+        end = html.index("function jumpToOffsets", start)
+        block = html[start:end]
+        self.assertIn("setMobilePane('writing')", block)
 
     def test_analysis_uses_untrimmed_index_for_offsets(self):
         html = (ROOT / "public" / "editor.html").read_text(encoding="utf-8")
