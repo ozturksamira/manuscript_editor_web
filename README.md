@@ -6,7 +6,7 @@
 
 A professional manuscript analysis and editing web application for writers who want editorial help without generative writing.
 
-**Live Web App:** [Magnolia Margin](https://magnoliamargin.ozturk05samira.dev/) *(Hosted via Cloudflare)*
+**Live Web App:** [Magnolia Margin](https://magnoliamargin.ozturk05samira.workers.dev/) *(Hosted via Cloudflare)*
 **GitHub Repository:** [ozturksamira/manuscript_app](https://www.google.com/search?q=https://github.com/ozturksamira/manuscript_app)
 
 ## Interactive Interface & User Experience
