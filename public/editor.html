@@ -204,9 +204,9 @@ let countWordsEngine=null;
 
 function showToast(message){toast.textContent=message;toast.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(function(){toast.classList.remove('show')},2600)}
 function escapeHtml(value){return String(value||'').replace(/[&<>"']/g,function(ch){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[ch]})}
-function format(command){document.execCommand(command,false,null);editor.focus();refreshOutline();scheduleSave()}
-function formatBlock(tag){document.execCommand('formatBlock',false,'<'+tag+'>');editor.focus();refreshOutline();scheduleSave()}
-function insertRule(){document.execCommand('insertHorizontalRule',false,null);editor.focus();refreshOutline();scheduleSave()}
+function format(command){document.execCommand(command,false,null);editor.focus();normalizeSections();refreshOutline();scheduleSave()}
+function formatBlock(tag){document.execCommand('formatBlock',false,'<'+tag+'>');editor.focus();normalizeSections();refreshOutline();scheduleSave()}
+function insertRule(){document.execCommand('insertHorizontalRule',false,null);editor.focus();normalizeSections();refreshOutline();scheduleSave()}
 
 function renderProjectSelect(){
   projectSelect.innerHTML=projects.map(function(project){return '<option value="'+project.id+'">'+escapeHtml(project.title)+'</option>'}).join('');
@@ -240,6 +240,7 @@ async function loadProject(projectId){
   activeProjectSlug=project.slug||'';
   titleInput.value=project.title||'Untitled manuscript';
   editor.innerHTML=project.content||'';
+  normalizeSections();
   currentAnalysis=project.analysis||{word_count:0,words:[],passive:[],pacing:[],flagged_count:0};
   updateWordCount();
   wordCursors={};
@@ -304,6 +305,68 @@ function textToHtml(value){
   const paragraphs=String(value||'').split(/\n\s*\n/);
   if(paragraphs.length===1 && !paragraphs[0].trim())return '<p><br></p>';
   return paragraphs.map(function(paragraph){return '<p>'+escapeHtml(paragraph).replace(/\n/g,'<br>')+'</p>'}).join('');
+}
+function normalizeSections(){
+  const existing=Array.from(editor.querySelectorAll(':scope > .mm-section'));
+  if(existing.length){
+    editor.classList.add('has-sections');
+    const active=existing.findIndex(function(section){return section.classList.contains('mm-section-active')});
+    setActiveSection(active>=0?active:0,false);
+    return existing;
+  }
+  const children=Array.from(editor.childNodes);
+  const headings=children.filter(function(node){return node.nodeType===1&&/^H[1-6]$/.test(node.tagName)});
+  if(!headings.length){
+    editor.classList.remove('has-sections');
+    return [];
+  }
+  const fragment=document.createDocumentFragment();
+  let section=null,index=0;
+  children.forEach(function(node){
+    const isHeading=node.nodeType===1&&/^H[1-6]$/.test(node.tagName);
+    if(isHeading){
+      section=document.createElement('div');
+      section.className='mm-section';
+      section.dataset.sectionIndex=String(index++);
+      fragment.appendChild(section);
+    }
+    if(!section){
+      section=document.createElement('div');
+      section.className='mm-section';
+      section.dataset.sectionIndex=String(index++);
+      const intro=document.createElement('h2');
+      intro.textContent='Introduction';
+      section.appendChild(intro);
+      fragment.appendChild(section);
+    }
+    section.appendChild(node);
+  });
+  editor.replaceChildren(fragment);
+  editor.classList.add('has-sections');
+  setActiveSection(0,false);
+  return Array.from(editor.querySelectorAll(':scope > .mm-section'));
+}
+function setActiveSection(index,scroll){
+  const sections=Array.from(editor.querySelectorAll(':scope > .mm-section'));
+  if(!sections.length)return;
+  const safe=Math.max(0,Math.min(Number(index)||0,sections.length-1));
+  sections.forEach(function(section,i){section.classList.toggle('mm-section-active',i===safe)});
+  document.querySelectorAll('.outline-item').forEach(function(button,i){button.classList.toggle('active',i===safe)});
+  if(scroll){
+    const active=sections[safe];
+    if(active)active.scrollIntoView({behavior:'smooth',block:'nearest'});
+  }
+}
+function sectionTitle(section,index){
+  const heading=section.querySelector('h1,h2,h3,h4,h5,h6');
+  return (heading&&heading.textContent.trim())||('Section '+(index+1));
+}
+function openSidebarTab(name,button){
+  document.querySelectorAll('.sidebar-view').forEach(function(view){view.classList.remove('active')});
+  document.querySelectorAll('.sidebar-tab').forEach(function(tab){tab.classList.remove('active');tab.setAttribute('aria-selected','false')});
+  document.getElementById(name+'View').classList.add('active');
+  button.classList.add('active');
+  button.setAttribute('aria-selected','true');
 }
 fileInput.addEventListener('change',async function(){
   if(!fileInput.files.length)return;
@@ -379,20 +442,30 @@ document.addEventListener('visibilitychange',function(){if(document.visibilitySt
 window.addEventListener('beforeunload',function(){if(activeProjectId)saveProject(true)});
 
 function refreshOutline(){
+  normalizeSections();
   const list=document.getElementById('outlineList');
-  const headings=Array.from(editor.querySelectorAll('h1,h2,h3,h4,h5,h6'));
-  if(!headings.length){list.innerHTML='<div class="outline-empty">No headings yet. Use H1, H2 or H3 in the toolbar to create chapter navigation.</div>';return}
+  const sections=Array.from(editor.querySelectorAll(':scope > .mm-section'));
+  if(!sections.length){
+    list.innerHTML='<div class="outline-empty">No headings yet. Use H1, H2 or H3 in the toolbar to create separate writing sections.</div>';
+    return;
+  }
   list.innerHTML='';
-  headings.forEach(function(heading,index){
-    heading.id='mm-heading-'+index;
-    const level=Number(heading.tagName.substring(1));
+  sections.forEach(function(section,index){
+    const heading=section.querySelector('h1,h2,h3,h4,h5,h6');
+    const level=heading?Number(heading.tagName.substring(1)):2;
     const button=document.createElement('button');
-    button.type='button';button.className='outline-item level-'+level;
-    button.textContent=heading.textContent.trim()||'Untitled heading';
-    button.title=heading.textContent.trim()||'Untitled heading';
-    button.addEventListener('click',function(){heading.scrollIntoView({behavior:'smooth',block:'center'});heading.classList.add('mm-heading-focus');setTimeout(function(){heading.classList.remove('mm-heading-focus')},800)});
+    button.type='button';
+    button.className='outline-item level-'+level;
+    button.textContent=sectionTitle(section,index);
+    button.title=sectionTitle(section,index);
+    button.addEventListener('click',function(){
+      openSidebarTab('headers',document.getElementById('headersTab'));
+      setActiveSection(index,true);
+    });
     list.appendChild(button);
   });
+  const activeIndex=Math.max(0,sections.findIndex(function(section){return section.classList.contains('mm-section-active')}));
+  document.querySelectorAll('.outline-item').forEach(function(button,i){button.classList.toggle('active',i===activeIndex)});
 }
 
 function renderIssues(){
@@ -446,8 +519,16 @@ function rangeForOffsets(index,start,end){
 }
 function selectAndScroll(range){
   if(!range){showToast('That passage could not be located in the current manuscript.');return}
+  const element=range.startContainer.parentElement;
+  const section=element&&element.closest('.mm-section');
+  if(section){
+    const sections=Array.from(editor.querySelectorAll(':scope > .mm-section'));
+    const sectionIndex=sections.indexOf(section);
+    if(sectionIndex>=0)setActiveSection(sectionIndex,false);
+  }
+  openSidebarTab('analysis',document.getElementById('analysisTab'));
   const selection=window.getSelection();selection.removeAllRanges();selection.addRange(range);
-  const element=range.startContainer.parentElement;if(element)element.scrollIntoView({behavior:'smooth',block:'center'});
+  if(element)element.scrollIntoView({behavior:'smooth',block:'center'});
   editor.focus({preventScroll:true});
 }
 function jumpToWord(word){
