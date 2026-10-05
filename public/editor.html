@@ -432,6 +432,7 @@ function setActiveSection(index,scroll){
     updateSectionNav();
     return;
   }
+  const previous=sections.findIndex(function(section){return section.classList.contains('mm-section-active')});
   const safe=Math.max(0,Math.min(Number(index)||0,sections.length-1));
   sections.forEach(function(section,i){section.classList.toggle('mm-section-active',i===safe)});
   document.querySelectorAll('.outline-item').forEach(function(button,i){button.classList.toggle('active',i===safe)});
@@ -442,7 +443,7 @@ function setActiveSection(index,scroll){
       if(!active)return;
       editor.scrollTo({top:Math.max(0,active.offsetTop-18),behavior:'smooth'});
     });
-  }else{
+  }else if(previous!==safe){
     editor.scrollTop=0;
   }
 }
