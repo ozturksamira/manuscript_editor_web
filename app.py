@@ -40,6 +40,12 @@ from werkzeug.security import check_password_hash, generate_password_hash
 
 
 app = Flask(__name__)
+PUBLIC_DIR = Path(__file__).resolve().parent / "public"
+
+
+def frontend_page(filename):
+    return send_file(PUBLIC_DIR / filename)
+
 IS_RENDER = os.environ.get("RENDER", "").strip().lower() == "true"
 SECRET_KEY = os.environ.get("SECRET_KEY", "").strip()
 if IS_RENDER and not SECRET_KEY:
@@ -1010,11 +1016,11 @@ def index():
         try:
             project = project_for_slug(db, host_slug, user.id)
             if not project:
-                return render_template("not_found.html"), 404
-            return render_template("editor.html", email=user.email, project_slug=project.slug)
+                return frontend_page("not_found.html"), 404
+            return frontend_page("editor.html")
         finally:
             db.close()
-    return render_template("index.html")
+    return frontend_page("index.html")
 
 
 @app.route("/login/")
@@ -1022,14 +1028,14 @@ def index():
 def login_page():
     if current_user():
         return redirect(url_for("projects"))
-    return render_template("login.html")
+    return frontend_page("login.html")
 
 
 @app.route("/projects/")
 @app.route("/projects")
 @login_required
 def projects():
-    return render_template("projects.html", email=current_user().email)
+    return frontend_page("projects.html")
 
 
 @app.route("/editor/")
@@ -1066,7 +1072,7 @@ def project_editor(slug):
         project = project_for_slug(db, slug, current_user().id)
         if not project:
             return render_template("not_found.html"), 404
-        return render_template("editor.html", email=current_user().email, project_slug=project.slug)
+        return frontend_page("editor.html")
     finally:
         db.close()
 
