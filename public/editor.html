@@ -307,7 +307,7 @@ projectSelect.addEventListener('change',async function(){await saveProject();awa
 titleInput.addEventListener('input',function(){scheduleSave()});
 document.getElementById('prevSection').addEventListener('click',function(){navigateSection(-1)});
 document.getElementById('writingJumpBottom').addEventListener('click',function(){
-  editor.scrollTo({top:editor.scrollHeight,behavior:'smooth'});
+  document.querySelector('.manuscript-footer').scrollIntoView({behavior:'smooth',block:'end'});
 });
 document.getElementById('wordPrev').addEventListener('click',function(){moveWordOccurrence(-1)});
 document.getElementById('wordNext').addEventListener('click',function(){moveWordOccurrence(1)});
@@ -661,6 +661,8 @@ function renderIssues(){
       const card=issueCard(item.word,item.count+' uses',(item.contexts&&item.contexts[0])||'Repeated word detected.',function(progress){
         activeWord=item.word;
         openWordSearch(item.word,card);
+        moveWordOccurrence(0);
+        if(progress)progress.textContent='Find window opened';
       });
       views.words.appendChild(card);
     });
