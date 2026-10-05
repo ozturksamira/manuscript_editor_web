@@ -1070,7 +1070,7 @@ def project_editor(slug):
     try:
         project = project_for_slug(db, slug, current_user().id)
         if not project:
-            return render_template("not_found.html"), 404
+            return frontend_page("not_found.html"), 404
         return frontend_page("editor.html")
     finally:
         db.close()
