@@ -176,6 +176,17 @@ class FrontendRegressionTest(unittest.TestCase):
 
 
 
+    def test_save_tracks_edits_during_inflight_request(self):
+        html = (ROOT / "public" / "editor.html").read_text(encoding="utf-8")
+        self.assertIn("let manuscriptChangeVersion=0;", html)
+        start = html.index("function scheduleSave()")
+        end = html.index("document.addEventListener('visibilitychange'", start)
+        block = html[start:end]
+        self.assertIn("manuscriptChangeVersion+=1;", block)
+        self.assertIn("let savedVersion=-1;", block)
+        self.assertIn("do{", block)
+        self.assertIn("}while(savedVersion!==manuscriptChangeVersion);", block)
+
     def test_editor_transitions_require_successful_save(self):
         html = (ROOT / "public" / "editor.html").read_text(encoding="utf-8")
         self.assertIn("const saved=await saveProject();if(!saved){renderProjectSelect();return}", html)
