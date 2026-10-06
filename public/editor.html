@@ -1008,46 +1008,7 @@ function focusOffsets(start,end){
 function jumpToOffsets(start,end){
   focusOffsets(start,end);
 }
-function buildTextIndex(root){
-  root=root||editor;
-  const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT),nodes=[];
-  let text='',node;
-  while(node=walker.nextNode()){
-    if(!node.nodeValue)continue;
-    const block=node.parentElement?node.parentElement.closest('p,h1,h2,h3,h4,h5,h6,blockquote,li'):null;
-    const previous=nodes[nodes.length-1];
-    if(text&&block&&previous&&block!==previous.block)text+='\n';
-    const start=text.length;
-    text+=node.nodeValue;
-    nodes.push({node:node,start:start,end:text.length,block:block});
-  }
-  return {text:text,nodes:nodes};
-}
-function updateWordCount(){
-  const index=buildTextIndex();
-  const matches=index.text.match(WORD_COUNT_RE)||[];
-  const count=typeof countWordsEngine==='function'?countWordsEngine(index.text):matches.length;
-  wordCount.textContent=count.toLocaleString()+' '+(count===1?'word':'words');
-}
-function rangeForOffsets(index,start,end){
-  start=Number(start);end=Number(end);
-  if(!Number.isFinite(start)||!Number.isFinite(end)||start<0||end<start)return null;
-  let startPoint=null,endPoint=null;
-  for(const item of index.nodes){
-    if(!startPoint&&start>=item.start&&start<=item.end){
-      startPoint={node:item.node,offset:Math.min(start-item.start,item.node.nodeValue.length)};
-    }
-    if(end>=item.start&&end<=item.end){
-      endPoint={node:item.node,offset:Math.min(end-item.start,item.node.nodeValue.length)};
-      break;
-    }
-  }
-  if(!startPoint||!endPoint)return null;
-  const range=document.createRange();
-  range.setStart(startPoint.node,startPoint.offset);
-  range.setEnd(endPoint.node,endPoint.offset);
-  return range;
-}
+
 function findWordOccurrences(index,word){
   const target=String(word||'').toLowerCase().replace(/’/g,"'");
   const matches=[];
