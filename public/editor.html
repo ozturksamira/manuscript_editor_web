@@ -316,6 +316,7 @@ async function loadProject(projectId){
   editor.innerHTML=project.content||'';
   promoteEditorHeadingCandidates();
   normalizeSections(true);
+  refreshOutline();
   currentAnalysis=project.analysis||{word_count:0,words:[],passive:[],pacing:[],flagged_count:0};
   visibleAnalysis=currentAnalysis;
   updateWordCount();
@@ -348,6 +349,7 @@ editor.addEventListener('input',function(){
   updateWordCount();
   wordCursors={};
   renderIssues();
+  if(sectionStructureNeedsSync())normalizeSections(false);
   refreshOutline();
   scheduleSave();
   analysisStatus.textContent='Needs analysis';
@@ -457,34 +459,73 @@ function setMobilePane(name){
   document.getElementById('mobileWritingTab').setAttribute('aria-selected',String(writing));
   document.getElementById('mobileIssuesTab').setAttribute('aria-selected',String(!writing));
 }
-function normalizeSections(force){
-  const existing=Array.from(editor.querySelectorAll(':scope > .mm-section'));
-  const headingCount=editor.querySelectorAll('.mm-section h1,.mm-section h2,.mm-section h3,.mm-section h4,.mm-section h5,.mm-section h6').length;
-  const needsRebuild=!existing.length || Boolean(force) || headingCount>existing.length;
-  if(!needsRebuild){
-    editor.classList.add('has-sections');
-    existing.forEach(function(section,index){section.dataset.sectionIndex=String(index)});
-    const active=existing.findIndex(function(section){return section.classList.contains('mm-section-active')});
-    setActiveSection(active>=0?active:0,false);
-    return existing;
-  }
+function getSelectionOffsets(){
+  const selection=window.getSelection();
+  if(!selection||!selection.rangeCount)return null;
+  const range=selection.getRangeAt(0);
+  if(!editor.contains(range.startContainer)||!editor.contains(range.endContainer))return null;
+  const index=buildTextIndex();
+  const startItem=index.nodes.find(function(item){return item.node===range.startContainer});
+  const endItem=index.nodes.find(function(item){return item.node===range.endContainer});
+  if(!startItem||!endItem)return null;
+  return {
+    start:startItem.start+Math.min(range.startOffset,range.startContainer.nodeValue.length),
+    end:endItem.start+Math.min(range.endOffset,range.endContainer.nodeValue.length)
+  };
+}
+function restoreSelectionOffsets(offsets){
+  if(!offsets)return;
+  const range=rangeForOffsets(buildTextIndex(),offsets.start,offsets.end);
+  if(!range)return;
+  const selection=window.getSelection();
+  selection.removeAllRanges();
+  selection.addRange(range);
+  editor.focus({preventScroll:true});
+}
+function flattenSectionWrappers(){
+  const wrappers=Array.from(editor.querySelectorAll('.mm-section'));
+  wrappers.forEach(function(section){
+    const parent=section.parentNode;
+    if(!parent)return;
+    while(section.firstChild)parent.insertBefore(section.firstChild,section);
+    section.remove();
+  });
+}
+function sectionStructureSignature(){
+  const headings=Array.from(editor.querySelectorAll('h1,h2,h3,h4,h5,h6'));
+  const sections=Array.from(editor.querySelectorAll(':scope > .mm-section'));
+  const headingSignature=headings.map(function(heading){
+    const section=heading.closest('.mm-section');
+    const sectionIndex=section&&section.parentElement===editor?sections.indexOf(section):-1;
+    return String(heading.tagName)+'|'+String(heading.textContent||'').trim()+'|'+sectionIndex;
+  }).join('||');
+  return headings.length+'#'+sections.length+'#'+headingSignature;
+}
+function sectionStructureNeedsSync(){
+  const headings=Array.from(editor.querySelectorAll('h1,h2,h3,h4,h5,h6'));
+  const sections=Array.from(editor.querySelectorAll(':scope > .mm-section'));
+  if(!headings.length)return sections.length>0;
+  if(sections.length<1)return true;
+  if(sectionStructureSignature()!==lastSectionStructureSignature)return true;
+  if(Array.from(editor.children).some(function(child){return !child.classList.contains('mm-section')}))return true;
+  return false;
+}
+let lastSectionStructureSignature='';
+function rebuildSections(){
+  const selectionOffsets=getSelectionOffsets();
+  const activeSection=Array.from(editor.querySelectorAll(':scope > .mm-section')).find(function(section){return section.classList.contains('mm-section-active')});
+  const activeHeading=activeSection&&activeSection.querySelector('h1,h2,h3,h4,h5,h6');
+  const activeHeadingText=activeHeading?String(activeHeading.textContent||'').trim():'';
 
-  let preferredIndex=existing.findIndex(function(section){return section.classList.contains('mm-section-active')});
-  if(!existing.length)preferredIndex=0;
-
-  if(existing.length){
-    const fragment=document.createDocumentFragment();
-    existing.forEach(function(section){
-      Array.from(section.childNodes).forEach(function(node){fragment.appendChild(node)});
-    });
-    editor.replaceChildren(fragment);
-  }
+  flattenSectionWrappers();
 
   const children=Array.from(editor.childNodes);
   const headings=children.filter(function(node){return node.nodeType===1&&/^H[1-6]$/.test(node.tagName)});
   if(!headings.length){
     editor.classList.remove('has-sections');
-    document.getElementById('sectionNav').style.display='none';
+    lastSectionStructureSignature=sectionStructureSignature();
+    updateSectionNav();
+    restoreSelectionOffsets(selectionOffsets);
     return [];
   }
 
@@ -492,13 +533,7 @@ function normalizeSections(force){
   let section=null,index=0;
   children.forEach(function(node){
     const isHeading=node.nodeType===1&&/^H[1-6]$/.test(node.tagName);
-    if(isHeading){
-      section=document.createElement('div');
-      section.className='mm-section';
-      section.dataset.sectionIndex=String(index++);
-      fragment.appendChild(section);
-    }
-    if(!section){
+    if(isHeading||!section){
       section=document.createElement('div');
       section.className='mm-section';
       section.dataset.sectionIndex=String(index++);
@@ -506,12 +541,41 @@ function normalizeSections(force){
     }
     section.appendChild(node);
   });
+
   editor.replaceChildren(fragment);
   editor.classList.add('has-sections');
   const sections=Array.from(editor.querySelectorAll(':scope > .mm-section'));
-  setActiveSection(Math.max(0,Math.min(preferredIndex,sections.length-1)),false);
+  sections.forEach(function(item,i){item.dataset.sectionIndex=String(i)});
+
+  let preferred=sections.findIndex(function(item){
+    const heading=item.querySelector('h1,h2,h3,h4,h5,h6');
+    return activeHeadingText&&heading&&String(heading.textContent||'').trim()===activeHeadingText;
+  });
+  if(preferred<0)preferred=0;
+  setActiveSection(preferred,false);
+  lastSectionStructureSignature=sectionStructureSignature();
+  restoreSelectionOffsets(selectionOffsets);
   return sections;
 }
+function normalizeSections(force){
+  if(force||sectionStructureNeedsSync())return rebuildSections();
+  const sections=Array.from(editor.querySelectorAll(':scope > .mm-section'));
+  sections.forEach(function(section,index){section.dataset.sectionIndex=String(index)});
+  const active=sections.findIndex(function(section){return section.classList.contains('mm-section-active')});
+  setActiveSection(active>=0?active:0,false);
+  lastSectionStructureSignature=sectionStructureSignature();
+  return sections;
+}
+function refreshEditorialStructure(checkHeadingCandidates){
+  const selectionOffsets=getSelectionOffsets();
+  if(checkHeadingCandidates)promoteEditorHeadingCandidates();
+  const changed=!!selectionOffsets || sectionStructureNeedsSync();
+  const sections=normalizeSections(!!checkHeadingCandidates||sectionStructureNeedsSync());
+  refreshOutline();
+  if(selectionOffsets)restoreSelectionOffsets(selectionOffsets);
+  return {sections:sections.length,changed:changed};
+}
+
 function updateSectionNav(){
   const nav=document.getElementById('sectionNav');
   const sections=Array.from(editor.querySelectorAll(':scope > .mm-section'));
@@ -639,7 +703,6 @@ document.addEventListener('visibilitychange',function(){if(document.visibilitySt
 window.addEventListener('beforeunload',function(){if(activeProjectId)saveProject(true)});
 
 function refreshOutline(){
-  normalizeSections(false);
   const list=document.getElementById('outlineList');
   const sections=Array.from(editor.querySelectorAll(':scope > .mm-section'));
   if(!sections.length){
@@ -649,19 +712,20 @@ function refreshOutline(){
   list.innerHTML='';
   sections.forEach(function(section,index){
     const heading=section.querySelector('h1,h2,h3,h4,h5,h6');
-    const level=heading?Number(heading.tagName.substring(1)):2;
+    if(!heading)return;
+    const level=Number(heading.tagName.substring(1));
     const button=document.createElement('button');
     button.type='button';
     button.className='outline-item level-'+level;
-    button.textContent=sectionTitle(section,index);
-    button.title=sectionTitle(section,index);
+    button.textContent=String(heading.textContent||'').trim()||('Section '+(index+1));
+    button.title=button.textContent;
     button.addEventListener('click',function(){
       setMobilePane('writing');
       setActiveSection(index,true);
     });
     list.appendChild(button);
   });
-  const activeIndex=Math.max(0,sections.findIndex(function(section){return section.classList.contains('mm-section-active')}));
+  const activeIndex=Array.from(editor.querySelectorAll(':scope > .mm-section')).findIndex(function(section){return section.classList.contains('mm-section-active')});
   document.querySelectorAll('.outline-item').forEach(function(button,i){button.classList.toggle('active',i===activeIndex)});
 }
 
@@ -769,7 +833,9 @@ function openWordSearch(word,anchor){
   }
   pop.classList.add('open');
   pop.style.transform=anchor?'':'translateX(-50%)';
+  const targetIndex=Number(wordCursors[activeWord]||0);
   updateWordSearchPopup();
+  focusWordOccurrence(activeWord,targetIndex);
 }
 function updateWordSearchPopup(){
   if(!activeWord)return;
@@ -781,6 +847,36 @@ function updateWordSearchPopup(){
   document.getElementById('wordSearchMeta').textContent='Use '+(index+1)+' of '+matches.length;
   document.getElementById('wordSearchContext').textContent=getOccurrenceContext(found.start,found.end);
 }
+function focusWordOccurrence(index,occurrenceIndex){
+  const matches=findWordOccurrences(buildTextIndex(),index);
+  if(!matches.length)return false;
+  const target=matches[occurrenceIndex];
+  if(!target)return false;
+
+  setMobilePane('writing');
+  const section=target.node.parentElement&&target.node.parentElement.closest('.mm-section');
+  const sections=Array.from(editor.querySelectorAll(':scope > .mm-section'));
+  const sectionIndex=section?sections.indexOf(section):-1;
+  if(sectionIndex>=0&&!section.classList.contains('mm-section-active'))setActiveSection(sectionIndex,false);
+
+  requestAnimationFrame(function(){
+    const freshMatches=findWordOccurrences(buildTextIndex(),index);
+    const freshTarget=freshMatches[occurrenceIndex];
+    if(!freshTarget||!freshTarget.node.isConnected){
+      showToast('That occurrence could not be located. Run the analysis again after editing.');
+      return;
+    }
+    const range=document.createRange();
+    range.setStart(freshTarget.node,freshTarget.nodeOffsetStart);
+    range.setEnd(freshTarget.node,freshTarget.nodeOffsetEnd);
+    const selection=window.getSelection();
+    selection.removeAllRanges();
+    selection.addRange(range);
+    editor.focus({preventScroll:true});
+    requestAnimationFrame(function(){scrollRangeIntoEditor(range)});
+  });
+  return true;
+}
 function moveWordOccurrence(delta){
   if(!activeWord)return;
   const matches=findWordOccurrences(buildTextIndex(),activeWord);
@@ -788,18 +884,17 @@ function moveWordOccurrence(delta){
   let next=(Number(wordCursors[activeWord]||0)+Number(delta||0))%matches.length;
   if(next<0)next+=matches.length;
   wordCursors[activeWord]=next;
-  const found=matches[next];
-  const range=rangeForOffsets(buildTextIndex(),found.start,found.end);
-  if(range)selectAndScroll(range);
+  focusWordOccurrence(activeWord,next);
   updateWordSearchPopup();
 }
+
 function closeWordSearch(){
   document.getElementById('wordSearchPopover').classList.remove('open');
   activeWord=null;
 }
 function getOccurrenceContext(start,end){
   const text=buildTextIndex().text;
-  return text.slice(Math.max(0,start-70),Math.min(text.length,end+100)).replace(/\\s+/g,' ').trim();
+  return text.slice(Math.max(0,start-70),Math.min(text.length,end+100)).replace(/\s+/g,' ').trim();
 }
 
 function openIssueView(viewName,button){
@@ -850,57 +945,129 @@ function rangeForOffsets(index,start,end){
 }
 function scrollRangeIntoEditor(range){
   if(!range)return;
-  const rect=range.getBoundingClientRect();
+  const rects=Array.from(range.getClientRects&&range.getClientRects()||[]);
+  const rect=rects[0]||range.getBoundingClientRect();
   const editorRect=editor.getBoundingClientRect();
-  if(!rect.height&&!rect.width)return;
+  if(!rect||(!rect.height&&!rect.width))return;
   const target=editor.scrollTop+(rect.top-editorRect.top)-(editor.clientHeight/2)+(rect.height/2);
   editor.scrollTo({top:Math.max(0,target),behavior:'smooth'});
 }
 function selectAndScroll(range){
-  if(!range){showToast('That passage could not be located in the manuscript. Run the analysis again if you recently changed the text.');return}
-  const sourceIndex=buildTextIndex();
-  const startNode=range.startContainer;
-  const endNode=range.endContainer;
-  const startItem=sourceIndex.nodes.find(function(item){return item.node===startNode});
-  const endItem=sourceIndex.nodes.find(function(item){return item.node===endNode});
-  if(!startItem||!endItem){showToast('That passage could not be located in the manuscript. Run the analysis again.');return}
-  const start=startItem.start+Math.min(range.startOffset,startNode.nodeValue.length);
-  const end=endItem.start+Math.min(range.endOffset,endNode.nodeValue.length);
+  if(!range){
+    showToast('That passage could not be located in the manuscript. Run the analysis again if you recently changed the text.');
+    return;
+  }
+  const index=buildTextIndex();
+  const startItem=index.nodes.find(function(item){return item.node===range.startContainer});
+  const endItem=index.nodes.find(function(item){return item.node===range.endContainer});
+  if(!startItem||!endItem){
+    showToast('That passage could not be located in the manuscript. Run the analysis again.');
+    return;
+  }
+  const start=startItem.start+Math.min(range.startOffset,range.startContainer.nodeValue.length);
+  const end=endItem.start+Math.min(range.endOffset,range.endContainer.nodeValue.length);
+  focusOffsets(start,end);
+}
+function focusOffsets(start,end){
   setMobilePane('writing');
-  const section=startNode.parentElement&&startNode.parentElement.closest('.mm-section');
+  const firstIndex=buildTextIndex();
+  const initialRange=rangeForOffsets(firstIndex,start,end);
+  if(!initialRange){
+    showToast('That passage could not be located in the manuscript.');
+    return;
+  }
+  const section=initialRange.startContainer.parentElement&&initialRange.startContainer.parentElement.closest('.mm-section');
   const sections=Array.from(editor.querySelectorAll(':scope > .mm-section'));
   const sectionIndex=section?sections.indexOf(section):-1;
   if(sectionIndex>=0&&!section.classList.contains('mm-section-active'))setActiveSection(sectionIndex,false);
-  const focusAndScroll=function(){
-    const freshIndex=buildTextIndex();
-    const freshRange=rangeForOffsets(freshIndex,start,end);
-    if(!freshRange){showToast('That passage could not be located after changing sections.');return}
+  requestAnimationFrame(function(){
+    const freshRange=rangeForOffsets(buildTextIndex(),start,end);
+    if(!freshRange){
+      showToast('That passage could not be located after changing sections.');
+      return;
+    }
     const selection=window.getSelection();
     selection.removeAllRanges();
     selection.addRange(freshRange);
     editor.focus({preventScroll:true});
     requestAnimationFrame(function(){scrollRangeIntoEditor(freshRange)});
-  };
-  requestAnimationFrame(focusAndScroll);
+  });
 }
+
 function jumpToOffsets(start,end){
   const index=buildTextIndex();
   const range=rangeForOffsets(index,start,end);
   selectAndScroll(range);
 }
+function jumpToOffsets(start,end){
+  focusOffsets(start,end);
+}
+function buildTextIndex(root){
+  root=root||editor;
+  const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT),nodes=[];
+  let text='',node;
+  while(node=walker.nextNode()){
+    if(!node.nodeValue)continue;
+    const block=node.parentElement?node.parentElement.closest('p,h1,h2,h3,h4,h5,h6,blockquote,li'):null;
+    const previous=nodes[nodes.length-1];
+    if(text&&block&&previous&&block!==previous.block)text+='\n';
+    const start=text.length;
+    text+=node.nodeValue;
+    nodes.push({node:node,start:start,end:text.length,block:block});
+  }
+  return {text:text,nodes:nodes};
+}
+function updateWordCount(){
+  const index=buildTextIndex();
+  const matches=index.text.match(WORD_COUNT_RE)||[];
+  const count=typeof countWordsEngine==='function'?countWordsEngine(index.text):matches.length;
+  wordCount.textContent=count.toLocaleString()+' '+(count===1?'word':'words');
+}
+function rangeForOffsets(index,start,end){
+  start=Number(start);end=Number(end);
+  if(!Number.isFinite(start)||!Number.isFinite(end)||start<0||end<start)return null;
+  let startPoint=null,endPoint=null;
+  for(const item of index.nodes){
+    if(!startPoint&&start>=item.start&&start<=item.end){
+      startPoint={node:item.node,offset:Math.min(start-item.start,item.node.nodeValue.length)};
+    }
+    if(end>=item.start&&end<=item.end){
+      endPoint={node:item.node,offset:Math.min(end-item.start,item.node.nodeValue.length)};
+      break;
+    }
+  }
+  if(!startPoint||!endPoint)return null;
+  const range=document.createRange();
+  range.setStart(startPoint.node,startPoint.offset);
+  range.setEnd(endPoint.node,endPoint.offset);
+  return range;
+}
 function findWordOccurrences(index,word){
   const target=String(word||'').toLowerCase().replace(/’/g,"'");
   const matches=[];
-  for(const match of index.text.matchAll(WORD_COUNT_RE)){
-    const normalized=String(match[0]||'').toLowerCase().replace(/’/g,"'");
-    if(normalized===target)matches.push({start:match.index,end:match.index+match[0].length});
-  }
+  index.nodes.forEach(function(item){
+    const value=String(item.node.nodeValue||'');
+    WORD_COUNT_RE.lastIndex=0;
+    for(const match of value.matchAll(WORD_COUNT_RE)){
+      const normalized=String(match[0]||'').toLowerCase().replace(/’/g,"'");
+      if(normalized===target){
+        matches.push({
+          start:item.start+match.index,
+          end:item.start+match.index+match[0].length,
+          node:item.node,
+          nodeOffsetStart:match.index,
+          nodeOffsetEnd:match.index+match[0].length
+        });
+      }
+    }
+  });
   return matches;
 }
+
 function jumpToWord(word,progress){
   activeWord=word;
+  wordCursors[word]=0;
   openWordSearch(word);
-  moveWordOccurrence(0);
   if(progress)progress.textContent='Find window opened';
 }
 
@@ -908,29 +1075,25 @@ async function analyseProject(){
   if(!activeProjectId||typeof analyseTextEngine!=='function')return;
   analyseButton.disabled=true;
   analyseChapterButton.disabled=true;
-  analyseButton.textContent='Checking…';
+  analyseButton.textContent='Checking headings…';
   analysisStatus.textContent='Checking headings and refreshing Contents…';
-  refreshEditorialStructure(true);
-  const index=buildTextIndex();
-  const manuscriptText=index.text;
-
-  if(!manuscriptText.trim()){
-    currentAnalysis={word_count:0,words:[],passive:[],pacing:[],flagged_count:0};
-    visibleAnalysis=currentAnalysis;
-    renderIssues();
-    updateWordCount();
-    refreshOutline();
-    analysisStatus.textContent='Nothing to analyse';
-    analyseButton.disabled=false;
-    analyseChapterButton.disabled=false;
-    analyseButton.textContent='Analyse manuscript';
-    return;
-  }
-
-  analyseButton.textContent='Analysing…';
-  analysisStatus.textContent='Analysing manuscript locally…';
-
   try{
+    refreshEditorialStructure(true);
+    const index=buildTextIndex();
+    const manuscriptText=index.text;
+
+    if(!manuscriptText.trim()){
+      currentAnalysis={word_count:0,words:[],passive:[],pacing:[],flagged_count:0};
+      visibleAnalysis=currentAnalysis;
+      renderIssues();
+      updateWordCount();
+      refreshOutline();
+      analysisStatus.textContent='Nothing to analyse';
+      return;
+    }
+
+    analyseButton.textContent='Analysing…';
+    analysisStatus.textContent='Analysing manuscript locally…';
     currentAnalysis=analyseTextEngine(manuscriptText);
     visibleAnalysis=currentAnalysis;
     wordCursors={};
