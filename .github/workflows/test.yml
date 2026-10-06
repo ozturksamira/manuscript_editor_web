@@ -52,8 +52,8 @@ jobs:
         run: npm install
       - name: Browser smoke test
         run: |
-          npx --yes playwright@1.56.1 install --with-deps chromium
-          npx --yes playwright@1.56.1 test tests/editor_browser.spec.mjs --reporter=line
+          npx playwright install --with-deps chromium
+          node tests/editor_browser.spec.mjs
 
       - name: Check Cloudflare Worker JavaScript
         run: node --check src/index.js
