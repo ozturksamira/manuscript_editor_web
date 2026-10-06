@@ -79,7 +79,7 @@ try {
 
   await page.locator(".issue-tab").filter({hasText:"Passive"}).click();
   await page.locator("#passiveView .issue-card").first().click();
-  if(await highlightedText()!=="The ball was thrown by John.")throw new Error("Passive issue did not receive the correct soft focus highlight");
+  if(await highlightedText()!=="The ball was thrown by John.")throw new Error("Passive issue did not receive the correct soft focus highlight: "+JSON.stringify(await highlightedText()));
   if(await page.locator(".mm-section-active").innerText().then(text=>!text.includes("Chapter One")))throw new Error("Passive issue did not activate its containing chapter");
   await page.locator(".issue-tab").filter({hasText:"Pacing"}).click();
   await page.locator("#pacingView .issue-card").first().click();
