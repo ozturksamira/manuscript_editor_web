@@ -85,6 +85,7 @@ try {
       return rect.bottom>=editorRect.top&&rect.top<=editorRect.bottom;
     },null,{timeout:3000});
   };
+  await waitForHighlight("alpha");
   if(await highlightedText()!=="alpha")throw new Error("Overused word did not receive the correct soft focus highlight");
   if(await page.locator(".mm-section-active").innerText().then(text=>!text.includes("Chapter One")))throw new Error("Overused word did not activate its containing chapter");
   await page.locator("#wordNext").click();
