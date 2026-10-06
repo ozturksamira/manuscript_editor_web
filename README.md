@@ -26,6 +26,8 @@ The application features a modern, full-screen **snap-scrolling slideshow layout
 - Develop Pacing feature flag better issues.
 - Find a way for Overused Words feature not to flag names, possibly by not flagging capitalised words(?). -> When regular overused words are flagged, change code to ignore case lettering.
 - Add feature which allows users to modify their scripts' tense (e.g. first to third, past to present).
+- Fix switching manuscripts tab.
+- Fix jumping arrows to work on Ediorial page all over.
 
 ## Production
 
@@ -64,8 +66,6 @@ Nothing depends on the developer's PC being switched on. Manuscript data is stor
 ## Account security
 
 Passwords are never stored as plaintext. The Cloudflare Worker hashes passwords with PBKDF2-SHA-256 using Web Crypto and stores only the derived hash. Login sessions use a signed, HttpOnly, Secure, SameSite=Lax cookie.
-
-`SESSION_SECRET` is stored as a Cloudflare Worker secret and must never be committed to GitHub.
 
 ## Manuscript analysis
 
