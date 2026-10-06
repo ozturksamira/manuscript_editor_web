@@ -218,9 +218,15 @@ CONTRACTION_STOP_WORDS = {
     "needn't", "daren't", "oughtn't", "usedn't",
     "cannot",
 }
-STOP_WORDS = PRONOUNS | PREPOSITIONS | CONJUNCTIONS | AUXILIARY_WORDS | CONTRACTION_STOP_WORDS | {
-    "a", "an", "the",
+COMMON_GRAMMAR_WORDS = {
+    "a", "an", "the", "and", "but", "or", "nor", "so", "yet", "as", "if", "then", "than",
+    "not", "no", "yes", "back", "away", "very", "just", "also", "too", "still", "already",
+    "again", "ever", "never", "now", "here", "there", "when", "where", "why", "how",
+    "what", "who", "whom", "which", "this", "that", "these", "those", "some", "any",
+    "all", "each", "every", "both", "either", "neither", "more", "most", "less", "least",
+    "much", "many", "few", "little", "own", "same", "such",
 }
+STOP_WORDS = PRONOUNS | PREPOSITIONS | CONJUNCTIONS | AUXILIARY_WORDS | CONTRACTION_STOP_WORDS | COMMON_GRAMMAR_WORDS
 EVENT_VERBS = {
     "arrive", "arrived", "attack", "attacked", "avoid", "avoided", "break", "broke",
     "burst", "build", "built", "call", "called", "catch", "caught", "change", "changed",
