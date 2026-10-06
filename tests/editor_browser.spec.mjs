@@ -51,6 +51,7 @@ try {
   if(!savedContent||savedContent.includes("mm-section"))throw new Error("Saved content should be canonical manuscript HTML without runtime section wrappers");
   await page.reload({waitUntil:"domcontentloaded"});
   await page.locator(".mm-section").first().waitFor();
+  if(await page.evaluate(()=>window.CSS?.highlights?.has("mm-editor-issue") ? window.CSS.highlights.get("mm-editor-issue").size : 0)!==0)throw new Error("Transient issue focus survived a page reload");
   if(await page.locator(".mm-section").count()!==5||await page.locator(".outline-item").count()!==4)throw new Error("Contents did not rebuild after refresh");
 
   await page.locator("a.brand").click();
@@ -74,9 +75,21 @@ try {
       return !!(h&&h.size&&Array.from(h).map(range=>range.toString()).join("")===value);
     },expected,{timeout:3000});
   };
+  const waitForHighlightInEditor=async()=>{
+    await page.waitForFunction(()=>{
+      const h=window.CSS?.highlights?.get("mm-editor-issue");
+      const range=h&&h.size?Array.from(h)[0]:null;
+      if(!range)return false;
+      const editor=document.getElementById("richEditor");
+      const rect=range.getBoundingClientRect();
+      const editorRect=editor.getBoundingClientRect();
+      return rect.bottom>=editorRect.top&&rect.top<=editorRect.bottom;
+    },null,{timeout:3000});
+  };
   if(await highlightedText()!=="alpha")throw new Error("Overused word did not receive the correct soft focus highlight");
   if(await page.locator(".mm-section-active").innerText().then(text=>!text.includes("Chapter One")))throw new Error("Overused word did not activate its containing chapter");
   await page.locator("#wordNext").click();
+  if(await page.locator("#wordSearchMeta").innerText()!=="Use 2 of 16")throw new Error("Next word navigation did not advance to the second occurrence");
   const secondWord=await highlightedText();
   if(secondWord!=="alpha")throw new Error("Next word did not replace the focus highlight");
   await page.locator("#wordPrev").click();
@@ -86,7 +99,11 @@ try {
   await page.locator(".issue-tab").filter({hasText:"Passive"}).click();
   await page.locator("#passiveView .issue-card").first().click();
   await waitForHighlight("The ball was thrown by John.");
+  await waitForHighlightInEditor();
   if(await highlightedText()!=="The ball was thrown by John.")throw new Error("Passive issue did not receive the correct soft focus highlight");
+  await page.evaluate(()=>saveProject());
+  await page.waitForTimeout(300);
+  if(savedContent.includes("issue-focus-highlight")||savedContent.includes("mm-editor-issue"))throw new Error("Transient issue focus was persisted into manuscript content");
   if(await page.locator(".mm-section-active").innerText().then(text=>!text.includes("Chapter One")))throw new Error("Passive issue did not activate its containing chapter");
   await page.locator(".issue-tab").filter({hasText:"Pacing"}).click();
   await page.locator("#pacingView .issue-card").first().click();
