@@ -97,13 +97,62 @@ class FrontendRegressionTest(unittest.TestCase):
 
     def test_overused_word_navigation_re_resolves_target_range(self):
         html = (ROOT / "public" / "editor.html").read_text(encoding="utf-8")
-        start = html.index("function selectAndScroll(range){")
-        end = html.index("function jumpToOffsets(start,end){", start)
+        start = html.index("function findWordOccurrences(index,word){")
+        end = html.index("function jumpToWord(word,progress){", start)
         block = html[start:end]
-        self.assertIn("const freshIndex=buildTextIndex();", block)
-        self.assertIn("const freshRange=rangeForOffsets(freshIndex,start,end);", block)
-        self.assertIn("requestAnimationFrame(focusAndScroll);", block)
-        self.assertIn("editor.scrollTo({top:Math.max(0,target),behavior:'smooth'});", html)
+        self.assertIn("node:item.node", block)
+        self.assertIn("nodeOffsetStart:match.index", block)
+        self.assertIn("nodeOffsetEnd:match.index+match[0].length", block)
+
+        start = html.index("function focusWordOccurrence(index,occurrenceIndex){")
+        end = html.index("function moveWordOccurrence(delta){", start)
+        block = html[start:end]
+        self.assertIn("const freshMatches=findWordOccurrences(buildTextIndex(),index);", block)
+        self.assertIn("freshTarget.nodeOffsetStart", block)
+        self.assertIn("selection.addRange(range)", block)
+        self.assertIn("scrollRangeIntoEditor(range)", block)
+        self.assertIn("setActiveSection(sectionIndex,false)", block)
+    def test_editor_uses_canonical_heading_structure_refresh(self):
+        html = (ROOT / "public" / "editor.html").read_text(encoding="utf-8")
+        self.assertIn("function sectionStructureNeedsSync()", html)
+        self.assertIn("function rebuildSections()", html)
+        self.assertIn("function getSelectionOffsets()", html)
+        self.assertIn("function restoreSelectionOffsets(offsets)", html)
+        self.assertIn("promoteEditorHeadingCandidates();", html)
+        self.assertIn("mso-)?outline-level", html)
+        self.assertIn("const titleCase=titleWords.length>=2&&titleWords.length<=8", html)
+        self.assertIn("hasOnlyBoldText", html)
+        self.assertIn("text-align\\s*:\\s*center", html)
+        self.assertIn("refreshEditorialStructure(true);", html)
+        self.assertIn("Checking headings and refreshing Contents…", html)
+        self.assertNotIn("const needsRebuild=!existing.length || Boolean(force) || headingCount>existing.length;", html)
+
+    def test_contents_targets_actual_section_after_preface(self):
+        html = (ROOT / "public" / "editor.html").read_text(encoding="utf-8")
+        start = html.index("function refreshOutline(){")
+        end = html.index("function issueCard(title,meta,copy,action){", start)
+        block = html[start:end]
+        self.assertIn("button.dataset.sectionIndex=String(index);", block)
+        self.assertIn("setActiveSection(Number(this.dataset.sectionIndex),true);", block)
+        self.assertIn("Number(button.dataset.sectionIndex)===activeIndex", block)
+
+    def test_overused_word_navigation_targets_live_text_node(self):
+        html = (ROOT / "public" / "editor.html").read_text(encoding="utf-8")
+        start = html.index("function findWordOccurrences(index,word){")
+        end = html.index("function jumpToWord(word,progress){", start)
+        block = html[start:end]
+        self.assertIn("node:item.node", block)
+        self.assertIn("nodeOffsetStart:match.index", block)
+        self.assertIn("nodeOffsetEnd:match.index+match[0].length", block)
+
+        start = html.index("function focusWordOccurrence(index,occurrenceIndex){")
+        end = html.index("function moveWordOccurrence(delta){", start)
+        block = html[start:end]
+        self.assertIn("const freshMatches=findWordOccurrences(buildTextIndex(),index);", block)
+        self.assertIn("freshTarget.nodeOffsetStart", block)
+        self.assertIn("selection.addRange(range)", block)
+        self.assertIn("scrollRangeIntoEditor(range)", block)
+
     def test_editor_keeps_project_rename_delete_api_paths(self):
         html = (ROOT / "public" / "editor.html").read_text(encoding="utf-8")
         self.assertIn("'/api/projects/'+activeProjectId", html)
