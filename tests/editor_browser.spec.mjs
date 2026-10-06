@@ -67,7 +67,13 @@ try {
   await page.locator("#returnToProject").click();
   await page.locator(".mm-section").first().waitFor();
   if(await page.locator(".mm-section").count()!==5||await page.locator(".outline-item").count()!==4)throw new Error("Contents did not survive project-page round trip");
+  await page.locator("#analyseButton").click();
+  await page.locator("#analyseButton").waitFor({state:"visible"});
+  await page.locator("#analyseButton").evaluate((button)=>button.disabled===false);
+  await page.locator("#mobileIssuesTab").click();
+  await page.locator("#wordsView .issue-card").first().waitFor();
 
+  await page.locator("#mobileWritingTab").click();
   await page.locator("#mobileIssuesTab").click();
   await page.locator("#wordsView .issue-card").first().waitFor();
   await page.locator("#wordsView .issue-card").first().click();
