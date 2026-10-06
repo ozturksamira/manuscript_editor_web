@@ -64,7 +64,6 @@ try {
   await page.locator("#wordsView .issue-card").first().waitFor();
   await page.locator("#wordsView .issue-card").first().click();
   await page.locator("#wordSearchPopover.open").waitFor();
-  for(let i=0;i<30&&!(await page.evaluate(()=>window.getSelection().rangeCount));i++) await sleep(50);
   const highlightedText=()=>page.evaluate(()=>{
     const h=window.CSS?.highlights?.get("mm-editor-issue");
     return h&&h.size ? Array.from(h).map(range=>range.toString()).join("") : "";
