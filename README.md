@@ -29,6 +29,7 @@ The application features a modern, full-screen **snap-scrolling slideshow layout
 - Fix switching manuscripts tab.
 - Fix jumping arrows to work on Ediorial page all over.
 - Remove duplicate Issues from bottom of Editorial Writing tab.
+- Remove need for at least one Manuscript in Projects.
 
 ## Production
 
