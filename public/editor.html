@@ -526,8 +526,9 @@ let lastSectionStructureSignature='';
 function rebuildSections(){
   const selectionOffsets=getSelectionOffsets();
   const activeSection=Array.from(editor.querySelectorAll(':scope > .mm-section')).find(function(section){return section.classList.contains('mm-section-active')});
+  const allHeadingsBefore=Array.from(editor.querySelectorAll('h1,h2,h3,h4,h5,h6'));
   const activeHeading=activeSection&&activeSection.querySelector('h1,h2,h3,h4,h5,h6');
-  const activeHeadingText=activeHeading?String(activeHeading.textContent||'').trim():'';
+  const activeHeadingIndex=activeHeading?allHeadingsBefore.indexOf(activeHeading):-1;
 
   flattenSectionWrappers();
 
@@ -559,10 +560,10 @@ function rebuildSections(){
   const sections=Array.from(editor.querySelectorAll(':scope > .mm-section'));
   sections.forEach(function(item,i){item.dataset.sectionIndex=String(i)});
 
-  let preferred=sections.findIndex(function(item){
+  let preferred=activeHeadingIndex>=0?sections.findIndex(function(item){
     const heading=item.querySelector('h1,h2,h3,h4,h5,h6');
-    return activeHeadingText&&heading&&String(heading.textContent||'').trim()===activeHeadingText;
-  });
+    return heading&&Array.from(editor.querySelectorAll('h1,h2,h3,h4,h5,h6')).indexOf(heading)===activeHeadingIndex;
+  }):0;
   if(preferred<0)preferred=0;
   setActiveSection(preferred,false);
   lastSectionStructureSignature=sectionStructureSignature();
