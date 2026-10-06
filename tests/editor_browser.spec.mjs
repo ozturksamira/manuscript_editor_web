@@ -68,6 +68,12 @@ try {
     const h=window.CSS?.highlights?.get("mm-editor-issue");
     return h&&h.size ? Array.from(h).map(range=>range.toString()).join("") : "";
   });
+  const waitForHighlight=async(expected)=>{
+    await page.waitForFunction((value)=>{
+      const h=window.CSS?.highlights?.get("mm-editor-issue");
+      return !!(h&&h.size&&Array.from(h).map(range=>range.toString()).join("")===value);
+    },expected,{timeout:3000});
+  };
   if(await highlightedText()!=="alpha")throw new Error("Overused word did not receive the correct soft focus highlight");
   if(await page.locator(".mm-section-active").innerText().then(text=>!text.includes("Chapter One")))throw new Error("Overused word did not activate its containing chapter");
   await page.locator("#wordNext").click();
@@ -79,10 +85,12 @@ try {
 
   await page.locator(".issue-tab").filter({hasText:"Passive"}).click();
   await page.locator("#passiveView .issue-card").first().click();
-  if(await highlightedText()!=="The ball was thrown by John."){const debug=await page.evaluate(()=>{const i=buildTextIndex();const r=rangeForOffsets(i,51,79);return {sample:i.text.slice(0,110),range:r?r.toString():""}});throw new Error("Passive issue did not receive the correct soft focus highlight: "+JSON.stringify({highlight:await highlightedText(),debug}));}
+  await waitForHighlight("The ball was thrown by John.");
+  if(await highlightedText()!=="The ball was thrown by John.")throw new Error("Passive issue did not receive the correct soft focus highlight");
   if(await page.locator(".mm-section-active").innerText().then(text=>!text.includes("Chapter One")))throw new Error("Passive issue did not activate its containing chapter");
   await page.locator(".issue-tab").filter({hasText:"Pacing"}).click();
   await page.locator("#pacingView .issue-card").first().click();
+  await waitForHighlight("alpha alpha alpha alpha. The ball was thrown by John.");
   if(await highlightedText()!=="alpha alpha alpha alpha. The ball was thrown by John.")throw new Error("Pacing issue did not replace the previous focus with the correct highlight");
   if(await page.locator(".mm-section-active").innerText().then(text=>!text.includes("Chapter One")))throw new Error("Pacing issue did not activate its containing chapter");
 
