@@ -1248,7 +1248,7 @@ async function deleteAccount(){
   if(!response.ok){error.textContent=data.error||'Account deletion failed.';return}
   localStorage.removeItem('mm.activeProjectId');location.href='/';
 }
-async function logout(){await saveProject();await fetch('/logout',{method:'POST'});localStorage.removeItem('mm.activeProjectId');location.href='/'}
+async function logout(){const saved=await saveProject();if(!saved){showToast('Your current manuscript could not be saved. Log out was cancelled.');return}await fetch('/logout',{method:'POST'});localStorage.removeItem('mm.activeProjectId');location.href='/'}
 
 (async function(){
   try{
