@@ -14,8 +14,8 @@ try {
   const savedAnalysis={
     word_count:18,
     words:[{word:"alpha",count:12,contexts:["alpha alpha alpha alpha."]}],
-    passive:[{sentence:"The ball was thrown by John.",start:46,end:77,reason:"High-confidence passive voice — explicit agent",confidence:"high"}],
-    pacing:[{sentence:"alpha alpha alpha alpha. The ball was thrown by John.",start:0,end:77,reason:"Too fast — possible event compression",word_count:12,confidence:"medium"}],
+    passive:[{sentence:"The ball was thrown by John.",start:51,end:79,reason:"High-confidence passive voice — explicit agent",confidence:"high"}],
+    pacing:[{sentence:"alpha alpha alpha alpha. The ball was thrown by John.",start:25,end:79,reason:"Too fast — possible event compression",word_count:12,confidence:"medium"}],
     flagged_count:14
   };
   await page.route("**/api/account",async(route)=>route.fulfill({status:200,contentType:"application/json",body:JSON.stringify({email:"smoke@example.test"})}));
