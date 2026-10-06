@@ -89,7 +89,7 @@ button,input,select{font:inherit}button{cursor:pointer}a{color:inherit}
 </head>
 <body>
 <header class="topbar">
-  <a class="brand" href="/projects/">Magnolia Margin</a>
+  <a class="brand" id="projectsLink" href="/projects/">Magnolia Margin</a>
   <div class="account">
     <div class="account-stack">
       <span class="account-email" id="accountEmail"></span>
@@ -270,6 +270,8 @@ let projects=[];
 let activeProjectId=null;
 let activeProjectSlug='';
 let saveTimer=null;
+let saveInFlight=null;
+let manuscriptDirty=false;
 let toastTimer=null;
 let currentAnalysis={word_count:0,words:[],passive:[],pacing:[],flagged_count:0};
 let visibleAnalysis=currentAnalysis;
@@ -306,6 +308,7 @@ async function loadProjects(){
 }
 
 async function loadProject(projectId){
+  clearTimeout(saveTimer);
   activeProjectId=Number(projectId);
   localStorage.setItem('mm.activeProjectId',String(activeProjectId));
   renderProjectSelect();
@@ -315,10 +318,11 @@ async function loadProject(projectId){
   activeProjectSlug=project.slug||'';
   titleInput.value=project.title||'Untitled manuscript';
   editor.innerHTML=project.content||'';
-  promoteEditorHeadingCandidates();
   normalizeSections(true);
   refreshOutline();
-  currentAnalysis=project.analysis||{word_count:0,words:[],passive:[],pacing:[],flagged_count:0};
+  const manuscriptHash=await hashText(buildTextIndex().text);
+  const savedAnalysis=project.analysis&&project.analysis.content_hash===manuscriptHash?project.analysis:null;
+  currentAnalysis=savedAnalysis||{word_count:0,words:[],passive:[],pacing:[],flagged_count:0};
   visibleAnalysis=currentAnalysis;
   updateWordCount();
   wordCursors={};
@@ -328,10 +332,12 @@ async function loadProject(projectId){
   refreshOutline();
   renderIssues();
   saveStatus.textContent='Saved project';
+  manuscriptDirty=false;
   analysisStatus.textContent=Number(currentAnalysis.flagged_count||0)>0?(Number(currentAnalysis.flagged_count).toLocaleString()+' saved issue'+(Number(currentAnalysis.flagged_count)===1?'':'s')):'Ready';
 }
 
-projectSelect.addEventListener('change',async function(){await saveProject();await loadProject(this.value)});
+projectSelect.addEventListener('change',async function(){const target=this.value;const saved=await saveProject();if(!saved){renderProjectSelect();return}await loadProject(target)});
+document.getElementById('projectsLink').addEventListener('click',async function(event){event.preventDefault();const saved=await saveProject();if(saved)location.href=this.href});
 titleInput.addEventListener('input',function(){scheduleSave()});
 document.getElementById('prevSection').addEventListener('click',function(){navigateSection(-1)});
 document.getElementById('writingJumpTop').addEventListener('click',function(){
@@ -358,6 +364,12 @@ editor.addEventListener('input',function(){
   scheduleSave();
   analysisStatus.textContent='Needs analysis';
 });
+
+async function hashText(value){
+  const bytes=new TextEncoder().encode(String(value||''));
+  const digest=await crypto.subtle.digest('SHA-256',bytes);
+  return Array.from(new Uint8Array(digest)).map(function(byte){return byte.toString(16).padStart(2,'0')}).join('');
+}
 
 async function fileToHtml(file){
   const name=file.name.toLowerCase();
@@ -650,6 +662,8 @@ fileInput.addEventListener('change',async function(){
   const file=fileInput.files[0];
   saveStatus.textContent='Importing manuscript…';
   try{
+    const saved=await saveProject();
+    if(!saved)throw new Error('Your current manuscript could not be saved. Import was cancelled.');
     const content=await fileToHtml(file);
     const title=(file.name.replace(/\.[^.]+$/,'').trim()||'Imported manuscript').slice(0,160);
     const response=await fetch('/api/projects/import',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({filename:file.name,title:title,content:content})});
@@ -670,6 +684,8 @@ fileInput.addEventListener('change',async function(){
 
 async function createProject(){
   const title=window.prompt('Project name','Untitled manuscript');if(title===null)return;
+  const saved=await saveProject();
+  if(!saved){showToast('Your current manuscript could not be saved. New project was cancelled.');return}
   const response=await fetch('/api/projects',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title:title.trim()||'Untitled manuscript'})});
   const data=await response.json();
   if(!data.project){showToast(data.error||'Could not create project.');return}
@@ -678,7 +694,8 @@ async function createProject(){
 
 async function deleteProject(){
   if(!activeProjectId)return;
-  await saveProject();
+  const saved=await saveProject();
+  if(!saved){showToast('Your current manuscript could not be saved. Delete was cancelled.');return}
   if(!window.confirm('Delete this manuscript project? This cannot be undone.'))return;
   const response=await fetch('/api/projects/'+activeProjectId,{method:'DELETE'});
   const data=await response.json();
@@ -703,15 +720,18 @@ function serializeEditorContent(){
 }
 function scheduleSave(){
   clearTimeout(saveTimer);
+  manuscriptDirty=true;
   saveStatus.textContent='Unsaved changes…';
   saveTimer=setTimeout(function(){saveProject()},1000);
 }
 
 async function saveProject(keepalive){
   clearTimeout(saveTimer);
-  if(!activeProjectId)return;
+  if(!activeProjectId)return false;
+  clearTimeout(saveTimer);
+  if(saveInFlight)return saveInFlight;
   saveStatus.textContent='Saving…';
-  try{
+  saveInFlight=(async function(){try{
     const response=await fetch('/api/projects/'+activeProjectId,{
       method:'POST',headers:{'Content-Type':'application/json'},keepalive:!!keepalive,
       body:JSON.stringify({title:titleInput.value.trim()||'Untitled manuscript',content:serializeEditorContent(),analysis:currentAnalysis})
@@ -723,10 +743,15 @@ async function saveProject(keepalive){
     if(selected){selected.title=titleInput.value.trim()||'Untitled manuscript';selected.slug=activeProjectSlug;selected.url=data.url||selected.url}
     renderProjectSelect();projectSelect.value=String(activeProjectId);
     saveStatus.textContent='Saved just now';
-  }catch(error){saveStatus.textContent='Save failed — your next edit will retry'}
+    manuscriptDirty=false;
+    return true;
+  }catch(error){saveStatus.textContent='Save failed — changes were not saved';return false}
+  finally{saveInFlight=null}
+  })();
+  return saveInFlight;
 }
-document.addEventListener('visibilitychange',function(){if(document.visibilityState==='hidden')saveProject(true)});
-window.addEventListener('beforeunload',function(){if(activeProjectId)saveProject(true)});
+document.addEventListener('visibilitychange',function(){if(document.visibilityState==='hidden'&&manuscriptDirty)saveProject(true)});
+window.addEventListener('beforeunload',function(){if(activeProjectId&&manuscriptDirty)saveProject(true)});
 
 function refreshOutline(){
   const list=document.getElementById('outlineList');
@@ -977,10 +1002,16 @@ function scrollRangeIntoEditor(range){
   if(!range)return;
   const rects=Array.from(range.getClientRects&&range.getClientRects()||[]);
   const rect=rects[0]||range.getBoundingClientRect();
-  const editorRect=editor.getBoundingClientRect();
   if(!rect||(!rect.height&&!rect.width))return;
-  const target=editor.scrollTop+(rect.top-editorRect.top)-(editor.clientHeight/2)+(rect.height/2);
-  editor.scrollTo({top:Math.max(0,target),behavior:'smooth'});
+  const editorRect=editor.getBoundingClientRect();
+  const internallyScrollable=editor.scrollHeight>editor.clientHeight+2;
+  if(internallyScrollable){
+    const target=editor.scrollTop+(rect.top-editorRect.top)-(editor.clientHeight/2)+(rect.height/2);
+    editor.scrollTo({top:Math.max(0,target),behavior:'smooth'});
+  }else{
+    const target=window.scrollY+rect.top-(window.innerHeight/2)+(rect.height/2);
+    window.scrollTo({top:Math.max(0,target),behavior:'smooth'});
+  }
 }
 function clearIssueHighlight(){
   if(window.CSS&&CSS.highlights&&CSS.highlights.delete)CSS.highlights.delete('mm-editor-issue');
@@ -1093,7 +1124,7 @@ async function analyseProject(){
   analyseButton.textContent='Checking headings…';
   analysisStatus.textContent='Checking headings and refreshing Contents…';
   try{
-    refreshEditorialStructure(true);
+    refreshEditorialStructure(false);
     const index=buildTextIndex();
     const manuscriptText=index.text;
 
@@ -1110,13 +1141,15 @@ async function analyseProject(){
     analyseButton.textContent='Analysing…';
     analysisStatus.textContent='Analysing manuscript locally…';
     currentAnalysis=analyseTextEngine(manuscriptText);
+    currentAnalysis.content_hash=await hashText(manuscriptText);
     visibleAnalysis=currentAnalysis;
     wordCursors={};
     renderIssues();
     refreshOutline();
     updateWordCount();
-    await saveProject();
+    const saved=await saveProject();
     const issueCount=Number(currentAnalysis.flagged_count||0);
+    if(!saved)throw new Error('The analysis was calculated, but the manuscript could not be saved.');
     analysisStatus.textContent=issueCount===0?'No flagged issues':issueCount.toLocaleString()+' issue'+(issueCount===1?'':'s')+' found';
     saveStatus.textContent='Analysis saved';
     setMobilePane('writing');
