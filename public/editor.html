@@ -188,7 +188,7 @@ button,input,select{font:inherit}button{cursor:pointer}a{color:inherit}
       </div>
     </aside>
 
-  </section>>
+  </section>
 
   <footer class="project-footer">
     <div class="project-footer-links">
@@ -709,15 +709,6 @@ async function saveProject(keepalive){
     renderProjectSelect();projectSelect.value=String(activeProjectId);
     saveStatus.textContent='Saved just now';
   }catch(error){saveStatus.textContent='Save failed — your next edit will retry'}
-}
-
-function refreshEditorialStructure(checkHeadingCandidates){
-  if(checkHeadingCandidates)promoteEditorHeadingCandidates();
-  const before=Array.from(editor.querySelectorAll(':scope > .mm-section')).length;
-  normalizeSections(false);
-  refreshOutline();
-  const after=Array.from(editor.querySelectorAll(':scope > .mm-section')).length;
-  return {sections:after,changed:before!==after};
 }
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='hidden')saveProject(true)});
 window.addEventListener('beforeunload',function(){if(activeProjectId)saveProject(true)});
