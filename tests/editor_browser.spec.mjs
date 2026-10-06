@@ -21,7 +21,7 @@ try {
   for(let i=0;i<30&&await page.locator(".mm-section").count()!==4;i++) await sleep(100);
   if(await page.locator(".mm-section").count()!==4||await page.locator(".outline-item").count()!==3)throw new Error("New heading refresh failed");
   await page.locator("#analyseButton").click();
-  await page.locator("#analyseButton").waitFor({state:"enabled"});
+  for(let i=0;i<60&&await page.locator("#analyseButton").isDisabled();i++) await sleep(100);
   if(await page.locator(".mm-section").count()!==4)throw new Error("Analysis rebuilt sections incorrectly");
   await page.locator("#mobileIssuesTab").click();
   await page.locator("#wordsView .issue-card").first().waitFor();
