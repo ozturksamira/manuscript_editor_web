@@ -28,7 +28,8 @@ try {
   await page.locator("#wordsView .issue-card").first().click();
   await page.locator("#wordSearchPopover.open").waitFor();
   if(await page.locator("#wordSearchMeta").innerText()!=="Use 1 of 12")throw new Error("First word occurrence failed");
-  if(await page.evaluate(()=>window.getSelection().toString().toLowerCase())!=="alpha")throw new Error("First word selection failed");
+  const firstSelection=await page.evaluate(()=>{const x=window.getSelection();return {text:x.toString(),rangeCount:x.rangeCount,anchor:x.anchorNode?.parentElement?.outerHTML?.slice(0,300)||"",active:document.querySelector(".mm-section-active")?.innerText?.slice(0,80)||"",meta:document.getElementById("wordSearchMeta")?.innerText||""};});
+  if(firstSelection.text.toLowerCase()!=="alpha")throw new Error("First word selection failed: "+JSON.stringify(firstSelection));
   for(let i=0;i<4;i++) await page.locator("#wordNext").click();
   if(await page.locator("#wordSearchMeta").innerText()!=="Use 5 of 12")throw new Error("Word search did not advance across the chapter boundary");
   if(await page.evaluate(()=>window.getSelection().toString().toLowerCase())!=="alpha")throw new Error("Cross-chapter word occurrence was not selected");
