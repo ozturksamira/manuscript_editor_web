@@ -9,13 +9,13 @@ try {
   await sleep(800);
   const browser=await chromium.launch({headless:true});
   const page=await browser.newPage();
-  const content="<p>Preface text.</p><h1>Chapter One</h1><p>John ran. John jumped. John screamed. The ball was thrown by John.</p><h1>Chapter Two</h1><p>alpha alpha alpha alpha.</p><h1>Chapter Three</h1><p>alpha alpha alpha alpha.</p>";
+  const content="<p>Preface text.</p><h1>Chapter One</h1><p>John ran. John jumped. John screamed. John shouted. The ball was thrown by John.</p><h1>Chapter Two</h1><p>alpha alpha alpha alpha.</p><h1>Chapter Three</h1><p>alpha alpha alpha alpha.</p>";
   let savedContent="";
   const savedAnalysis={
     word_count:18,
     words:[{word:"alpha",count:12,contexts:["alpha alpha alpha alpha."]}],
     passive:[{sentence:"The ball was thrown by John.",start:51,end:79,reason:"High-confidence passive voice — explicit agent",confidence:"high"}],
-    pacing:[{sentence:"John ran. John jumped. John screamed. The ball was thrown by John.",start:25,end:79,reason:"Too fast — possible event compression",word_count:12,confidence:"medium"}],
+    pacing:[{sentence:"John ran. John jumped. John screamed. John shouted. The ball was thrown by John.",start:25,end:79,reason:"Too fast — possible event compression",word_count:12,confidence:"medium"}],
     flagged_count:14
   };
   await page.route("**/api/account",async(route)=>route.fulfill({status:200,contentType:"application/json",body:JSON.stringify({email:"smoke@example.test"})}));
@@ -46,12 +46,12 @@ try {
   for(let i=0;i<30&&await page.locator(".outline-item").count()!==4;i++) await sleep(100);
   if(await page.locator(".outline-item").count()!==4)throw new Error("Nested canonical heading disappeared from Contents");
   if(await page.locator(".outline-item").filter({hasText:"Nested Section"}).count()!==1)throw new Error("Nested canonical heading was not navigable in Contents");
-  await page.evaluate(()=>{const e=document.getElementById("richEditor");e.innerHTML="<p>Preface text.</p><h1>Chapter One</h1><p>John ran. John jumped. John screamed. The ball was thrown by John.</p><h1>Chapter Two</h1><p>alpha alpha alpha alpha.</p><h1>Chapter Three</h1><p>alpha alpha alpha alpha.</p>";e.dispatchEvent(new Event("input",{bubbles:true}));});
+  await page.evaluate(()=>{const e=document.getElementById("richEditor");e.innerHTML="<p>Preface text.</p><h1>Chapter One</h1><p>John ran. John jumped. John screamed. John shouted. The ball was thrown by John.</p><h1>Chapter Two</h1><p>alpha alpha alpha alpha.</p><h1>Chapter Three</h1><p>alpha alpha alpha alpha.</p>";e.dispatchEvent(new Event("input",{bubbles:true}));});
   for(let i=0;i<30&&await page.locator(".mm-section").count()!==4;i++) await sleep(100);
   await page.locator(".outline-item").nth(2).click();
   if(!(await page.locator(".mm-section-active").innerText()).includes("Chapter Three"))throw new Error("Contents navigation failed");
 
-  await page.evaluate(()=>{const e=document.getElementById("richEditor");e.innerHTML="<p>Preface text.</p><h1>Chapter One</h1><p>John ran. John jumped. John screamed. The ball was thrown by John.</p><h1>Chapter Two</h1><p>alpha alpha alpha alpha.</p><h1>Chapter Three</h1><p>alpha alpha alpha alpha.</p><h1>Chapter Four</h1><p>alpha alpha alpha alpha.</p>";e.dispatchEvent(new Event("input",{bubbles:true}));});
+  await page.evaluate(()=>{const e=document.getElementById("richEditor");e.innerHTML="<p>Preface text.</p><h1>Chapter One</h1><p>John ran. John jumped. John screamed. John shouted. The ball was thrown by John.</p><h1>Chapter Two</h1><p>alpha alpha alpha alpha.</p><h1>Chapter Three</h1><p>alpha alpha alpha alpha.</p><h1>Chapter Four</h1><p>alpha alpha alpha alpha.</p>";e.dispatchEvent(new Event("input",{bubbles:true}));});
   for(let i=0;i<30&&await page.locator(".mm-section").count()!==5;i++) await sleep(100);
   if(await page.locator(".mm-section").count()!==5||await page.locator(".outline-item").count()!==4)throw new Error("New heading refresh failed");
 
@@ -116,13 +116,13 @@ try {
   if(await page.locator(".mm-section-active").innerText().then(text=>!text.includes("Chapter One")))throw new Error("Passive issue did not activate its containing chapter");
   await page.locator(".issue-tab").filter({hasText:"Pacing"}).click();
   await page.locator("#pacingView .issue-card").first().click();
-  await waitForHighlight("John ran. John jumped. John screamed. The ball was thrown by John.");
-  if(await highlightedText()!=="John ran. John jumped. John screamed. The ball was thrown by John.")throw new Error("Pacing issue did not replace the previous focus with the correct highlight");
+  await waitForHighlight("John ran. John jumped. John screamed. John shouted. The ball was thrown by John.");
+  if(await highlightedText()!=="John ran. John jumped. John screamed. John shouted. The ball was thrown by John.")throw new Error("Pacing issue did not replace the previous focus with the correct highlight");
   if(await page.locator(".mm-section-active").innerText().then(text=>!text.includes("Chapter One")))throw new Error("Pacing issue did not activate its containing chapter");
 
   await page.evaluate(()=>closeWordSearch());
   if(await page.evaluate(()=>window.CSS?.highlights?.has("mm-editor-issue") ? window.CSS.highlights.get("mm-editor-issue").size : 0)!==0)throw new Error("Issue highlight did not clear when closing focus");
-  await page.evaluate(()=>{const e=document.getElementById("richEditor");e.innerHTML="<p>Preface text.</p><h1>Chapter One</h1><p>John ran. John jumped. John screamed. The ball was thrown by John.</p><h1>Chapter Two</h1><p>alpha alpha alpha alpha.</p><h1>Chapter Three</h1><p>alpha alpha alpha alpha.</p>";e.dispatchEvent(new Event("input",{bubbles:true}));});
+  await page.evaluate(()=>{const e=document.getElementById("richEditor");e.innerHTML="<p>Preface text.</p><h1>Chapter One</h1><p>John ran. John jumped. John screamed. John shouted. The ball was thrown by John.</p><h1>Chapter Two</h1><p>alpha alpha alpha alpha.</p><h1>Chapter Three</h1><p>alpha alpha alpha alpha.</p>";e.dispatchEvent(new Event("input",{bubbles:true}));});
   for(let i=0;i<30&&await page.locator(".mm-section").count()!==4;i++) await sleep(100);
   if(await page.locator(".mm-section").count()!==4||await page.locator(".outline-item").count()!==3)throw new Error("Deleting a heading did not remove the stale Contents entry");
   await page.waitForTimeout(1200);
