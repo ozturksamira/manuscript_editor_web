@@ -409,7 +409,11 @@ function headingLevelForElement(element){
   const className=String(element.className||'').toLowerCase();
   const metadata=style+' '+className;
   const headingStyle=metadata.match(/heading\s*([1-6])|heading([1-6])/i);
+  const outlineStyle=metadata.match(/(?:mso-)?outline-level\s*[:=]\s*([1-6])/i);
+  const dataLevel=String(element.getAttribute('data-heading-level')||element.getAttribute('aria-level')||'').match(/^[1-6]$/);
   if(headingStyle)return Number(headingStyle[1]||headingStyle[2]);
+  if(outlineStyle)return Number(outlineStyle[1]);
+  if(String(element.getAttribute('role')||'').toLowerCase()==='heading'&&dataLevel)return Number(dataLevel[0]);
   const looksStyled=/heading|title|subtitle|chapter|section/.test(metadata);
   const looksLikeLabel=/^(chapter|part|section|prologue|epilogue|introduction|conclusion|appendix)\b/i.test(text);
   const allCaps=text===text.toUpperCase()&&/[A-Z]/.test(text)&&text.length<=80;
@@ -418,8 +422,13 @@ function headingLevelForElement(element){
     return /^(STRONG|B)$/.test(child.tagName||'')&&String(child.textContent||'').trim()===text;
   });
   const centered=/text-align\s*:\s*center/.test(style);
+  const titleWords=text.split(/\s+/).filter(Boolean);
+  const titleCase=titleWords.length>=2&&titleWords.length<=8&&titleWords.every(function(word,index){
+    if(index===0)return /^[A-Z][A-Za-z'’-]*$/.test(word);
+    return /^(?:[A-Z][A-Za-z'’-]*|[IVXLCDM]+|[A-Z]{2,})$/.test(word);
+  });
   if(looksLikeLabel||allCaps||numbered)return 1;
-  if(looksStyled||hasOnlyBoldText||centered)return 2;
+  if(looksStyled||hasOnlyBoldText||centered||titleCase)return 2;
   return 0;
 }
 function createHeadingFromElement(element,level){
