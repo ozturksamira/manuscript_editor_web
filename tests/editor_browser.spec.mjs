@@ -29,8 +29,9 @@ try {
   await page.locator("#wordSearchPopover.open").waitFor();
   if(await page.locator("#wordSearchMeta").innerText()!=="Use 1 of 12")throw new Error("First word occurrence failed");
   if(await page.evaluate(()=>window.getSelection().toString().toLowerCase())!=="alpha")throw new Error("First word selection failed");
-  await page.locator("#wordNext").click();
-  if(await page.locator("#wordSearchMeta").innerText()!=="Use 2 of 12")throw new Error("Next word occurrence failed");
-  if(await page.evaluate(()=>window.getSelection().toString().toLowerCase())!=="alpha")throw new Error("Next word selection failed");
+  for(let i=0;i<4;i++) await page.locator("#wordNext").click();
+  if(await page.locator("#wordSearchMeta").innerText()!=="Use 5 of 12")throw new Error("Word search did not advance across the chapter boundary");
+  if(await page.evaluate(()=>window.getSelection().toString().toLowerCase())!=="alpha")throw new Error("Cross-chapter word occurrence was not selected");
+  if(!(await page.locator(".mm-section-active").innerText()).includes("Chapter Two"))throw new Error("Word navigation did not activate the containing chapter");
   await browser.close();
 } finally { server.kill("SIGTERM"); }
