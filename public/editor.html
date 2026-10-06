@@ -883,10 +883,10 @@ function focusWordOccurrence(index,occurrenceIndex){
     const range=document.createRange();
     range.setStart(freshTarget.node,freshTarget.nodeOffsetStart);
     range.setEnd(freshTarget.node,freshTarget.nodeOffsetEnd);
+    editor.focus({preventScroll:true});
     const selection=window.getSelection();
     selection.removeAllRanges();
     selection.addRange(range);
-    editor.focus({preventScroll:true});
     requestAnimationFrame(function(){scrollRangeIntoEditor(range)});
   });
   return true;
@@ -1000,10 +1000,10 @@ function focusOffsets(start,end){
       showToast('That passage could not be located after changing sections.');
       return;
     }
+    editor.focus({preventScroll:true});
     const selection=window.getSelection();
     selection.removeAllRanges();
     selection.addRange(freshRange);
-    editor.focus({preventScroll:true});
     requestAnimationFrame(function(){scrollRangeIntoEditor(freshRange)});
   });
 }
