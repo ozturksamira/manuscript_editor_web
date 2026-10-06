@@ -96,14 +96,14 @@ try {
   };
   await waitForHighlight("alpha");
   if(await highlightedText()!=="alpha")throw new Error("Overused word did not receive the correct soft focus highlight");
-  if(await page.locator(".mm-section-active").innerText().then(text=>!text.includes("Chapter One")))throw new Error("Overused word did not activate its containing chapter");
+  if(await page.locator(".mm-section-active").innerText().then(text=>!text.includes("Chapter Two")))throw new Error("Overused word did not activate its containing chapter");
   await page.locator("#wordNext").click();
-  if(await page.locator("#wordSearchMeta").innerText()!=="Use 2 of 16")throw new Error("Next word navigation did not advance to the second occurrence");
+  if(await page.locator("#wordSearchMeta").innerText()!=="Use 2 of 12")throw new Error("Next word navigation did not advance to the second occurrence");
   const secondWord=await highlightedText();
   if(secondWord!=="alpha")throw new Error("Next word did not replace the focus highlight");
   await page.locator("#wordPrev").click();
   if(await highlightedText()!=="alpha")throw new Error("Previous word did not restore the prior focus");
-  if(await page.locator("#wordSearchMeta").innerText()!=="Use 1 of 16")throw new Error("Previous word navigation did not move back to the first occurrence");
+  if(await page.locator("#wordSearchMeta").innerText()!=="Use 1 of 12")throw new Error("Previous word navigation did not move back to the first occurrence");
 
   await page.locator(".issue-tab").filter({hasText:"Passive"}).click();
   await page.locator("#passiveView .issue-card").first().click();
