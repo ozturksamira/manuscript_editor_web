@@ -414,8 +414,12 @@ function headingLevelForElement(element){
   const looksLikeLabel=/^(chapter|part|section|prologue|epilogue|introduction|conclusion|appendix)\b/i.test(text);
   const allCaps=text===text.toUpperCase()&&/[A-Z]/.test(text)&&text.length<=80;
   const numbered=/^(?:chapter\s+)?(?:\d+|[ivxlcdm]+)[\s:.)-]+[A-Za-z]/i.test(text);
+  const hasOnlyBoldText=Array.from(element.children||[]).some(function(child){
+    return /^(STRONG|B)$/.test(child.tagName||'')&&String(child.textContent||'').trim()===text;
+  });
+  const centered=/text-align\s*:\s*center/.test(style);
   if(looksLikeLabel||allCaps||numbered)return 1;
-  if(looksStyled)return 2;
+  if(looksStyled||hasOnlyBoldText||centered)return 2;
   return 0;
 }
 function createHeadingFromElement(element,level){
@@ -575,13 +579,11 @@ function normalizeSections(force){
   return sections;
 }
 function refreshEditorialStructure(checkHeadingCandidates){
-  const selectionOffsets=getSelectionOffsets();
   if(checkHeadingCandidates)promoteEditorHeadingCandidates();
-  const changed=!!selectionOffsets || sectionStructureNeedsSync();
-  const sections=normalizeSections(!!checkHeadingCandidates||sectionStructureNeedsSync());
+  const needsSync=checkHeadingCandidates||sectionStructureNeedsSync();
+  const sections=normalizeSections(needsSync);
   refreshOutline();
-  if(selectionOffsets)restoreSelectionOffsets(selectionOffsets);
-  return {sections:sections.length,changed:changed};
+  return {sections:sections.length,changed:needsSync};
 }
 
 function updateSectionNav(){
@@ -613,7 +615,7 @@ function setActiveSection(index,scroll){
   const previous=sections.findIndex(function(section){return section.classList.contains('mm-section-active')});
   const safe=Math.max(0,Math.min(Number(index)||0,sections.length-1));
   sections.forEach(function(section,i){section.classList.toggle('mm-section-active',i===safe)});
-  document.querySelectorAll('.outline-item').forEach(function(button,i){button.classList.toggle('active',i===safe)});
+  document.querySelectorAll('.outline-item').forEach(function(button){button.classList.toggle('active',Number(button.dataset.sectionIndex)===safe)});
   updateSectionNav();
   if(scroll){
     requestAnimationFrame(function(){
