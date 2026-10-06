@@ -86,6 +86,24 @@ class FrontendRegressionTest(unittest.TestCase):
         self.assertIn("layout.classList.toggle('issues-mode',!writing)", html)
         self.assertNotIn('class="issues-panel" aria-label="Editorial issues"', html.split('class="issues-screen"', 1)[0])
 
+    def test_analysis_refreshes_headings_and_contents(self):
+        html = (ROOT / "public" / "editor.html").read_text(encoding="utf-8")
+        self.assertIn("function promoteEditorHeadingCandidates()", html)
+        self.assertIn("function refreshEditorialStructure(checkHeadingCandidates)", html)
+        self.assertIn("refreshEditorialStructure(true);", html)
+        self.assertIn("Checking headings and refreshing Contents…", html)
+        self.assertIn("refreshOutline();", html)
+        self.assertIn("const numbered=/^(?:chapter\\s+)?(?:\\d+|[ivxlcdm]+)[\\s:.)-]+[A-Za-z]/i.test(text);", html)
+
+    def test_overused_word_navigation_re_resolves_target_range(self):
+        html = (ROOT / "public" / "editor.html").read_text(encoding="utf-8")
+        start = html.index("function selectAndScroll(range){")
+        end = html.index("function jumpToOffsets(start,end){", start)
+        block = html[start:end]
+        self.assertIn("const freshIndex=buildTextIndex();", block)
+        self.assertIn("const freshRange=rangeForOffsets(freshIndex,start,end);", block)
+        self.assertIn("requestAnimationFrame(focusAndScroll);", block)
+        self.assertIn("editor.scrollTo({top:Math.max(0,target),behavior:'smooth'});", html)
     def test_editor_keeps_project_rename_delete_api_paths(self):
         html = (ROOT / "public" / "editor.html").read_text(encoding="utf-8")
         self.assertIn("'/api/projects/'+activeProjectId", html)
