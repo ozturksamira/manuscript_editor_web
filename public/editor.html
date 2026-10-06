@@ -901,8 +901,7 @@ function focusWordOccurrence(index,occurrenceIndex){
     setIssueHighlight(range);
     editor.focus({preventScroll:true});
     const selection=window.getSelection();
-    selection.removeAllRanges();
-    selection.addRange(range);
+    if(selection)selection.removeAllRanges();
     requestAnimationFrame(function(){scrollRangeIntoEditor(range)});
   });
   return true;
@@ -1049,8 +1048,7 @@ function focusOffsets(start,end){
     setIssueHighlight(freshRange);
     editor.focus({preventScroll:true});
     const selection=window.getSelection();
-    selection.removeAllRanges();
-    selection.addRange(freshRange);
+    if(selection)selection.removeAllRanges();
     requestAnimationFrame(function(){scrollRangeIntoEditor(freshRange)});
   });
 }

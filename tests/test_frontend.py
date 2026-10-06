@@ -109,7 +109,7 @@ class FrontendRegressionTest(unittest.TestCase):
         block = html[start:end]
         self.assertIn("const freshMatches=findWordOccurrences(buildTextIndex(),index);", block)
         self.assertIn("freshTarget.nodeOffsetStart", block)
-        self.assertIn("selection.addRange(range)", block)
+        self.assertIn("setIssueHighlight(range)", block)
         self.assertIn("scrollRangeIntoEditor(range)", block)
         self.assertIn("setActiveSection(sectionIndex,false)", block)
     def test_editor_uses_canonical_heading_structure_refresh(self):
@@ -150,7 +150,8 @@ class FrontendRegressionTest(unittest.TestCase):
         block = html[start:end]
         self.assertIn("const freshMatches=findWordOccurrences(buildTextIndex(),index);", block)
         self.assertIn("freshTarget.nodeOffsetStart", block)
-        self.assertIn("selection.addRange(range)", block)
+        self.assertIn("setIssueHighlight(range)", block)
+        self.assertIn("scrollRangeIntoEditor(range)", block)
         self.assertIn("scrollRangeIntoEditor(range)", block)
 
     def test_editor_keeps_project_rename_delete_api_paths(self):
