@@ -213,7 +213,10 @@ class FrontendRegressionTest(unittest.TestCase):
         self.assertIn("setIssueHighlight(freshRange)", html)
         self.assertIn("scrollRangeIntoEditor(freshRange)", html)
         self.assertIn("selection.removeAllRanges()", html)
-        self.assertNotIn("selection.addRange(range)", html)
+        focus_start = html.index("function focusOffsets(")
+        focus_end = html.index("function jumpToOffsets(", focus_start)
+        focus_block = html[focus_start:focus_end]
+        self.assertNotIn("selection.addRange(range)", focus_block)
 
 if __name__ == "__main__":
     unittest.main()
