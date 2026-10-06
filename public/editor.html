@@ -276,6 +276,7 @@ let toastTimer=null;
 let currentAnalysis={word_count:0,words:[],passive:[],pacing:[],flagged_count:0};
 let visibleAnalysis=currentAnalysis;
 let wordCursors={},activeWord=null,wordSortMode='count-desc';
+let manuscriptChangeVersion=0;
 let analyseTextEngine=null;
 let countWordsEngine=null;
 
@@ -721,6 +722,7 @@ function serializeEditorContent(){
 function scheduleSave(){
   clearTimeout(saveTimer);
   manuscriptDirty=true;
+  manuscriptChangeVersion+=1;
   saveStatus.textContent='Unsaved changes…';
   saveTimer=setTimeout(function(){saveProject()},1000);
 }
@@ -728,20 +730,23 @@ function scheduleSave(){
 async function saveProject(keepalive){
   clearTimeout(saveTimer);
   if(!activeProjectId)return false;
-  clearTimeout(saveTimer);
   if(saveInFlight)return saveInFlight;
   saveStatus.textContent='Saving…';
   saveInFlight=(async function(){try{
-    const response=await fetch('/api/projects/'+activeProjectId,{
-      method:'POST',headers:{'Content-Type':'application/json'},keepalive:!!keepalive,
-      body:JSON.stringify({title:titleInput.value.trim()||'Untitled manuscript',content:serializeEditorContent(),analysis:currentAnalysis})
-    });
-    if(!response.ok)throw new Error('Save failed');
-    const data=await response.json();
-    activeProjectSlug=data.slug||activeProjectSlug;
-    const selected=projects.find(function(project){return project.id===activeProjectId});
-    if(selected){selected.title=titleInput.value.trim()||'Untitled manuscript';selected.slug=activeProjectSlug;selected.url=data.url||selected.url}
-    renderProjectSelect();projectSelect.value=String(activeProjectId);
+    let savedVersion=-1;
+    do{
+      savedVersion=manuscriptChangeVersion;
+      const response=await fetch('/api/projects/'+activeProjectId,{
+        method:'POST',headers:{'Content-Type':'application/json'},keepalive:!!keepalive,
+        body:JSON.stringify({title:titleInput.value.trim()||'Untitled manuscript',content:serializeEditorContent(),analysis:currentAnalysis})
+      });
+      if(!response.ok)throw new Error('Save failed');
+      const data=await response.json();
+      activeProjectSlug=data.slug||activeProjectSlug;
+      const selected=projects.find(function(project){return project.id===activeProjectId});
+      if(selected){selected.title=titleInput.value.trim()||'Untitled manuscript';selected.slug=activeProjectSlug;selected.url=data.url||selected.url}
+      renderProjectSelect();projectSelect.value=String(activeProjectId);
+    }while(savedVersion!==manuscriptChangeVersion);
     saveStatus.textContent='Saved just now';
     manuscriptDirty=false;
     return true;
