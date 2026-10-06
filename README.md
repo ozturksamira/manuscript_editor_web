@@ -28,6 +28,7 @@ The application features a modern, full-screen **snap-scrolling slideshow layout
 - Add feature which allows users to modify their scripts' tense (e.g. first to third, past to present).
 - Fix switching manuscripts tab.
 - Fix jumping arrows to work on Ediorial page all over.
+- Remove duplicate Issues from bottom of Editorial Writing tab.
 
 ## Production
 
