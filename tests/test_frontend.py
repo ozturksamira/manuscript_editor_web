@@ -90,7 +90,7 @@ class FrontendRegressionTest(unittest.TestCase):
         html = (ROOT / "public" / "editor.html").read_text(encoding="utf-8")
         self.assertIn("function promoteEditorHeadingCandidates()", html)
         self.assertIn("function refreshEditorialStructure(checkHeadingCandidates)", html)
-        self.assertIn("refreshEditorialStructure(true);", html)
+        self.assertIn("refreshEditorialStructure(false);", html)
         self.assertIn("Checking headings and refreshing Contents…", html)
         self.assertIn("refreshOutline();", html)
         self.assertIn("const numbered=/^(?:chapter\\s+)?(?:\\d+|[ivxlcdm]+)[\\s:.)-]+[A-Za-z]/i.test(text);", html)
@@ -118,7 +118,6 @@ class FrontendRegressionTest(unittest.TestCase):
         self.assertIn("function rebuildSections()", html)
         self.assertIn("function getSelectionOffsets()", html)
         self.assertIn("function restoreSelectionOffsets(offsets)", html)
-        self.assertIn("promoteEditorHeadingCandidates();", html)
         self.assertIn("mso-)?outline-level", html)
         self.assertIn("const titleCase=titleWords.length>=2&&titleWords.length<=8", html)
         self.assertIn("hasOnlyBoldText", html)
@@ -133,7 +132,8 @@ class FrontendRegressionTest(unittest.TestCase):
         end = html.index("function issueCard(title,meta,copy,action){", start)
         block = html[start:end]
         self.assertIn("button.dataset.sectionIndex=String(index);", block)
-        self.assertIn("setActiveSection(Number(this.dataset.sectionIndex),true);", block)
+        self.assertIn("setActiveSection(sectionIndex,true);", block)
+        self.assertIn("target.scrollIntoView({behavior:'smooth',block:'center'});", block)
         self.assertIn("Number(button.dataset.sectionIndex)===activeIndex", block)
 
     def test_overused_word_navigation_targets_live_text_node(self):
@@ -171,6 +171,35 @@ class FrontendRegressionTest(unittest.TestCase):
         self.assertIn("setIssueHighlight(freshRange)", html)
         self.assertIn("clearIssueHighlight();", html)
 
+
+
+
+    def test_editor_transitions_require_successful_save(self):
+        html = (ROOT / "public" / "editor.html").read_text(encoding="utf-8")
+        self.assertIn("const saved=await saveProject();if(!saved){renderProjectSelect();return}", html)
+        self.assertIn("const saved=await saveProject();\n  if(!saved){showToast('Your current manuscript could not be saved. New project was cancelled.');return}", html)
+        self.assertIn("const saved=await saveProject();\n    if(!saved)throw new Error('Your current manuscript could not be saved. Import was cancelled.');", html)
+        self.assertIn("document.getElementById('projectsLink').addEventListener", html)
+
+    def test_analysis_is_bound_to_current_manuscript(self):
+        html = (ROOT / "public" / "editor.html").read_text(encoding="utf-8")
+        self.assertIn("async function hashText(value)", html)
+        self.assertIn("project.analysis.content_hash===manuscriptHash", html)
+        self.assertIn("currentAnalysis.content_hash=await hashText(manuscriptText);", html)
+
+    def test_mobile_issue_focus_can_scroll_the_page(self):
+        html = (ROOT / "public" / "editor.html").read_text(encoding="utf-8")
+        self.assertIn("const internallyScrollable=editor.scrollHeight>editor.clientHeight+2;", html)
+        self.assertIn("window.scrollTo({top:Math.max(0,target),behavior:'smooth'});", html)
+
+    def test_import_contract_is_shared_with_flask(self):
+        app = (ROOT / "app.py").read_text(encoding="utf-8")
+        self.assertIn("data = request.get_json(silent=True) or {}", app)
+        self.assertIn("filename = str(data.get(\"filename\") or \"\").strip()[:255]", app)
+        self.assertIn("content = str(data.get(\"content\") or \"\")", app)
+
+if __name__ == "__main__":
+    unittest.main()
 
 if __name__ == "__main__":
     unittest.main()
