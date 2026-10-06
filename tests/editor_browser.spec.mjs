@@ -27,10 +27,11 @@ try {
   await page.locator("#wordsView .issue-card").first().waitFor();
   await page.locator("#wordsView .issue-card").first().click();
   await page.locator("#wordSearchPopover.open").waitFor();
+  for(let i=0;i<30&&!(await page.evaluate(()=>window.getSelection().rangeCount));i++) await sleep(100);
   if(await page.locator("#wordSearchMeta").innerText()!=="Use 1 of 12")throw new Error("First word occurrence failed");
   const firstSelection=await page.evaluate(()=>{const x=window.getSelection();return {text:x.toString(),rangeCount:x.rangeCount,debug:window.__mmSelectionDebug||null,anchor:x.anchorNode?.parentElement?.outerHTML?.slice(0,300)||"",active:document.querySelector(".mm-section-active")?.innerText?.slice(0,80)||"",meta:document.getElementById("wordSearchMeta")?.innerText||""};});
   if(firstSelection.text.toLowerCase()!=="alpha")throw new Error("First word selection failed: "+JSON.stringify(firstSelection));
-  for(let i=0;i<4;i++) await page.locator("#wordNext").click();
+  for(let i=0;i<4;i++) { await page.locator("#wordNext").click(); await sleep(100); }
   if(await page.locator("#wordSearchMeta").innerText()!=="Use 5 of 12")throw new Error("Word search did not advance across the chapter boundary");
   if(await page.evaluate(()=>window.getSelection().toString().toLowerCase())!=="alpha")throw new Error("Cross-chapter word occurrence was not selected");
   if(!(await page.locator(".mm-section-active").innerText()).includes("Chapter Two"))throw new Error("Word navigation did not activate the containing chapter");
