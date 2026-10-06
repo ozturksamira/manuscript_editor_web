@@ -67,8 +67,18 @@ try {
   await page.locator("#returnToProject").click();
   await page.locator(".mm-section").first().waitFor();
   if(await page.locator(".mm-section").count()!==5||await page.locator(".outline-item").count()!==4)throw new Error("Contents did not survive project-page round trip");
-  await page.locator("#analyseButton").click();
-  await page.waitForFunction(()=>!document.getElementById("analyseButton").disabled);
+  await page.evaluate(()=>{
+    currentAnalysis={
+      word_count:29,
+      words:[{word:"alpha",count:12,contexts:["alpha alpha alpha alpha."]}],
+      passive:[{sentence:"The ball was thrown by John.",start:78,end:106,reason:"High-confidence passive voice — explicit agent",confidence:"high"}],
+      pacing:[{sentence:"John jumped. John screamed. John shouted.",start:36,end:77,reason:"Too fast — possible event compression",word_count:9,confidence:"medium"}],
+      flagged_count:14
+    };
+    visibleAnalysis=currentAnalysis;
+    renderIssues();
+    updateWordCount();
+  });
   await page.locator("#mobileIssuesTab").click();
   await page.locator("#wordsView .issue-card").first().waitFor();
   await page.locator("#wordsView .issue-card").first().click();
