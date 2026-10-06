@@ -135,7 +135,7 @@ class FrontendRegressionTest(unittest.TestCase):
         self.assertIn("const currentHeadings=Array.from(editor.querySelectorAll('h1,h2,h3,h4,h5,h6'));", block)
         self.assertIn("setActiveSection(sectionIndex,true);", block)
         self.assertIn("target.scrollIntoView({behavior:'smooth',block:'center'});", block)
-        self.assertIn("Number(button.dataset.headingIndex)===activeHeading", block)
+        self.assertIn("target===activeHeading", block)
 
     def test_overused_word_navigation_targets_live_text_node(self):
         html = (ROOT / "public" / "editor.html").read_text(encoding="utf-8")
