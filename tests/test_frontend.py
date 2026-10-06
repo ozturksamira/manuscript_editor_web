@@ -198,13 +198,7 @@ class FrontendRegressionTest(unittest.TestCase):
         self.assertIn("filename = str(data.get(\"filename\") or \"\").strip()[:255]", app)
         self.assertIn("content = str(data.get(\"content\") or \"\")", app)
 
-if __name__ == "__main__":
-    unittest.main()
-
-if __name__ == "__main__":
-    unittest.main()
-
-    def test_editor_has_single_canonical_structure_refresh(self):
+def test_editor_has_single_canonical_structure_refresh(self):
         html = (ROOT / "public" / "editor.html").read_text(encoding="utf-8")
         self.assertEqual(html.count("function refreshEditorialStructure(checkHeadingCandidates)"), 1)
         self.assertNotIn("const before=Array.from(editor.querySelectorAll(':scope > .mm-section')).length;", html)
@@ -214,4 +208,7 @@ if __name__ == "__main__":
 
     def test_issue_selection_focuses_editor_before_restoring_range(self):
         html = (ROOT / "public" / "editor.html").read_text(encoding="utf-8")
-        self.assertIn("editor.focus({preventScroll:true});\n    const selection=window.getSelection();\n    selection.removeAllRanges();\n    selection.addRange(range);", html)
+        self.assertIn("setIssueHighlight(range)", html)\n        self.assertIn("scrollRangeIntoEditor(range)", html)\n        self.assertNotIn("selection.addRange(range)", html)
+
+if __name__ == "__main__":
+    unittest.main()
