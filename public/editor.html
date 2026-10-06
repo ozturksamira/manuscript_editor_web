@@ -778,9 +778,9 @@ function refreshOutline(){
       const section=target.closest('.mm-section');
       if(section){
         const sectionIndex=sections.indexOf(section);
-        if(sectionIndex>=0){setActiveSection(sectionIndex,true);return}
+        if(sectionIndex>=0)setActiveSection(sectionIndex,true);
       }
-      target.scrollIntoView({behavior:'smooth',block:'center'});
+      requestAnimationFrame(function(){target.scrollIntoView({behavior:'smooth',block:'center'});});
     });
     list.appendChild(button);
   });
