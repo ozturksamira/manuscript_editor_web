@@ -756,30 +756,39 @@ window.addEventListener('beforeunload',function(){if(activeProjectId&&manuscript
 function refreshOutline(){
   const list=document.getElementById('outlineList');
   const sections=Array.from(editor.querySelectorAll(':scope > .mm-section'));
+  const headings=Array.from(editor.querySelectorAll('h1,h2,h3,h4,h5,h6'));
   list.replaceChildren();
-  if(!sections.length){
+  if(!headings.length){
     list.innerHTML='<div class="outline-empty">No headings yet. Use H1, H2 or H3 in the toolbar to create separate writing sections.</div>';
     return;
   }
-  sections.forEach(function(section,index){
-    const heading=section.querySelector('h1,h2,h3,h4,h5,h6');
-    if(!heading)return;
+  headings.forEach(function(heading,index){
     const level=Number(heading.tagName.substring(1));
     const button=document.createElement('button');
     button.type='button';
     button.className='outline-item level-'+level;
-    button.dataset.sectionIndex=String(index);
+    button.dataset.headingIndex=String(index);
     button.textContent=String(heading.textContent||'').trim()||('Section '+(index+1));
     button.title=button.textContent;
     button.addEventListener('click',function(){
       setMobilePane('writing');
-      setActiveSection(Number(this.dataset.sectionIndex),true);
+      const currentHeadings=Array.from(editor.querySelectorAll('h1,h2,h3,h4,h5,h6'));
+      const target=currentHeadings[Number(this.dataset.headingIndex)];
+      if(!target)return;
+      const section=target.closest('.mm-section');
+      if(section){
+        const sectionIndex=sections.indexOf(section);
+        if(sectionIndex>=0){setActiveSection(sectionIndex,true);return}
+      }
+      target.scrollIntoView({behavior:'smooth',block:'center'});
     });
     list.appendChild(button);
   });
-  const activeIndex=sections.findIndex(function(section){return section.classList.contains('mm-section-active')});
+  const activeSection=sections.find(function(section){return section.classList.contains('mm-section-active')});
+  const activeHeading=activeSection&&activeSection.querySelector('h1,h2,h3,h4,h5,h6');
   document.querySelectorAll('.outline-item').forEach(function(button){
-    button.classList.toggle('active',Number(button.dataset.sectionIndex)===activeIndex);
+    const target=headings[Number(button.dataset.headingIndex)];
+    button.classList.toggle('active',target===activeHeading);
   });
 }
 
