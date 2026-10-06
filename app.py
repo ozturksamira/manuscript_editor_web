@@ -808,7 +808,7 @@ def analyse_text(value):
                 or variety <= 0.62
             )
             if (
-                avg_words >= 18
+                avg_words >= 12
                 and event_total <= 2
                 and event_density <= 0.04
                 and drag_signal
