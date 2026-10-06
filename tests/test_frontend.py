@@ -111,7 +111,6 @@ class FrontendRegressionTest(unittest.TestCase):
         self.assertIn("freshTarget.nodeOffsetStart", block)
         self.assertIn("setIssueHighlight(range)", block)
         self.assertIn("scrollRangeIntoEditor(range)", block)
-        self.assertIn("scrollRangeIntoEditor(range)", block)
         self.assertIn("setActiveSection(sectionIndex,false)", block)
     def test_editor_uses_canonical_heading_structure_refresh(self):
         html = (ROOT / "public" / "editor.html").read_text(encoding="utf-8")
