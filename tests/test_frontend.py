@@ -158,6 +158,18 @@ class FrontendRegressionTest(unittest.TestCase):
         self.assertIn("'/api/projects/'+activeProjectId", html)
         self.assertIn("method:'DELETE'", html)
 
+    def test_editor_persists_canonical_content_and_transient_issue_focus(self):
+        html = (ROOT / "public" / "editor.html").read_text(encoding="utf-8")
+        self.assertIn("function serializeEditorContent()", html)
+        self.assertIn("clone.querySelectorAll('.mm-section')", html)
+        self.assertIn("content:serializeEditorContent()", html)
+        self.assertIn("function clearIssueHighlight()", html)
+        self.assertIn("function setIssueHighlight(range)", html)
+        self.assertIn("CSS.highlights.set('mm-editor-issue'", html)
+        self.assertIn("::highlight(mm-editor-issue)", html)
+        self.assertIn("setIssueHighlight(freshRange)", html)
+        self.assertIn("clearIssueHighlight();", html)
+
 
 if __name__ == "__main__":
     unittest.main()

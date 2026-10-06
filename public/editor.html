@@ -49,6 +49,7 @@ button,input,select{font:inherit}button{cursor:pointer}a{color:inherit}
 .editor.has-sections > .mm-section{display:none;min-height:100%}
 .editor.has-sections > .mm-section.mm-section-active{display:block}
 .editor.has-sections > .mm-section > :first-child{margin-top:0}
+.editor mark.issue-focus-highlight{background:rgba(244,181,196,.58);color:inherit;border-radius:3px;box-shadow:0 0 0 1px rgba(193,111,135,.12);padding:0 .04em}::highlight(mm-editor-issue){background:rgba(244,181,196,.58);color:inherit}
 .editor h1,.editor h2,.editor h3,.editor h4,.editor h5,.editor h6{font-family:"Playfair Display",Georgia,serif;color:var(--burgundy);line-height:1.2}.editor h1{font-size:2.2rem}.editor h2{font-size:1.8rem}.editor h3{font-size:1.45rem}.editor blockquote{margin:1.25em 0;padding-left:17px;border-left:3px solid var(--tuscany);color:var(--umber)}.editor hr{border:0;border-top:1px solid var(--tuscany);margin:2em 0}.editor ul,.editor ol{padding-left:1.6em}
 .section-nav{display:none;align-items:center;justify-content:space-between;gap:10px;margin-top:12px;padding:9px 2px 0}
 .paper-wrap{position:relative}
@@ -321,6 +322,8 @@ async function loadProject(projectId){
   visibleAnalysis=currentAnalysis;
   updateWordCount();
   wordCursors={};
+  activeWord=null;
+  clearIssueHighlight();
   updateExportLinks();
   refreshOutline();
   renderIssues();
@@ -344,6 +347,7 @@ document.getElementById('wordClose').addEventListener('click',closeWordSearch);
 document.getElementById('nextSection').addEventListener('click',function(){navigateSection(1)});
 
 editor.addEventListener('input',function(){
+  clearIssueHighlight();
   currentAnalysis={word_count:0,words:[],passive:[],pacing:[],flagged_count:0};
   visibleAnalysis=currentAnalysis;
   updateWordCount();
@@ -686,6 +690,17 @@ async function deleteProject(){
   showToast('Project deleted.');
 }
 
+function serializeEditorContent(){
+  const clone=editor.cloneNode(true);
+  clone.querySelectorAll('mark.issue-focus-highlight').forEach(function(mark){mark.replaceWith(document.createTextNode(mark.textContent||''))});
+  clone.querySelectorAll('.mm-section').forEach(function(section){
+    const parent=section.parentNode;
+    if(!parent)return;
+    while(section.firstChild)parent.insertBefore(section.firstChild,section);
+    section.remove();
+  });
+  return clone.innerHTML;
+}
 function scheduleSave(){
   clearTimeout(saveTimer);
   saveStatus.textContent='Unsaved changes…';
@@ -699,7 +714,7 @@ async function saveProject(keepalive){
   try{
     const response=await fetch('/api/projects/'+activeProjectId,{
       method:'POST',headers:{'Content-Type':'application/json'},keepalive:!!keepalive,
-      body:JSON.stringify({title:titleInput.value.trim()||'Untitled manuscript',content:editor.innerHTML,analysis:currentAnalysis})
+      body:JSON.stringify({title:titleInput.value.trim()||'Untitled manuscript',content:serializeEditorContent(),analysis:currentAnalysis})
     });
     if(!response.ok)throw new Error('Save failed');
     const data=await response.json();
@@ -883,6 +898,7 @@ function focusWordOccurrence(index,occurrenceIndex){
     const range=document.createRange();
     range.setStart(freshTarget.node,freshTarget.nodeOffsetStart);
     range.setEnd(freshTarget.node,freshTarget.nodeOffsetEnd);
+    setIssueHighlight(range);
     editor.focus({preventScroll:true});
     const selection=window.getSelection();
     selection.removeAllRanges();
@@ -905,6 +921,7 @@ function moveWordOccurrence(delta){
 function closeWordSearch(){
   document.getElementById('wordSearchPopover').classList.remove('open');
   activeWord=null;
+  clearIssueHighlight();
 }
 function getOccurrenceContext(start,end){
   const text=buildTextIndex().text;
@@ -966,6 +983,35 @@ function scrollRangeIntoEditor(range){
   const target=editor.scrollTop+(rect.top-editorRect.top)-(editor.clientHeight/2)+(rect.height/2);
   editor.scrollTo({top:Math.max(0,target),behavior:'smooth'});
 }
+function clearIssueHighlight(){
+  if(window.CSS&&CSS.highlights&&CSS.highlights.delete)CSS.highlights.delete('mm-editor-issue');
+  editor.querySelectorAll('mark.issue-focus-highlight').forEach(function(mark){mark.replaceWith(document.createTextNode(mark.textContent||''))});
+}
+function setIssueHighlight(range){
+  clearIssueHighlight();
+  if(!range)return;
+  if(window.CSS&&CSS.highlights&&typeof Highlight==='function'){
+    CSS.highlights.set('mm-editor-issue',new Highlight(range.cloneRange()));
+    return;
+  }
+  const nodes=[];
+  const walker=document.createTreeWalker(editor,NodeFilter.SHOW_TEXT);
+  let node;
+  while(node=walker.nextNode())nodes.push(node);
+  const relevant=nodes.filter(function(item){return range.intersectsNode(item)});
+  if(!relevant.length)return;
+  relevant.forEach(function(item){
+    const start=item===range.startContainer?range.startOffset:0;
+    const end=item===range.endContainer?range.endOffset:item.nodeValue.length;
+    if(end<=start||!item.parentNode)return;
+    const selected=item.splitText(start);
+    if(end-start<selected.nodeValue.length)selected.splitText(end-start);
+    const mark=document.createElement('mark');
+    mark.className='issue-focus-highlight';
+    selected.parentNode.insertBefore(mark,selected);
+    mark.appendChild(selected);
+  });
+}
 function selectAndScroll(range){
   if(!range){
     showToast('That passage could not be located in the manuscript. Run the analysis again if you recently changed the text.');
@@ -1000,6 +1046,7 @@ function focusOffsets(start,end){
       showToast('That passage could not be located after changing sections.');
       return;
     }
+    setIssueHighlight(freshRange);
     editor.focus({preventScroll:true});
     const selection=window.getSelection();
     selection.removeAllRanges();
