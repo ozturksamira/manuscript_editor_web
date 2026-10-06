@@ -169,3 +169,7 @@ if __name__ == "__main__":
         self.assertNotIn("</section>>", html)
         self.assertIn("const needsSync=checkHeadingCandidates||sectionStructureNeedsSync();", html)
         self.assertIn("const sections=normalizeSections(needsSync);", html)
+
+    def test_issue_selection_focuses_editor_before_restoring_range(self):
+        html = (ROOT / "public" / "editor.html").read_text(encoding="utf-8")
+        self.assertIn("editor.focus({preventScroll:true});\n    const selection=window.getSelection();\n    selection.removeAllRanges();\n    selection.addRange(range);", html)
