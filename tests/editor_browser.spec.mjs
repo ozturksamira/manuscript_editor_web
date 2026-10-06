@@ -1,0 +1,36 @@
+import { chromium } from "playwright";
+import { spawn } from "node:child_process";
+const port=4173;
+const server=spawn("python",["-m","http.server",String(port),"--directory","public"],{stdio:"ignore"});
+const sleep=(ms)=>new Promise((resolve)=>setTimeout(resolve,ms));
+try {
+  await sleep(800);
+  const browser=await chromium.launch({headless:true});
+  const page=await browser.newPage();
+  const content="<p>Preface text.</p><h1>Chapter One</h1><p>alpha alpha alpha alpha.</p><h1>Chapter Two</h1><p>alpha alpha alpha alpha.</p>";
+  await page.route("**/api/account",async(route)=>route.fulfill({status:200,contentType:"application/json",body:JSON.stringify({email:"smoke@example.test"})}));
+  await page.route("**/api/projects",async(route)=>route.fulfill({status:200,contentType:"application/json",body:JSON.stringify({projects:[{id:1,title:"Smoke manuscript",slug:"smoke-manuscript"}]})}));
+  await page.route("**/api/projects/1",async(route)=>route.fulfill({status:200,contentType:"application/json",body:JSON.stringify({project:{id:1,title:"Smoke manuscript",slug:"smoke-manuscript",content,analysis:{}}})}));
+  await page.goto(`http://127.0.0.1:${port}/editor.html`,{waitUntil:"domcontentloaded"});
+  await page.locator(".mm-section").first().waitFor();
+  if(await page.locator(".mm-section").count()!==3)throw new Error("Initial section build failed");
+  if(await page.locator(".outline-item").count()!==2)throw new Error("Initial Contents build failed");
+  await page.locator(".outline-item").nth(1).click();
+  if(!(await page.locator(".mm-section-active").innerText()).includes("Chapter Two"))throw new Error("Contents navigation failed");
+  await page.evaluate(()=>{const e=document.getElementById("richEditor");e.innerHTML="<p>Preface text.</p><h1>Chapter One</h1><p>alpha alpha alpha alpha.</p><h1>Chapter Two</h1><p>alpha alpha alpha alpha.</p><h1>Chapter Three</h1><p>alpha alpha alpha alpha.</p>";e.dispatchEvent(new Event("input",{bubbles:true}));});
+  await page.locator(".mm-section").nth(3).waitFor();
+  if(await page.locator(".mm-section").count()!==4||await page.locator(".outline-item").count()!==3)throw new Error("New heading refresh failed");
+  await page.locator("#analyseButton").click();
+  await page.locator("#analyseButton").waitFor({state:"enabled"});
+  if(await page.locator(".mm-section").count()!==4)throw new Error("Analysis rebuilt sections incorrectly");
+  await page.locator("#mobileIssuesTab").click();
+  await page.locator("#wordsView .issue-card").first().waitFor();
+  await page.locator("#wordsView .issue-card").first().click();
+  await page.locator("#wordSearchPopover.open").waitFor();
+  if(await page.locator("#wordSearchMeta").innerText()!=="Use 1 of 12")throw new Error("First word occurrence failed");
+  if(await page.evaluate(()=>window.getSelection().toString().toLowerCase())!=="alpha")throw new Error("First word selection failed");
+  await page.locator("#wordNext").click();
+  if(await page.locator("#wordSearchMeta").innerText()!=="Use 2 of 12")throw new Error("Next word occurrence failed");
+  if(await page.evaluate(()=>window.getSelection().toString().toLowerCase())!=="alpha")throw new Error("Next word selection failed");
+  await browser.close();
+} finally { server.kill("SIGTERM"); }
