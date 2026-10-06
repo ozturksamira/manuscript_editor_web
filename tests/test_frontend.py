@@ -131,10 +131,11 @@ class FrontendRegressionTest(unittest.TestCase):
         start = html.index("function refreshOutline(){")
         end = html.index("function issueCard(title,meta,copy,action){", start)
         block = html[start:end]
-        self.assertIn("button.dataset.sectionIndex=String(index);", block)
+        self.assertIn("button.dataset.headingIndex=String(index);", block)
+        self.assertIn("const currentHeadings=Array.from(editor.querySelectorAll('h1,h2,h3,h4,h5,h6'));", block)
         self.assertIn("setActiveSection(sectionIndex,true);", block)
         self.assertIn("target.scrollIntoView({behavior:'smooth',block:'center'});", block)
-        self.assertIn("Number(button.dataset.sectionIndex)===activeIndex", block)
+        self.assertIn("Number(button.dataset.headingIndex)===activeHeading", block)
 
     def test_overused_word_navigation_targets_live_text_node(self):
         html = (ROOT / "public" / "editor.html").read_text(encoding="utf-8")
@@ -208,8 +209,9 @@ class FrontendRegressionTest(unittest.TestCase):
 
     def test_issue_selection_focuses_editor_before_restoring_range(self):
         html = (ROOT / "public" / "editor.html").read_text(encoding="utf-8")
-        self.assertIn("setIssueHighlight(range)", html)
-        self.assertIn("scrollRangeIntoEditor(range)", html)
+        self.assertIn("setIssueHighlight(freshRange)", html)
+        self.assertIn("scrollRangeIntoEditor(freshRange)", html)
+        self.assertIn("selection.removeAllRanges()", html)
         self.assertNotIn("selection.addRange(range)", html)
 
 if __name__ == "__main__":
