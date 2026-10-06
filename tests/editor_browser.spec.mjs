@@ -126,8 +126,8 @@ try {
   if(await page.locator(".mm-section-active").innerText().then(text=>!text.includes("Chapter One")))throw new Error("Passive issue did not activate its containing chapter");
   await page.locator(".issue-tab").filter({hasText:"Pacing"}).click();
   await page.locator("#pacingView .issue-card").first().click();
-  await waitForHighlight("John ran. John jumped. John screamed. John shouted. The ball was thrown by John.");
-  if(await highlightedText()!=="John ran. John jumped. John screamed. John shouted. The ball was thrown by John.")throw new Error("Pacing issue did not replace the previous focus with the correct highlight");
+  await waitForHighlight("John jumped. John screamed. John shouted.");
+  if(await highlightedText()!=="John jumped. John screamed. John shouted.")throw new Error("Pacing issue did not replace the previous focus with the correct highlight");
   if(await page.locator(".mm-section-active").innerText().then(text=>!text.includes("Chapter One")))throw new Error("Pacing issue did not activate its containing chapter");
 
   await page.evaluate(()=>closeWordSearch());
