@@ -122,8 +122,9 @@ class FrontendRegressionTest(unittest.TestCase):
         self.assertIn("const titleCase=titleWords.length>=2&&titleWords.length<=8", html)
         self.assertIn("hasOnlyBoldText", html)
         self.assertIn("text-align\\s*:\\s*center", html)
-        self.assertIn("refreshEditorialStructure(true);", html)
+        self.assertIn("refreshEditorialStructure(false);", html)
         self.assertIn("Checking headings and refreshing Contents…", html)
+        self.assertNotIn("refreshEditorialStructure(true);", html[html.index("async function analyseProject()"):])
         self.assertNotIn("const needsRebuild=!existing.length || Boolean(force) || headingCount>existing.length;", html)
 
     def test_contents_targets_actual_section_after_preface(self):
