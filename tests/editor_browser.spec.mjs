@@ -18,7 +18,7 @@ try {
   await page.locator(".outline-item").nth(1).click();
   if(!(await page.locator(".mm-section-active").innerText()).includes("Chapter Two"))throw new Error("Contents navigation failed");
   await page.evaluate(()=>{const e=document.getElementById("richEditor");e.innerHTML="<p>Preface text.</p><h1>Chapter One</h1><p>alpha alpha alpha alpha.</p><h1>Chapter Two</h1><p>alpha alpha alpha alpha.</p><h1>Chapter Three</h1><p>alpha alpha alpha alpha.</p>";e.dispatchEvent(new Event("input",{bubbles:true}));});
-  await page.locator(".mm-section").nth(3).waitFor();
+  for(let i=0;i<30&&await page.locator(".mm-section").count()!==4;i++) await sleep(100);
   if(await page.locator(".mm-section").count()!==4||await page.locator(".outline-item").count()!==3)throw new Error("New heading refresh failed");
   await page.locator("#analyseButton").click();
   await page.locator("#analyseButton").waitFor({state:"enabled"});
