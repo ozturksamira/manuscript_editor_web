@@ -40,6 +40,12 @@ try {
   await page.locator(".mm-section").first().waitFor();
   if(await page.locator(".mm-section").count()!==4)throw new Error("Initial section build failed");
   if(await page.locator(".outline-item").count()!==3)throw new Error("Initial Contents build failed");
+  await page.evaluate(()=>{const e=document.getElementById("richEditor");e.innerHTML="<h1>Chapter One</h1><p>Intro.</p><div><h2>Nested Section</h2><p>Nested text.</p></div><h1>Chapter Two</h1><p>More.</p><h1>Chapter Three</h1><p>End.</p>";e.dispatchEvent(new Event("input",{bubbles:true}));});
+  for(let i=0;i<30&&await page.locator(".outline-item").count()!==4;i++) await sleep(100);
+  if(await page.locator(".outline-item").count()!==4)throw new Error("Nested canonical heading disappeared from Contents");
+  if(await page.locator(".outline-item").filter({hasText:"Nested Section"}).count()!==1)throw new Error("Nested canonical heading was not navigable in Contents");
+  await page.evaluate(()=>{const e=document.getElementById("richEditor");e.innerHTML="<p>Preface text.</p><h1>Chapter One</h1><p>alpha alpha alpha alpha. The ball was thrown by John.</p><h1>Chapter Two</h1><p>alpha alpha alpha alpha.</p><h1>Chapter Three</h1><p>alpha alpha alpha alpha.</p>";e.dispatchEvent(new Event("input",{bubbles:true}));});
+  for(let i=0;i<30&&await page.locator(".mm-section").count()!==4;i++) await sleep(100);
   await page.locator(".outline-item").nth(2).click();
   if(!(await page.locator(".mm-section-active").innerText()).includes("Chapter Three"))throw new Error("Contents navigation failed");
 
