@@ -161,3 +161,15 @@ class FrontendRegressionTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+    def test_editor_has_single_canonical_structure_refresh(self):
+        html = (ROOT / "public" / "editor.html").read_text(encoding="utf-8")
+        self.assertEqual(html.count("function refreshEditorialStructure(checkHeadingCandidates)"), 1)
+        self.assertNotIn("const before=Array.from(editor.querySelectorAll(':scope > .mm-section')).length;", html)
+        self.assertNotIn("</section>>", html)
+        self.assertIn("const needsSync=checkHeadingCandidates||sectionStructureNeedsSync();", html)
+        self.assertIn("const sections=normalizeSections(needsSync);", html)
+
+    def test_issue_selection_focuses_editor_before_restoring_range(self):
+        html = (ROOT / "public" / "editor.html").read_text(encoding="utf-8")
+        self.assertIn("editor.focus({preventScroll:true});\n    const selection=window.getSelection();\n    selection.removeAllRanges();\n    selection.addRange(range);", html)

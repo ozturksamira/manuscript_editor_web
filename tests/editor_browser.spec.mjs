@@ -1,0 +1,39 @@
+import { chromium } from "playwright";
+import { spawn } from "node:child_process";
+const port=4173;
+const server=spawn("python",["-m","http.server",String(port),"--directory","public"],{stdio:"ignore"});
+const sleep=(ms)=>new Promise((resolve)=>setTimeout(resolve,ms));
+try {
+  await sleep(800);
+  const browser=await chromium.launch({headless:true});
+  const page=await browser.newPage();
+  const content="<p>Preface text.</p><h1>Chapter One</h1><p>alpha alpha alpha alpha.</p><h1>Chapter Two</h1><p>alpha alpha alpha alpha.</p>";
+  await page.route("**/api/account",async(route)=>route.fulfill({status:200,contentType:"application/json",body:JSON.stringify({email:"smoke@example.test"})}));
+  await page.route("**/api/projects",async(route)=>route.fulfill({status:200,contentType:"application/json",body:JSON.stringify({projects:[{id:1,title:"Smoke manuscript",slug:"smoke-manuscript"}]})}));
+  await page.route("**/api/projects/1",async(route)=>route.fulfill({status:200,contentType:"application/json",body:JSON.stringify({project:{id:1,title:"Smoke manuscript",slug:"smoke-manuscript",content,analysis:{}}})}));
+  await page.goto(`http://127.0.0.1:${port}/editor.html`,{waitUntil:"domcontentloaded"});
+  await page.locator(".mm-section").first().waitFor();
+  if(await page.locator(".mm-section").count()!==3)throw new Error("Initial section build failed");
+  if(await page.locator(".outline-item").count()!==2)throw new Error("Initial Contents build failed");
+  await page.locator(".outline-item").nth(1).click();
+  if(!(await page.locator(".mm-section-active").innerText()).includes("Chapter Two"))throw new Error("Contents navigation failed");
+  await page.evaluate(()=>{const e=document.getElementById("richEditor");e.innerHTML="<p>Preface text.</p><h1>Chapter One</h1><p>alpha alpha alpha alpha.</p><h1>Chapter Two</h1><p>alpha alpha alpha alpha.</p><h1>Chapter Three</h1><p>alpha alpha alpha alpha.</p>";e.dispatchEvent(new Event("input",{bubbles:true}));});
+  for(let i=0;i<30&&await page.locator(".mm-section").count()!==4;i++) await sleep(100);
+  if(await page.locator(".mm-section").count()!==4||await page.locator(".outline-item").count()!==3)throw new Error("New heading refresh failed");
+  await page.locator("#analyseButton").click();
+  for(let i=0;i<60&&await page.locator("#analyseButton").isDisabled();i++) await sleep(100);
+  if(await page.locator(".mm-section").count()!==4)throw new Error("Analysis rebuilt sections incorrectly");
+  await page.locator("#mobileIssuesTab").click();
+  await page.locator("#wordsView .issue-card").first().waitFor();
+  await page.locator("#wordsView .issue-card").first().click();
+  await page.locator("#wordSearchPopover.open").waitFor();
+  for(let i=0;i<30&&!(await page.evaluate(()=>window.getSelection().rangeCount));i++) await sleep(100);
+  if(await page.locator("#wordSearchMeta").innerText()!=="Use 1 of 12")throw new Error("First word occurrence failed");
+  const firstSelection=await page.evaluate(()=>{const x=window.getSelection();return {text:x.toString(),rangeCount:x.rangeCount,anchor:x.anchorNode?.parentElement?.outerHTML?.slice(0,300)||"",active:document.querySelector(".mm-section-active")?.innerText?.slice(0,80)||"",meta:document.getElementById("wordSearchMeta")?.innerText||""};});
+  if(firstSelection.text.toLowerCase()!=="alpha")throw new Error("First word selection failed: "+JSON.stringify(firstSelection));
+  for(let i=0;i<4;i++) { await page.locator("#wordNext").click(); await sleep(100); }
+  if(await page.locator("#wordSearchMeta").innerText()!=="Use 5 of 12")throw new Error("Word search did not advance across the chapter boundary");
+  if(await page.evaluate(()=>window.getSelection().toString().toLowerCase())!=="alpha")throw new Error("Cross-chapter word occurrence was not selected");
+  if(!(await page.locator(".mm-section-active").innerText()).includes("Chapter Two"))throw new Error("Word navigation did not activate the containing chapter");
+  await browser.close();
+} finally { server.kill("SIGTERM"); }

@@ -50,6 +50,11 @@ jobs:
           node-version: 24
       - name: Install Node.js dependencies
         run: npm install
+      - name: Browser smoke test
+        run: |
+          npx playwright install --with-deps chromium
+          node tests/editor_browser.spec.mjs
+
       - name: Check Cloudflare Worker JavaScript
         run: node --check src/index.js
       - name: Run Cloudflare analysis tests
