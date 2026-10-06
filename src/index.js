@@ -88,7 +88,7 @@ function cookieHeader(value, maxAge) {
 }
 
 async function hashPassword(password) {
-  const iterations = 20000;
+  const iterations = 600000;
   const salt = crypto.getRandomValues(new Uint8Array(16));
   const key = await crypto.subtle.importKey(
     "raw",
