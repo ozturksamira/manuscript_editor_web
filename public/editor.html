@@ -497,7 +497,7 @@ function sectionStructureSignature(){
   const headingSignature=headings.map(function(heading){
     const section=heading.closest('.mm-section');
     const sectionIndex=section&&section.parentElement===editor?sections.indexOf(section):-1;
-    return String(heading.tagName)+'|'+String(heading.textContent||'').trim()+'|'+sectionIndex;
+    return String(heading.tagName)+'|'+sectionIndex;
   }).join('||');
   return headings.length+'#'+sections.length+'#'+headingSignature;
 }
@@ -506,8 +506,16 @@ function sectionStructureNeedsSync(){
   const sections=Array.from(editor.querySelectorAll(':scope > .mm-section'));
   if(!headings.length)return sections.length>0;
   if(sections.length<1)return true;
+  if(sections.length!==headings.length && !(
+    sections.length===headings.length+1 &&
+    sections[0].querySelector('h1,h2,h3,h4,h5,h6')===null
+  ))return true;
   if(sectionStructureSignature()!==lastSectionStructureSignature)return true;
   if(Array.from(editor.children).some(function(child){return !child.classList.contains('mm-section')}))return true;
+  for(const heading of headings){
+    const section=heading.closest('.mm-section');
+    if(!section||section.parentElement!==editor)return true;
+  }
   return false;
 }
 let lastSectionStructureSignature='';
@@ -705,11 +713,11 @@ window.addEventListener('beforeunload',function(){if(activeProjectId)saveProject
 function refreshOutline(){
   const list=document.getElementById('outlineList');
   const sections=Array.from(editor.querySelectorAll(':scope > .mm-section'));
+  list.replaceChildren();
   if(!sections.length){
     list.innerHTML='<div class="outline-empty">No headings yet. Use H1, H2 or H3 in the toolbar to create separate writing sections.</div>';
     return;
   }
-  list.innerHTML='';
   sections.forEach(function(section,index){
     const heading=section.querySelector('h1,h2,h3,h4,h5,h6');
     if(!heading)return;
@@ -717,16 +725,19 @@ function refreshOutline(){
     const button=document.createElement('button');
     button.type='button';
     button.className='outline-item level-'+level;
+    button.dataset.sectionIndex=String(index);
     button.textContent=String(heading.textContent||'').trim()||('Section '+(index+1));
     button.title=button.textContent;
     button.addEventListener('click',function(){
       setMobilePane('writing');
-      setActiveSection(index,true);
+      setActiveSection(Number(this.dataset.sectionIndex),true);
     });
     list.appendChild(button);
   });
-  const activeIndex=Array.from(editor.querySelectorAll(':scope > .mm-section')).findIndex(function(section){return section.classList.contains('mm-section-active')});
-  document.querySelectorAll('.outline-item').forEach(function(button,i){button.classList.toggle('active',i===activeIndex)});
+  const activeIndex=sections.findIndex(function(section){return section.classList.contains('mm-section-active')});
+  document.querySelectorAll('.outline-item').forEach(function(button){
+    button.classList.toggle('active',Number(button.dataset.sectionIndex)===activeIndex);
+  });
 }
 
 function issueCard(title,meta,copy,action){
@@ -787,8 +798,8 @@ function renderIssues(){
     sorted.forEach(function(item){
       const card=issueCard(item.word,item.count+' uses',(item.contexts&&item.contexts[0])||'Repeated word detected.',function(progress){
         activeWord=item.word;
+        wordCursors[item.word]=0;
         openWordSearch(item.word,card);
-        moveWordOccurrence(0);
         if(progress)progress.textContent='Find window opened';
       });
       views.words.appendChild(card);
@@ -994,11 +1005,6 @@ function focusOffsets(start,end){
   });
 }
 
-function jumpToOffsets(start,end){
-  const index=buildTextIndex();
-  const range=rangeForOffsets(index,start,end);
-  selectAndScroll(range);
-}
 function jumpToOffsets(start,end){
   focusOffsets(start,end);
 }
