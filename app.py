@@ -1310,19 +1310,29 @@ def delete_project(project_id):
 @api_login_required
 def import_project():
     user = current_user()
-    file = request.files.get("file")
-    if not file or not file.filename:
-        return jsonify({"error": "Choose a manuscript file first."}), 400
-
-    try:
-        filename, content = parse_uploaded_file(file)
-    except ValueError as exc:
-        return jsonify({"error": str(exc)}), 400
-    except Exception as exc:
-        return jsonify({"error": f"Failed to read the manuscript: {exc}"}), 500
+    filename = ""
+    content = ""
+    uploaded_file = request.files.get("file")
+    if uploaded_file and uploaded_file.filename:
+        try:
+            filename, content = parse_uploaded_file(uploaded_file)
+        except ValueError as exc:
+            return jsonify({"error": str(exc)}), 400
+        except Exception as exc:
+            return jsonify({"error": f"Failed to read the manuscript: {exc}"}), 500
+    else:
+        data = request.get_json(silent=True) or {}
+        filename = str(data.get("filename") or "").strip()[:255]
+        content = str(data.get("content") or "")
+        if not filename or not content:
+            return jsonify({"error": "Choose a manuscript file first."}), 400
+        if not re.search(r"\.(txt|docx|pdf)$", filename, re.IGNORECASE):
+            return jsonify({"error": "Unsupported file type. Please use .txt, .docx, or .pdf."}), 400
 
     content = sanitize_html(content)
-    title = Path(filename).stem.strip()[:160] or "Imported manuscript"
+    title = str((request.get_json(silent=True) or {}).get("title") or "").strip()[:160] if not uploaded_file else ""
+    if not title:
+        title = Path(filename).stem.strip()[:160] or "Imported manuscript"
 
     db = get_db()
     try:
