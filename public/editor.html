@@ -887,7 +887,6 @@ function focusWordOccurrence(index,occurrenceIndex){
     const selection=window.getSelection();
     selection.removeAllRanges();
     selection.addRange(range);
-    window.__mmSelectionDebug={text:selection.toString(),rangeCount:selection.rangeCount};
     requestAnimationFrame(function(){scrollRangeIntoEditor(range)});
   });
   return true;
