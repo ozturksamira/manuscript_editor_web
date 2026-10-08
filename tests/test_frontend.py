@@ -7,6 +7,23 @@ ROOT = Path(__file__).resolve().parent.parent
 
 
 class FrontendRegressionTest(unittest.TestCase):
+    def test_editor_desktop_controls_and_export_contract(self):
+        html = (ROOT / "public" / "editor.html").read_text(encoding="utf-8")
+        self.assertIn('id="saveNowButton"', html)
+        self.assertIn('onclick="openExportProject()"', html)
+        self.assertIn('id="exportProjectButton"', html)
+        self.assertIn("exportProjectFile('docx')", html)
+        self.assertIn("exportProjectFile('pdf')", html)
+        self.assertIn("exportProjectFile('txt')", html)
+        self.assertNotIn("Export HTML", html)
+        self.assertNotIn("exportHtml", html)
+        self.assertNotIn("onclick=" + '"exportDocx()"', html)
+        self.assertIn('class="project-footer-actions"', html)
+        self.assertIn('onclick="createProject()"', html)
+        self.assertIn('id="fileInput"', html)
+        self.assertIn(".editor-pane-tabs{display:none;", html)
+        self.assertIn(".editor-pane-tabs{display:grid}", html)
+
     def test_editor_uses_real_section_pages_and_navigation(self):
         html = (ROOT / "public" / "editor.html").read_text(encoding="utf-8")
         self.assertIn(".editor.has-sections > .mm-section{display:none", html)
