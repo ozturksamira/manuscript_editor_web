@@ -40,6 +40,22 @@ assert project["title"] == "Chapter One"
 assert project["source_filename"] == "chapter-one.txt"
 assert "Imported text." in project["content"]
 
+project_id = project["id"]
+for fmt, expected_type in [
+    ("txt", "text/plain"),
+    ("docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"),
+    ("pdf", "application/pdf"),
+]:
+    exported = client.get(f"/api/projects/{project_id}/export/{fmt}")
+    assert exported.status_code == 200, exported.get_data(as_text=True)
+    assert exported.content_type.startswith(expected_type), exported.content_type
+    assert exported.data, fmt
+    assert exported.headers.get("Content-Disposition", "").startswith("attachment;"), exported.headers
+
+html_export = client.get(f"/api/projects/{project_id}/export/html")
+assert html_export.status_code == 400, html_export.get_data(as_text=True)
+assert "docx, pdf, or txt" in html_export.get_json()["error"]
+
 delete = client.post("/api/account/delete", json={
     "password": password,
     "confirmation": "DELETE",
