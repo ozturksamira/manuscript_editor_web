@@ -25,6 +25,34 @@ class AnalysisParityTest(unittest.TestCase):
         self.assertNotIn("london", flagged)
         self.assertIn("river", flagged)
 
+    def test_sentence_initial_common_words_stay_eligible(self):
+        value = (
+            "River flooded the valley. River narrowed overnight. "
+            "River widened after the storm. River overflowed the banks. "
+            "House stood at the end of the road. House needed repairs. "
+            "House looked empty at dusk. House remained locked. "
+            "Chapter opened with a warning. Chapter ended with a question. "
+            "Chapter returned to the same mystery. Chapter closed on a cliffhanger."
+        )
+        result = analyse_text(value)
+        flagged = {item["word"] for item in result["words"]}
+        self.assertIn("river", flagged)
+        self.assertIn("house", flagged)
+        self.assertIn("chapter", flagged)
+
+    def test_proper_noun_heuristic_requires_more_than_mid_sentence_capitalization(self):
+        value = (
+            "The River flowed quietly. The River slowed. "
+            "The River turned north. The River reached the sea. "
+            "John walked through London. John stopped in London. "
+            "John looked back at London. John left London."
+        )
+        result = analyse_text(value)
+        flagged = {item["word"] for item in result["words"]}
+        self.assertIn("river", flagged)
+        self.assertNotIn("john", flagged)
+        self.assertNotIn("london", flagged)
+
     def test_python_and_browser_analysis_match(self):
         fixtures = [
             "The ball was thrown by John.",
