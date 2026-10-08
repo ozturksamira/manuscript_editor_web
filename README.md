@@ -20,16 +20,12 @@ The application features a modern, full-screen **snap-scrolling slideshow layout
 * **Pacing Issues Tab:** Spots overly long sentences and consecutive dragging segments.
 
 ## Extended Vision
-- Add a find and replace feature.
-- Develop Analyse Manuscript feature to check for new headings and additions to the Contents tab.
+- Add a general search feature and search in Overused Words.
 - Extend Passive Voice feature to show users replacement/fixing options.
 - Develop Pacing feature flag better issues.
-- Find a way for Overused Words feature not to flag names, possibly by not flagging capitalised words(?). -> When regular overused words are flagged, change code to ignore case lettering.
+- Find a way for Overused Words feature not to flag names, possibly by not flagging capitalised words unless at start of sentence(?). -> When regular overused words are flagged, change code to ignore case lettering.
 - Add feature which allows users to modify their scripts' tense (e.g. first to third, past to present).
-- Fix jumping arrows to work on Ediorial page all over.
-- Remove duplicate Issues from bottom of Editorial Writing tab.
-- Ensure PDF files can be imported. 
-- Develop search feature in Overused Words.
+- Fix jumping arrows to work on Ediorial Issues tab mobile UI.
 - Nested headings in Editorial should act as continuations, not separate sections.
 
 ## Production
