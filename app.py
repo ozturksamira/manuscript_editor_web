@@ -36,6 +36,10 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import declarative_base, relationship, sessionmaker
 from werkzeug.security import check_password_hash, generate_password_hash
+from reportlab.lib.pagesizes import LETTER
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib.units import inch
+from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer
 
 
 app = Flask(__name__)
@@ -1379,6 +1383,93 @@ def analyse_project(project_id):
         db.close()
 
 
+def html_to_pdf(content, title):
+    output = io.BytesIO()
+    document = SimpleDocTemplate(
+        output,
+        pagesize=LETTER,
+        rightMargin=0.75 * inch,
+        leftMargin=0.75 * inch,
+        topMargin=0.7 * inch,
+        bottomMargin=0.7 * inch,
+        title=title,
+    )
+    styles = getSampleStyleSheet()
+    body_style = styles["BodyText"]
+    body_style.fontName = "Helvetica"
+    body_style.fontSize = 11
+    body_style.leading = 16
+    body_style.spaceAfter = 9
+    heading_styles = {
+        "h1": styles["Heading1"],
+        "h2": styles["Heading2"],
+        "h3": styles["Heading3"],
+        "h4": styles["Heading4"],
+        "h5": styles["Heading5"],
+        "h6": styles["Heading6"],
+    }
+    for style in heading_styles.values():
+        style.fontName = "Helvetica-Bold"
+        style.textColor = "#3f3027"
+        style.spaceBefore = 10
+        style.spaceAfter = 7
+
+    class PdfBuilder(HTMLParser):
+        def __init__(self):
+            super().__init__(convert_charrefs=True)
+            self.blocks = []
+            self.current = []
+            self.current_tag = "p"
+
+        def flush(self):
+            text = "".join(self.current).strip()
+            if text:
+                self.blocks.append((self.current_tag, text))
+            self.current = []
+
+        def handle_starttag(self, tag, attrs):
+            tag = tag.lower()
+            if tag in {"p", "div", "blockquote", "li", "h1", "h2", "h3", "h4", "h5", "h6"}:
+                self.flush()
+                self.current_tag = tag
+
+        def handle_endtag(self, tag):
+            if tag.lower() in {"p", "div", "blockquote", "li", "h1", "h2", "h3", "h4", "h5", "h6"}:
+                self.flush()
+                self.current_tag = "p"
+
+        def handle_startendtag(self, tag, attrs):
+            if tag.lower() == "br":
+                self.current.append("<br/>")
+            elif tag.lower() == "hr":
+                self.flush()
+                self.blocks.append(("hr", ""))
+
+        def handle_data(self, data):
+            if data:
+                safe = data.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+                safe = safe.encode("cp1252", "replace").decode("cp1252")
+                self.current.append(safe)
+
+    parser = PdfBuilder()
+    parser.feed(content or "")
+    parser.close()
+    parser.flush()
+
+    story = [Paragraph(title.encode("cp1252", "replace").decode("cp1252"), styles["Title"]), Spacer(1, 0.15 * inch)]
+    for tag, text in parser.blocks:
+        if tag == "hr":
+            story.append(Spacer(1, 0.08 * inch))
+            continue
+        style = heading_styles.get(tag, body_style)
+        story.append(Paragraph(text, style))
+    if len(story) == 2:
+        story.append(Paragraph("", body_style))
+    document.build(story)
+    output.seek(0)
+    return output
+
+
 def html_to_docx(content):
     class DocumentBuilder(HTMLParser):
         def __init__(self):
@@ -1492,21 +1583,14 @@ def export_project(project_id, fmt):
                 as_attachment=True,
                 download_name=f"{safe_title}.docx",
             )
-        if fmt == "html":
-            document = (
-                "<!doctype html><html><head><meta charset='utf-8'><title>"
-                + escape(project.title)
-                + "</title><style>body{max-width:860px;margin:50px auto;padding:0 30px;background:#f7f5f2;color:#171411;font:17px/1.8 Georgia,serif}"
-                "h1,h2,h3{color:#3f3027}hr{border:0;border-top:1px solid #c0ab9a;margin:2em 0}</style></head><body>"
-                + project.content
-                + "</body></html>"
+        if fmt == "pdf":
+            return send_file(
+                html_to_pdf(project.content, project.title),
+                mimetype="application/pdf",
+                as_attachment=True,
+                download_name=f"{safe_title}.pdf",
             )
-            return app.response_class(
-                document,
-                mimetype="text/html",
-                headers={"Content-Disposition": f'attachment; filename="{safe_title}.html"'},
-            )
-        return jsonify({"error": "Unknown export format."}), 400
+        return jsonify({"error": "Unknown export format. Please use docx, pdf, or txt."}), 400
     finally:
         db.close()
 
