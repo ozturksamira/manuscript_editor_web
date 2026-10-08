@@ -639,6 +639,41 @@ def sentence_spans(value):
     return output
 
 
+def _proper_noun_candidates(value):
+    stats = {}
+    sentence_has_word = False
+    cursor = 0
+
+    for match in WORD_RE.finditer(value or ""):
+        between = (value or "")[cursor:match.start()]
+        if re.search(r"[.!?\n]", between):
+            sentence_has_word = False
+
+        raw = match.group(0)
+        word = raw.lower().replace("’", "'").strip("'")
+        if len(word) >= 2 and word not in STOP_WORDS:
+            row = stats.setdefault(
+                word,
+                {"capitalized": 0, "lowercase": 0, "non_initial": 0},
+            )
+            if raw[0].isupper():
+                row["capitalized"] += 1
+                if sentence_has_word:
+                    row["non_initial"] += 1
+            else:
+                row["lowercase"] += 1
+
+        sentence_has_word = True
+        cursor = match.end()
+
+    return {
+        word
+        for word, row in stats.items()
+        if row["non_initial"] > 0
+        or (row["capitalized"] >= 4 and row["lowercase"] == 0)
+    }
+
+
 def _sentence_profile(snippet):
     words = [
         match.group(0).lower().replace("’", "'").strip("'")
@@ -725,12 +760,13 @@ def analyse_text(value):
         }
 
     sentence_ranges = sentence_spans(value)
+    proper_nouns = _proper_noun_candidates(value)
     word_count = sum(1 for _ in WORD_COUNT_RE.finditer(value))
     counts = {}
 
     for match in WORD_RE.finditer(value):
         word = match.group(0).lower().replace("’", "'").strip("'")
-        if len(word) < 2 or word in STOP_WORDS:
+        if len(word) < 2 or word in STOP_WORDS or word in proper_nouns:
             continue
         counts[word] = counts.get(word, 0) + 1
 
