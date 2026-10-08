@@ -132,6 +132,7 @@ try {
   if(await highlightedText()!=="alpha")throw new Error("Previous word did not restore the prior focus");
   if(await page.locator("#wordSearchMeta").innerText()!=="Use 1 of 12")throw new Error("Previous word navigation did not move back to the first occurrence");
 
+  await page.locator("#mobileIssuesTab").click();
   await page.locator(".issue-tab").filter({hasText:"Passive"}).click();
   await page.locator("#passiveView .issue-card").first().click();
   await waitForHighlight("The ball was thrown by John.");
@@ -141,6 +142,7 @@ try {
   await page.waitForTimeout(300);
   if(savedContent.includes("issue-focus-highlight")||savedContent.includes("mm-editor-issue"))throw new Error("Transient issue focus was persisted into manuscript content");
   if(await page.locator(".mm-section-active").innerText().then(text=>!text.includes("Chapter One")))throw new Error("Passive issue did not activate its containing chapter");
+  await page.locator("#mobileIssuesTab").click();
   await page.locator(".issue-tab").filter({hasText:"Pacing"}).click();
   await page.locator("#pacingView .issue-card").first().click();
   await waitForHighlight("John jumped. John screamed. John shouted.");
