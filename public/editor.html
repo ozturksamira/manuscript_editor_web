@@ -24,9 +24,9 @@ button,input,select{font:inherit}button{cursor:pointer}a{color:inherit}
 .project-select{flex:1 1 300px;min-width:220px;border:1px solid var(--line);border-radius:15px;background:rgba(239,232,226,.62);color:var(--burgundy);padding:11px 14px;outline:none}
 .title-input{flex:0 1 320px;border:1px solid transparent;background:transparent;color:var(--burgundy);padding:8px 10px;border-radius:10px;outline:none;font:600 1.02rem "Playfair Display",Georgia,serif}.project-select:focus,.title-input:focus{border-color:var(--umber);box-shadow:0 0 0 3px rgba(123,92,75,.1)}
 .project-actions{display:flex;gap:7px;flex-wrap:wrap}.small-button,.danger{border:1px solid var(--line);background:var(--pearl);color:var(--burgundy);border-radius:11px;padding:8px 12px;font-size:12px}.small-button:hover,.danger:hover{background:var(--platinum)}.danger{color:#6d3428}.file-input{display:none}
-.layout{display:grid;grid-template-columns:165px minmax(0,1fr);gap:15px;align-items:start}
+.layout{display:grid;grid-template-columns:165px minmax(0,1fr) minmax(300px,360px);gap:15px;align-items:start}
 .layout.issues-mode{grid-template-columns:1fr}
-.issues-screen{display:none;min-height:calc(100vh - 150px);border:1px solid var(--line);background:rgba(239,232,226,.56);box-shadow:var(--shadow);border-radius:20px;overflow:hidden}
+.issues-screen{display:flex;flex-direction:column;min-height:calc(100vh - 150px);border:1px solid var(--line);background:rgba(239,232,226,.56);box-shadow:var(--shadow);border-radius:20px;overflow:hidden}
 .layout.issues-mode > .issues-screen{display:flex;flex-direction:column}
 .layout.issues-mode .outline-panel,.layout.issues-mode .manuscript-panel{display:none}
 .editor-pane-tabs{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin:0 0 12px;padding:4px;border:1px solid var(--line);border-radius:14px;background:var(--platinum)}
@@ -73,12 +73,13 @@ button,input,select{font:inherit}button{cursor:pointer}a{color:inherit}
 .modal-backdrop{position:fixed;inset:0;z-index:100;background:rgba(23,20,17,.35);display:none;align-items:center;justify-content:center;padding:20px}.modal-backdrop.open{display:flex}.settings-modal{width:min(430px,100%);background:var(--pearl);border:1px solid var(--tuscany);border-radius:22px;padding:24px;box-shadow:0 25px 80px rgba(23,20,17,.25)}.settings-modal h2{margin:0;color:var(--burgundy);font:600 1.6rem "Playfair Display",Georgia,serif}.settings-modal p{font-size:13px;line-height:1.65;color:var(--umber)}.settings-field{width:100%;border:1px solid var(--line);background:white;border-radius:11px;padding:11px;margin-top:7px;outline:none}.delete-box{margin-top:18px;padding-top:16px;border-top:1px solid var(--line)}.delete-account{background:#6d3428;border:0;border-radius:999px;color:var(--pearl);padding:10px 14px;font-weight:700}.close-settings{border:1px solid var(--line);background:transparent;border-radius:999px;color:var(--burgundy);padding:9px 13px}.settings-actions{display:flex;justify-content:flex-end;gap:7px;margin-top:14px}.settings-error{min-height:18px;color:#8f3329;font:11px system-ui,sans-serif}
 .toast{position:fixed;right:20px;bottom:20px;z-index:120;max-width:340px;padding:11px 14px;border-radius:13px;background:var(--burgundy);color:var(--pearl);font:11px/1.45 system-ui,sans-serif;opacity:0;transform:translateY(8px);pointer-events:none;transition:.2s}.toast.show{opacity:1;transform:none}
 .mobile-pane-tabs{display:none}
-@media(max-width:1180px){.layout{grid-template-columns:230px minmax(0,1fr)}}
+@media(max-width:1180px){.layout{grid-template-columns:180px minmax(0,1fr) 320px}}
 @media(max-width:980px){
   .layout{grid-template-columns:1fr}
   .outline-panel{position:static;height:205px;max-height:205px;order:0}
   .manuscript-panel{order:1}
-  .issues-screen{min-height:calc(100vh - 150px)}
+  .issues-screen{display:none;min-height:calc(100vh - 150px)}
+  .layout.issues-mode > .issues-screen{display:flex;flex-direction:column}
   .issues-panel{position:static;height:100%;max-height:none}
   .issue-list{max-height:none}
   .editor-fixed-jumps{right:14px}
