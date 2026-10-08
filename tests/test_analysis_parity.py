@@ -12,12 +12,27 @@ ROOT = Path(__file__).resolve().parent.parent
 
 
 class AnalysisParityTest(unittest.TestCase):
+    def test_proper_nouns_are_not_overused_word_flags(self):
+        value = (
+            "John walked through London. John stopped in London. "
+            "John looked back at London. John left London. "
+            "The river crossed the valley. The river narrowed. "
+            "The river widened. The river flooded the valley."
+        )
+        result = analyse_text(value)
+        flagged = {item["word"] for item in result["words"]}
+        self.assertNotIn("john", flagged)
+        self.assertNotIn("london", flagged)
+        self.assertIn("river", flagged)
+
     def test_python_and_browser_analysis_match(self):
         fixtures = [
             "The ball was thrown by John.",
             "He ran. She screamed. The door slammed. The lights went out. They fled.",
             "The old room was incredibly quiet and strangely beautiful, with dusty shelves, faded curtains, cracked frames, and pale light resting across every surface. She looked around the room carefully, noticing the delicate patterns in the wallpaper and the intricate carvings along the wooden cabinet. The silence seemed almost impossibly deep, strangely calm, and completely removed from the busy world outside.",
             "dragon dragon dragon dragon. The dragon watched the door. The dragon walked away.",
+            "John walked through London. John stopped in London. John looked back at London. John left London.",
+            "The river crossed the valley. The river narrowed. The river widened. The river flooded the valley.",
         ]
         node_script = """
 import { analyseText } from './public/analysis.js';
