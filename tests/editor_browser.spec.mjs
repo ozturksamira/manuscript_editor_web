@@ -37,6 +37,20 @@ try {
     status:200,contentType:"text/html",body:editorHtml
   }));
   await page.goto("http://127.0.0.1:"+port+"/editor.html",{waitUntil:"domcontentloaded"});
+  if(await page.locator(".editor-pane-tabs").isVisible())throw new Error("Writing/Issues tabs should be hidden on desktop");
+  if(!await page.locator("#issuesScreen").isVisible())throw new Error("Issues sidebar should remain visible on desktop");
+  if(!await page.locator("#saveNowButton").isVisible())throw new Error("Save now should be available at the top of the editor");
+  if(await page.locator(".manuscript-footer #saveNowButton").count()!==0)throw new Error("Save now should not remain in the manuscript footer");
+  if(await page.locator(".project-footer-actions").isVisible()===false)throw new Error("Project actions should be moved to the bottom");
+  if(await page.locator(".project-footer-actions button").count()!==2)throw new Error("Bottom project actions should contain New project and Import manuscript");
+  await page.locator("#exportProjectButton").click();
+  if(await page.locator("#exportBackdrop").isVisible()===false)throw new Error("Export project dialog did not open");
+  if(await page.locator("#exportBackdrop .export-option").count()!==3)throw new Error("Export project should offer exactly three formats");
+  for(const format of ["DOCX","PDF","TXT"]){
+    if(await page.locator("#exportBackdrop .export-option").filter({hasText:format}).count()!==1)throw new Error("Missing "+format+" export option");
+  }
+  if(await page.locator("#exportBackdrop").getByText("HTML",{exact:true}).count()!==0)throw new Error("HTML export should not be offered");
+  await page.locator(".export-cancel").click();
   await page.locator(".mm-section").first().waitFor();
   if(await page.locator(".mm-section").count()!==4)throw new Error("Initial section build failed");
   if(await page.locator(".outline-item").count()!==3)throw new Error("Initial Contents build failed");
@@ -79,7 +93,10 @@ try {
     renderIssues();
     updateWordCount();
   });
+  await page.setViewportSize({width:390,height:900});
+  if(!await page.locator(".editor-pane-tabs").isVisible())throw new Error("Writing/Issues tabs should be visible on mobile");
   await page.locator("#mobileIssuesTab").click();
+
   await page.locator("#wordsView .issue-card").first().waitFor();
   await page.locator("#wordsView .issue-card").first().click();
   await page.locator("#wordSearchPopover.open").waitFor();
