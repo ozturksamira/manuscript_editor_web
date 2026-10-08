@@ -231,6 +231,34 @@ COMMON_GRAMMAR_WORDS = {
     "much", "many", "few", "little", "own", "same", "such",
 }
 STOP_WORDS = PRONOUNS | PREPOSITIONS | CONJUNCTIONS | AUXILIARY_WORDS | CONTRACTION_STOP_WORDS | COMMON_GRAMMAR_WORDS
+COMMON_CAPITALIZED_WORDS = {
+    "river", "house", "chapter", "book", "room", "door", "road", "street", "city", "town", "village",
+    "country", "world", "earth", "sun", "moon", "sky", "sea", "ocean", "mountain", "hill", "forest",
+    "garden", "church", "school", "university", "hospital", "office", "hotel", "king", "queen",
+    "prince", "princess", "captain", "general", "president", "mother", "father", "brother", "sister",
+    "friend", "stranger", "man", "woman", "child", "children", "boy", "girl", "doctor", "teacher",
+    "writer", "author", "soldier", "officer", "police", "letter", "story", "page", "scene", "day",
+    "night", "morning", "evening", "summer", "winter", "spring", "autumn", "monday", "tuesday",
+    "wednesday", "thursday", "friday", "saturday", "sunday", "january", "february", "march", "april",
+    "may", "june", "july", "august", "september", "october", "november", "december",
+}
+COMMON_PROPER_NAMES = {
+    "john", "mary", "james", "robert", "michael", "william", "david", "richard", "thomas", "charles",
+    "joseph", "daniel", "matthew", "anthony", "mark", "paul", "steven", "andrew", "joshua", "george",
+    "kevin", "brian", "edward", "ronald", "timothy", "jason", "jeffrey", "ryan", "jacob", "gary",
+    "nicholas", "eric", "jonathan", "stephen", "larry", "justin", "scott", "brandon", "benjamin",
+    "samuel", "gregory", "alexander", "patrick", "frank", "raymond", "jack", "dennis", "jerry",
+    "tyler", "aaron", "henry", "adam", "douglas", "nathan", "peter", "zachary", "kyle", "walter",
+    "harold", "jeremy", "ethan", "carl", "keith", "roger", "gerald", "christian", "terry", "sean",
+    "arthur", "austin", "noah", "jesse", "albert", "bryan", "bruce", "jordan", "dylan", "alan",
+    "ralph", "gabriel", "roy", "wayne", "eugene", "logan", "randy", "louis", "russell", "vincent",
+    "philip", "bobby", "johnny", "bradley", "mason", "lucas", "patricia", "jennifer", "linda",
+    "elizabeth", "barbara", "susan", "jessica", "sarah", "karen", "nancy", "lisa", "margaret",
+    "betty", "sandra", "ashley", "kimberly", "donna", "emily", "michelle", "carol", "amanda",
+    "melissa", "deborah", "stephanie", "rebecca", "laura", "sharon", "cynthia", "kathleen", "amy",
+    "shirley", "anna", "angela", "ruth", "brenda", "pamela", "nicole", "katherine", "samantha",
+    "christine", "emma", "catherine", "debra", "virginia", "rachel", "carolyn", "janet",
+}
 EVENT_VERBS = {
     "arrive", "arrived", "attack", "attacked", "avoid", "avoided", "break", "broke",
     "burst", "build", "built", "call", "called", "catch", "caught", "change", "changed",
@@ -639,6 +667,46 @@ def sentence_spans(value):
     return output
 
 
+def _proper_noun_candidates(value):
+    stats = {}
+    sentence_has_word = False
+    cursor = 0
+
+    for match in WORD_RE.finditer(value or ""):
+        between = (value or "")[cursor:match.start()]
+        if re.search(r"[.!?\n]", between):
+            sentence_has_word = False
+
+        raw = match.group(0)
+        word = raw.lower().replace("’", "'").strip("'")
+        if len(word) >= 2 and word not in STOP_WORDS:
+            row = stats.setdefault(
+                word,
+                {"capitalized": 0, "lowercase": 0, "non_initial": 0, "sentence_initial": 0},
+            )
+            if raw[0].isupper():
+                row["capitalized"] += 1
+                if sentence_has_word:
+                    row["non_initial"] += 1
+                else:
+                    row["sentence_initial"] += 1
+            else:
+                row["lowercase"] += 1
+
+        sentence_has_word = True
+        cursor = match.end()
+
+    return {
+        word
+        for word, row in stats.items()
+        if row["lowercase"] == 0
+        and word not in COMMON_CAPITALIZED_WORDS
+        and (
+            row["non_initial"] > 0
+            or (row["sentence_initial"] >= 2 and (word in COMMON_PROPER_NAMES or row["capitalized"] >= 3))
+        )
+    }
+
 def _sentence_profile(snippet):
     words = [
         match.group(0).lower().replace("’", "'").strip("'")
@@ -725,12 +793,13 @@ def analyse_text(value):
         }
 
     sentence_ranges = sentence_spans(value)
+    proper_nouns = _proper_noun_candidates(value)
     word_count = sum(1 for _ in WORD_COUNT_RE.finditer(value))
     counts = {}
 
     for match in WORD_RE.finditer(value):
         word = match.group(0).lower().replace("’", "'").strip("'")
-        if len(word) < 2 or word in STOP_WORDS:
+        if len(word) < 2 or word in STOP_WORDS or word in proper_nouns:
             continue
         counts[word] = counts.get(word, 0) + 1
 
