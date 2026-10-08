@@ -1,0 +1,21 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "magnoliamargin",
+  "main": "src/index.js",
+  "compatibility_date": "2026-10-02",
+  "workers_dev": true,
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    "html_handling": "none",
+    "run_worker_first": ["/", "/login*", "/api/*", "/auth", "/logout", "/projects*", "/editor*", "/project/*"]
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "magnoliamargin-db",
+      "database_id": "d4b607d3-97ab-4129-bb78-6f9eb27cfaf8",
+      "migrations_dir": "./migrations"
+    }
+  ]
+}

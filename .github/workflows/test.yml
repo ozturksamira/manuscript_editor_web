@@ -1,0 +1,61 @@
+name: Test application
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - run: python -m pip install --upgrade pip
+      - run: pip install -r requirements.txt
+      - run: python -m unittest discover -s tests -p "test_*.py"
+      - name: Check editor JavaScript
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          html = Path("public/editor.html").read_text(encoding="utf-8")
+          scripts = re.findall(r"<script>(.*?)</script>", html, flags=re.S)
+          if not scripts:
+              raise SystemExit("No inline editor script found")
+
+          script = scripts[-1]
+          pattern = r"const\s+initialProjectSlug\s*=\s*[^;]*;"
+          script, replacements = re.subn(
+              pattern,
+              "const initialProjectSlug='';",
+              script,
+              count=1,
+          )
+          if replacements != 1:
+              raise SystemExit(
+                  "Could not find the initialProjectSlug declaration in the extracted editor script"
+              )
+
+          Path("/tmp/editor.js").write_text(script, encoding="utf-8")
+          print("Validated extraction: replaced initialProjectSlug template expression")
+          PY
+          node --check /tmp/editor.js
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24
+      - name: Install Node.js dependencies
+        run: npm install
+      - name: Browser smoke test
+        run: |
+          npx playwright install --with-deps chromium
+          node tests/editor_browser.spec.mjs
+
+      - name: Check Cloudflare Worker JavaScript
+        run: node --check src/index.js
+      - name: Run Cloudflare analysis tests
+        run: node tests/test_analysis.js 2>&1

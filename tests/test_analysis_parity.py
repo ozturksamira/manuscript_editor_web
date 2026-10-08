@@ -1,0 +1,41 @@
+import json
+import subprocess
+import sys
+import unittest
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from app import analyse_text
+
+
+ROOT = Path(__file__).resolve().parent.parent
+
+
+class AnalysisParityTest(unittest.TestCase):
+    def test_python_and_browser_analysis_match(self):
+        fixtures = [
+            "The ball was thrown by John.",
+            "He ran. She screamed. The door slammed. The lights went out. They fled.",
+            "The old room was incredibly quiet and strangely beautiful, with dusty shelves, faded curtains, cracked frames, and pale light resting across every surface. She looked around the room carefully, noticing the delicate patterns in the wallpaper and the intricate carvings along the wooden cabinet. The silence seemed almost impossibly deep, strangely calm, and completely removed from the busy world outside.",
+            "dragon dragon dragon dragon. The dragon watched the door. The dragon walked away.",
+        ]
+        node_script = """
+import { analyseText } from './public/analysis.js';
+const input = JSON.parse(process.argv[1]);
+process.stdout.write(JSON.stringify(input.map(analyseText)));
+"""
+        result = subprocess.run(
+            ["node", "--input-type=module", "-e", node_script, json.dumps(fixtures)],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            check=True,
+            timeout=20,
+        )
+        browser_results = json.loads(result.stdout)
+        python_results = [analyse_text(value) for value in fixtures]
+        self.assertEqual(browser_results, python_results)
+
+
+if __name__ == "__main__":
+    unittest.main()

@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sign in — Magnolia Margin</title>
+<link href="https://fonts.googleapis.com/css2?family=Alice&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet">
+<style>
+:root{--pearl:#f7f5f2;--platinum:#efe8e2;--tuscany:#c0ab9a;--umber:#7b5c4b;--burgundy:#3f3027;--ink:#171411}*{box-sizing:border-box}body{margin:0;min-height:100svh;display:grid;place-items:center;background:var(--pearl);color:var(--ink);font-family:'Alice',serif;padding:20px}.login-card{width:min(100%,430px);background:var(--platinum);padding:clamp(30px,6vw,50px) clamp(22px,6vw,40px);border-radius:26px;text-align:center;box-shadow:0 14px 45px rgba(0,0,0,.06)}h1{font:600 clamp(1.7rem,5vw,2.2rem) 'Playfair Display',Georgia,serif;color:var(--burgundy);margin:0 0 30px}.divider{display:flex;align-items:center;gap:10px;color:var(--umber);font-size:12px;letter-spacing:1px;margin:22px 0}.divider:before,.divider:after{content:'';height:1px;background:var(--tuscany);flex:1}.field{display:block;width:100%;padding:14px 18px;border:1px solid transparent;border-radius:30px;background:var(--umber);color:var(--pearl);font:16px system-ui,sans-serif;margin-bottom:12px;outline:none}.field:focus{border-color:var(--burgundy);box-shadow:0 0 0 3px rgba(123,92,75,.15)}.field::placeholder{color:var(--platinum)}.submit{width:100%;border:0;border-radius:30px;padding:14px;background:var(--tuscany);color:var(--burgundy);font-weight:700;font-size:16px;cursor:pointer;margin-top:4px}.submit:hover{background:#b09987}.toggle{margin-top:18px;color:var(--umber);text-decoration:underline;cursor:pointer;font-size:14px}.message{min-height:20px;margin-top:12px;color:#9a2d2d;font-size:13px}.back{display:inline-block;margin-top:24px;color:var(--umber);text-decoration:none;font-size:14px}
+</style>
+</head>
+<body>
+<main class="login-card">
+<h1 id="authTitle">Sign in to your writing room</h1>
+<div class="divider">EMAIL</div>
+<form id="authForm">
+<input type="hidden" id="authAction" value="login">
+<input class="field" id="emailInput" type="email" autocomplete="email" placeholder="your@email.com" required>
+<input class="field" id="passwordInput" type="password" autocomplete="current-password" minlength="8" placeholder="password (8+ characters)" required>
+<button class="submit" id="authSubmit" type="submit">Sign In</button>
+<div class="message" id="message" role="alert"></div>
+</form>
+<div class="toggle" id="authToggle">Don't have an account? Create one here.</div>
+<a class="back" href="/">← Back to Magnolia Margin</a>
+</main>
+<script>
+const form=document.getElementById('authForm'),action=document.getElementById('authAction'),title=document.getElementById('authTitle'),submit=document.getElementById('authSubmit'),toggle=document.getElementById('authToggle'),message=document.getElementById('message'),password=document.getElementById('passwordInput');
+toggle.addEventListener('click',()=>{const registering=action.value==='login';action.value=registering?'register':'login';title.textContent=registering?'Create your writing room':'Sign in to your writing room';submit.textContent=registering?'Create Account':'Sign In';toggle.textContent=registering?'Already have an account? Sign in here.':"Don't have an account? Create one here.";password.autocomplete=registering?'new-password':'current-password';message.textContent='';});
+form.addEventListener('submit',async e=>{e.preventDefault();message.textContent='';submit.disabled=true;submit.textContent='Please wait…';try{const response=await fetch('/auth',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:document.getElementById('emailInput').value,password:password.value,action:action.value})});const data=await response.json();if(!response.ok)throw new Error(data.error||'Authentication failed.');if(!data.token)throw new Error('Authentication succeeded but no session token was returned.');sessionStorage.setItem('mm_session_token',data.token);window.location.href='/projects/';}catch(err){message.textContent=err.message;}finally{submit.disabled=false;submit.textContent=action.value==='register'?'Create Account':'Sign In';}});
+</script>
+
+<script>
+window.addEventListener('pageshow',function(){document.getElementById('emailInput').focus()});
+</script>
+</body>
+</html>
