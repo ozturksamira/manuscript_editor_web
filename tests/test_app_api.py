@@ -56,6 +56,13 @@ html_export = client.get(f"/api/projects/{project_id}/export/html")
 assert html_export.status_code == 400, html_export.get_data(as_text=True)
 assert "docx, pdf, or txt" in html_export.get_json()["error"]
 
+unsupported_import = client.post("/api/projects/import", json={
+    "filename": "chapter.html",
+    "title": "Unsupported",
+    "content": "<p>Should not import</p>",
+})
+assert unsupported_import.status_code == 400, unsupported_import.get_data(as_text=True)
+
 delete = client.post("/api/account/delete", json={
     "password": password,
     "confirmation": "DELETE",
