@@ -27,7 +27,7 @@ button,input,select{font:inherit}button{cursor:pointer}a{color:inherit}
 .layout{display:grid;grid-template-columns:165px minmax(0,1fr);gap:15px;align-items:start}
 .layout.issues-mode{grid-template-columns:1fr}
 .issues-screen{display:none;min-height:calc(100vh - 150px);border:1px solid var(--line);background:rgba(239,232,226,.56);box-shadow:var(--shadow);border-radius:20px;overflow:hidden}
-.layout.issues-mode + .issues-screen{display:flex;flex-direction:column}
+.layout.issues-mode > .issues-screen{display:flex;flex-direction:column}
 .layout.issues-mode .outline-panel,.layout.issues-mode .manuscript-panel{display:none}
 .editor-pane-tabs{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin:0 0 12px;padding:4px;border:1px solid var(--line);border-radius:14px;background:var(--platinum)}
 .editor-pane-tab{border:0;border-radius:10px;background:transparent;color:var(--umber);padding:9px 10px;font:700 11px system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase}
@@ -170,8 +170,6 @@ button,input,select{font:inherit}button{cursor:pointer}a{color:inherit}
       </div>
     </section>
 
-  </div
-
   <section class="issues-screen" id="issuesScreen" aria-label="Editorial issues">
     <div class="issues-panel" aria-label="Editorial issues">
       <div class="issues-head">
@@ -190,6 +188,7 @@ button,input,select{font:inherit}button{cursor:pointer}a{color:inherit}
     </aside>
 
   </section>
+  </div>
 
   <footer class="project-footer">
     <div class="project-footer-links">
