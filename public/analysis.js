@@ -27,6 +27,43 @@ function countWords(text) {
   return wordsIn(text).length;
 }
 
+function properNounCandidates(value) {
+  const text = String(value || "");
+  const stats = new Map();
+  let sentenceHasWord = false;
+  let cursor = 0;
+  WORD_RE.lastIndex = 0;
+
+  for (const match of text.matchAll(WORD_RE)) {
+    const between = text.slice(cursor, match.index);
+    if (/[.!?\n]/.test(between)) sentenceHasWord = false;
+
+    const raw = match[0];
+    const word = raw.toLowerCase().replace(/’/g, "'").replace(/^'+|'+$/g, "");
+    if (word.length >= 2 && !STOP_WORDS.has(word)) {
+      const row = stats.get(word) || { capitalized: 0, lowercase: 0, nonInitial: 0 };
+      if (/^[A-Z]/.test(raw)) {
+        row.capitalized += 1;
+        if (sentenceHasWord) row.nonInitial += 1;
+      } else {
+        row.lowercase += 1;
+      }
+      stats.set(word, row);
+    }
+
+    sentenceHasWord = true;
+    cursor = match.index + raw.length;
+  }
+
+  const candidates = new Set();
+  for (const [word, row] of stats) {
+    if (row.nonInitial > 0 || (row.capitalized >= 4 && row.lowercase === 0)) {
+      candidates.add(word);
+    }
+  }
+  return candidates;
+}
+
 function sentenceSpans(value) {
   SENTENCE_RE.lastIndex = 0;
   const output = [];
@@ -97,9 +134,12 @@ export function analyseText(value) {
   const text = String(value || "");
   if (!text.trim()) return { word_count: 0, words: [], passive: [], pacing: [], flagged_count: 0 };
   const spans = sentenceSpans(text);
+  const properNouns = properNounCandidates(text);
   const counts = new Map();
-  for (const word of wordsIn(text)) {
-    if (word.length < 2 || STOP_WORDS.has(word)) continue;
+  WORD_RE.lastIndex = 0;
+  for (const match of text.matchAll(WORD_RE)) {
+    const word = match[0].toLowerCase().replace(/’/g, "'").replace(/^'+|'+$/g, "");
+    if (word.length < 2 || STOP_WORDS.has(word) || properNouns.has(word)) continue;
     counts.set(word, (counts.get(word) || 0) + 1);
   }
   const frequent = [...counts.entries()]
