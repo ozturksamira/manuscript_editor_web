@@ -29,7 +29,7 @@ button,input,select{font:inherit}button{cursor:pointer}a{color:inherit}
 .issues-screen{display:flex;flex-direction:column;min-height:calc(100vh - 150px);border:1px solid var(--line);background:rgba(239,232,226,.56);box-shadow:var(--shadow);border-radius:20px;overflow:hidden}
 .layout.issues-mode > .issues-screen{display:flex;flex-direction:column}
 .layout.issues-mode .outline-panel,.layout.issues-mode .manuscript-panel{display:none}
-.editor-pane-tabs{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin:0 0 12px;padding:4px;border:1px solid var(--line);border-radius:14px;background:var(--platinum)}
+.editor-pane-tabs{display:none;grid-template-columns:1fr 1fr;gap:4px;margin:0 0 12px;padding:4px;border:1px solid var(--line);border-radius:14px;background:var(--platinum)}
 .editor-pane-tab{border:0;border-radius:10px;background:transparent;color:var(--umber);padding:9px 10px;font:700 11px system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase}
 .editor-pane-tab.active{background:var(--pearl);color:var(--burgundy);box-shadow:0 2px 8px rgba(23,20,17,.06)}
 .editor-fixed-jumps{position:fixed;right:24px;top:50%;transform:translateY(-50%);z-index:80;display:flex;flex-direction:column;gap:7px}
@@ -64,17 +64,18 @@ button,input,select{font:inherit}button{cursor:pointer}a{color:inherit}
 .section-nav-button:hover:not(:disabled){background:var(--tuscany)}
 .section-nav-button:disabled{opacity:.38;cursor:default}
 .section-nav-label{text-align:center;color:var(--umber);font:700 10px/1.4 system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase}
-.manuscript-footer{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:12px 16px 16px}.left-actions,.export-actions,.manuscript-metrics{display:flex;gap:7px;flex-wrap:wrap;align-items:center}.word-count{font:700 11px system-ui,sans-serif;color:var(--burgundy);padding:8px 11px;border:1px solid var(--line);border-radius:999px;background:var(--platinum)}.primary{border:0;background:var(--umber);color:var(--pearl);border-radius:999px;padding:10px 16px;font-weight:700}.primary:hover{background:var(--burgundy)}.ghost{border:1px solid var(--line);background:transparent;color:var(--burgundy);border-radius:999px;padding:9px 14px}.ghost:hover{background:var(--platinum)}.save-status{font:11px system-ui,sans-serif;color:var(--umber);min-height:17px}.export{border:1px solid var(--line);background:var(--platinum);color:var(--burgundy);border-radius:999px;padding:9px 12px;text-decoration:none;font:700 11px system-ui,sans-serif}.export:hover{background:var(--tuscany)}
+.manuscript-footer{display:flex;align-items:center;justify-content:flex-end;gap:12px;flex-wrap:wrap;padding:12px 16px 16px}.left-actions,.export-actions,.manuscript-metrics{display:flex;gap:7px;flex-wrap:wrap;align-items:center}.word-count{font:700 11px system-ui,sans-serif;color:var(--burgundy);padding:8px 11px;border:1px solid var(--line);border-radius:999px;background:var(--platinum)}.primary{border:0;background:var(--umber);color:var(--pearl);border-radius:999px;padding:10px 16px;font-weight:700}.primary:hover{background:var(--burgundy)}.ghost{border:1px solid var(--line);background:transparent;color:var(--burgundy);border-radius:999px;padding:9px 14px}.ghost:hover{background:var(--platinum)}.save-status{font:11px system-ui,sans-serif;color:var(--umber);min-height:17px}.export{border:1px solid var(--line);background:var(--platinum);color:var(--burgundy);border-radius:999px;padding:9px 12px;text-decoration:none;font:700 11px system-ui,sans-serif}.export:hover{background:var(--tuscany)}
 .issues-panel{position:sticky;top:92px;height:calc(100vh - 115px);max-height:calc(100vh - 115px);border-radius:20px;overflow:hidden;display:flex;flex-direction:column}
 .issues-head{padding:15px 15px 0;border-bottom:1px solid var(--line)}.issues-title-row{display:flex;align-items:center;justify-content:space-between;gap:8px}.issues-title{margin:0;font:600 1.35rem "Playfair Display",Georgia,serif;color:var(--burgundy)}.issue-count{min-width:28px;height:28px;display:grid;place-items:center;padding:0 8px;border-radius:999px;background:var(--burgundy);color:var(--pearl);font:700 11px system-ui,sans-serif}
 .issue-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;margin-top:13px}.issue-tab{border:0;background:transparent;padding:10px 3px;color:var(--umber);border-bottom:2px solid transparent;font:700 10px system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase}.issue-tab.active{color:var(--burgundy);border-bottom-color:var(--umber)}.issue-tab span{display:block;margin-top:2px;font-size:10px;opacity:.7}
 .issue-list{flex:1;overflow:auto;padding:9px}.issue-view{display:none}.issue-view.active{display:block}.issue-empty{padding:25px 10px;text-align:center;color:var(--umber);font-size:.88rem;line-height:1.6}.issue-card{width:100%;border:1px solid transparent;background:rgba(247,245,242,.72);padding:11px;border-radius:14px;margin-bottom:7px;text-align:left;color:var(--burgundy);transition:.16s ease}.issue-card:hover{transform:translateY(-1px);border-color:var(--tuscany);background:var(--pearl)}.issue-main{display:flex;justify-content:space-between;gap:8px;align-items:baseline}.issue-word{font:700 1rem "Playfair Display",Georgia,serif}.issue-meta{font:700 9px system-ui,sans-serif;color:var(--umber);letter-spacing:.07em;text-transform:uppercase;white-space:nowrap}.issue-copy{margin-top:5px;font:11px/1.5 system-ui,sans-serif;color:#6f6258}.issue-progress{margin-top:5px;font:10px system-ui,sans-serif;color:var(--umber)}
-.project-footer{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;margin-top:22px;padding:15px 4px 0;border-top:1px solid var(--line);color:var(--umber);font:10px system-ui,sans-serif}.project-footer-links{display:flex;gap:7px}.mini-link{width:32px;height:32px;border:1px solid var(--line);border-radius:50%;display:grid;place-items:center;background:var(--platinum);text-decoration:none;color:var(--burgundy)}.mini-link:hover{background:var(--tuscany)}.mini-link svg{width:15px;height:15px}
+.project-footer{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;margin-top:22px;padding:15px 4px 0;border-top:1px solid var(--line);color:var(--umber);font:10px system-ui,sans-serif}.project-footer-links{display:flex;gap:7px}.project-footer-actions{display:flex;gap:7px;align-items:center;flex-wrap:wrap}.project-footer-actions .small-button{padding:9px 14px}.mini-link{width:32px;height:32px;border:1px solid var(--line);border-radius:50%;display:grid;place-items:center;background:var(--platinum);text-decoration:none;color:var(--burgundy)}.mini-link:hover{background:var(--tuscany)}.mini-link svg{width:15px;height:15px}
 .modal-backdrop{position:fixed;inset:0;z-index:100;background:rgba(23,20,17,.35);display:none;align-items:center;justify-content:center;padding:20px}.modal-backdrop.open{display:flex}.settings-modal{width:min(430px,100%);background:var(--pearl);border:1px solid var(--tuscany);border-radius:22px;padding:24px;box-shadow:0 25px 80px rgba(23,20,17,.25)}.settings-modal h2{margin:0;color:var(--burgundy);font:600 1.6rem "Playfair Display",Georgia,serif}.settings-modal p{font-size:13px;line-height:1.65;color:var(--umber)}.settings-field{width:100%;border:1px solid var(--line);background:white;border-radius:11px;padding:11px;margin-top:7px;outline:none}.delete-box{margin-top:18px;padding-top:16px;border-top:1px solid var(--line)}.delete-account{background:#6d3428;border:0;border-radius:999px;color:var(--pearl);padding:10px 14px;font-weight:700}.close-settings{border:1px solid var(--line);background:transparent;border-radius:999px;color:var(--burgundy);padding:9px 13px}.settings-actions{display:flex;justify-content:flex-end;gap:7px;margin-top:14px}.settings-error{min-height:18px;color:#8f3329;font:11px system-ui,sans-serif}
 .toast{position:fixed;right:20px;bottom:20px;z-index:120;max-width:340px;padding:11px 14px;border-radius:13px;background:var(--burgundy);color:var(--pearl);font:11px/1.45 system-ui,sans-serif;opacity:0;transform:translateY(8px);pointer-events:none;transition:.2s}.toast.show{opacity:1;transform:none}
 .mobile-pane-tabs{display:none}
 @media(max-width:1180px){.layout{grid-template-columns:180px minmax(0,1fr) 320px}}
 @media(max-width:980px){
+  .editor-pane-tabs{display:grid}
   .layout{grid-template-columns:1fr}
   .outline-panel{position:static;height:205px;max-height:205px;order:0}
   .manuscript-panel{order:1}
@@ -105,8 +106,6 @@ button,input,select{font:inherit}button{cursor:pointer}a{color:inherit}
     <select id="projectSelect" class="project-select" aria-label="Choose project"></select>
     <input id="titleInput" class="title-input" maxlength="160" aria-label="Project title" value="Untitled manuscript">
     <div class="project-actions">
-      <button class="small-button" type="button" onclick="createProject()">+ New project</button>
-      <button class="small-button" type="button" onclick="document.getElementById('fileInput').click()">Import manuscript</button>
       <button class="danger" type="button" onclick="deleteProject()">Delete project</button>
       <input class="file-input" id="fileInput" type="file" accept=".txt,.docx,.pdf,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/pdf">
     </div>
@@ -144,6 +143,7 @@ button,input,select{font:inherit}button{cursor:pointer}a{color:inherit}
           <div class="left-actions">
             <button class="primary" id="analyseButton" type="button" onclick="analyseProject()">Analyse manuscript</button>
             <button class="primary" id="analyseChapterButton" type="button" onclick="analyseChapter()">Analyse Chapter</button>
+            <button class="ghost" id="saveNowButton" type="button" onclick="saveProject()">Save now</button>
           </div>
         </div>
       </div>
@@ -156,18 +156,11 @@ button,input,select{font:inherit}button{cursor:pointer}a{color:inherit}
         </div>
       </div>
       <div class="manuscript-footer">
-        <div class="left-actions">
-          <button class="ghost" type="button" onclick="saveProject()">Save now</button>
-        </div>
         <div class="manuscript-metrics">
           <span class="word-count" id="wordCount" aria-live="polite">0 words</span>
           <div class="save-status" id="saveStatus">Changes save automatically.</div>
         </div>
-        <div class="export-actions">
-          <button class="export" id="exportDocx" type="button" onclick="exportDocx()">Export DOCX</button>
-          <a class="export" id="exportHtml" href="#">Export HTML</a>
-          <a class="export" id="exportTxt" href="#">Export TXT</a>
-        </div>
+
       </div>
     </section>
 
@@ -198,6 +191,10 @@ button,input,select{font:inherit}button{cursor:pointer}a{color:inherit}
       <a class="mini-link" href="#" aria-label="Support Magnolia Margin" title="Support link coming soon">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4.5 9h11v5.2A4.8 4.8 0 0 1 10.7 19H9.3a4.8 4.8 0 0 1-4.8-4.8V9Z"/><path d="M15.5 10h2a2.5 2.5 0 1 1 0 5h-2M7 5.5c1 1 1 1.8 0 2.8M10 5c1 1 1 1.8 0 2.8M13 5.5c1 1 1 1.8 0 2.8"/><path d="M4 21h14"/></svg>
       </a>
+    </div>
+    <div class="project-footer-actions">
+      <button class="small-button" type="button" onclick="createProject()">+ New project</button>
+      <button class="small-button" type="button" onclick="document.getElementById(&quot;fileInput&quot;).click()">Import manuscript</button>
     </div>
     <span>Built to keep the writer at the centre.</span>
   </footer>
